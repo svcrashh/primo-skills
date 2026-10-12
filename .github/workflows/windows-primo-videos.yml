@@ -1,3 +1,5 @@
+# A primo-videos num Windows de verdade (o runner windows-latest): a instalação como a pessoa faz, a suíte e um vídeo de
+# ponta a ponta. Sem segredo e sem API paga: a voz vem da ElevenLabs de mentira dos testes (tests/fake-api.mjs).
 name: primo-videos no Windows
 
 on:
@@ -16,40 +18,64 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  sondagem:
+  # Sem cache e sem setup-node: o que a pessoa vê no PowerShell, do primeiro requisitos ao ambiente pronto.
+  instalar:
     runs-on: windows-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
+    defaults:
+      run:
+        shell: powershell
     steps:
-      - name: O que o runner tem
-        shell: pwsh
+      - uses: actions/checkout@v7
+      - name: Os pacotes que o requisitos.mjs manda instalar existem no winget
         run: |
-          winget --version
-          Get-Command python, python3, py, node, npm, wt, claude -ErrorAction SilentlyContinue | Format-Table Name, Source -AutoSize
-          [System.Environment]::OSVersion
-      - name: winget install ffmpeg
-        shell: pwsh
+          foreach ($id in 'OpenJS.NodeJS.LTS', 'ffmpeg', 'Python.Python.3.12', 'Microsoft.WindowsTerminal') {
+            winget show $id --accept-source-agreements --disable-interactivity | Select-Object -First 2
+            if ($LASTEXITCODE) { throw "winget show $id falhou ($LASTEXITCODE)" }
+          }
+      - name: requisitos.mjs numa máquina sem ffmpeg e sem a conferência
+        run: |
+          [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+          node primo-videos/scripts/requisitos.mjs
+          if ($LASTEXITCODE -ne 1) { throw "esperava código 1 (falta o ffmpeg e a conferência), veio $LASTEXITCODE" }
+          exit 0
+      - name: winget install ffmpeg e winget install Python.Python.3.12
         run: |
           winget install ffmpeg --accept-source-agreements --accept-package-agreements --disable-interactivity
-          $links = Join-Path $env:LOCALAPPDATA 'Microsoft\WinGet\Links'
-          Get-ChildItem $links | Format-Table Name, Length
-          $env:PATH = "$links;$env:PATH"
-          Get-Command ffmpeg, ffprobe | Format-Table Name, Source -AutoSize
-          ffmpeg -hide_banner -version | Select-Object -First 1
-          ffmpeg -hide_banner -loglevel error -f gdigrab -framerate 10 -t 2 -i desktop -y "$env:RUNNER_TEMP\tela.mp4"
-          ffprobe -v error -show_entries stream=width,height,nb_frames -of compact "$env:RUNNER_TEMP\tela.mp4"
-      - name: OCR e vozes (Windows PowerShell 5.1)
-        shell: powershell
+          if ($LASTEXITCODE) { throw "winget install ffmpeg: $LASTEXITCODE" }
+          winget install Python.Python.3.12 --accept-source-agreements --accept-package-agreements --disable-interactivity
+          "winget install Python.Python.3.12: código $LASTEXITCODE"
+          # o PATH novo só vale num PowerShell novo: os próximos passos são processos novos
+          Join-Path $env:LOCALAPPDATA 'Microsoft\WinGet\Links' | Out-File -Append -Encoding utf8 $env:GITHUB_PATH
+      - name: ffmpeg e Python com o nome que a skill procura
         run: |
-          $PSVersionTable.PSVersion
-          Add-Type -AssemblyName System.Runtime.WindowsRuntime
-          $null = [Windows.Media.Ocr.OcrEngine, Windows.Foundation, ContentType = WindowsRuntime]
-          "OCR languages: " + (([Windows.Media.Ocr.OcrEngine]::AvailableRecognizerLanguages | ForEach-Object { $_.LanguageTag }) -join ', ')
-          $e = [Windows.Media.Ocr.OcrEngine]::TryCreateFromUserProfileLanguages()
-          "OCR engine: " + ($(if ($e) { $e.RecognizerLanguage.LanguageTag } else { 'none' }))
-          Add-Type -AssemblyName System.Speech
-          "voices: " + (((New-Object System.Speech.Synthesis.SpeechSynthesizer).GetInstalledVoices() | ForEach-Object { $_.VoiceInfo.Name }) -join ', ')
-          Add-Type -AssemblyName System.Windows.Forms
-          [System.Windows.Forms.Screen]::AllScreens | Format-Table DeviceName, Bounds, Primary
+          Get-Command ffmpeg, ffprobe, py | Format-Table Name, Source -AutoSize
+          py -0p
+      - name: environment.mjs --fix sem --yes diz o que baixaria e não baixa
+        run: |
+          [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+          node primo-videos/scripts/environment.mjs --fix
+          if ($LASTEXITCODE -ne 2) { throw "esperava código 2 (falta o Chromium), veio $LASTEXITCODE" }
+          exit 0
+      - name: environment.mjs --fix --yes
+        run: |
+          [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+          node primo-videos/scripts/environment.mjs --fix --yes
+          if ($LASTEXITCODE) { throw "environment.mjs --fix --yes: $LASTEXITCODE" }
+      - name: A chave salva pelo Bloco de Notas (BOM e CRLF) vale e não aparece
+        run: |
+          [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+          $d = "$env:USERPROFILE\.claude\secrets"
+          New-Item -ItemType Directory -Force $d | Out-Null
+          # o Set-Content do PowerShell 5.1 grava UTF-8 com BOM e CRLF, como o Bloco de Notas pode gravar
+          Set-Content -Path "$d\elevenlabs.env" -Encoding UTF8 -Value 'ELEVENLABS_API_KEY=chave-falsa-do-runner'
+          $saida = node primo-videos/scripts/requisitos.mjs | Out-String
+          $codigo = $LASTEXITCODE
+          $saida
+          if ($codigo -ne 0) { throw "esperava código 0 (nada obrigatório falta), veio $codigo" }
+          if ($saida -match 'chave-falsa') { throw 'o valor da chave apareceu na saída' }
+          if ($saida -notmatch '✔ Voz em off') { throw 'a chave do arquivo não foi achada' }
+          Remove-Item -Recurse -Force $d
 
   testes:
     runs-on: windows-latest
@@ -59,21 +85,123 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: 24
-      - uses: actions/setup-python@v7
+      - name: Cache do Playwright, do Chromium e do Python da trilha
+        uses: actions/cache@v6
         with:
-          python-version: '3.12'
+          path: |
+            ~\.videostudio\node
+            ~\.videostudio\venv
+            ~\AppData\Local\ms-playwright
+          key: ambiente-${{ runner.os }}-${{ hashFiles('primo-videos/scripts/environment.mjs') }}-1
       - name: ffmpeg pelo winget
         shell: pwsh
         run: |
           winget install ffmpeg --accept-source-agreements --accept-package-agreements --disable-interactivity
           Join-Path $env:LOCALAPPDATA 'Microsoft\WinGet\Links' | Out-File -Append -Encoding utf8 $env:GITHUB_PATH
-      - name: requisitos.mjs
-        shell: pwsh
-        run: node primo-videos/scripts/requisitos.mjs; "código $LASTEXITCODE"; exit 0
       - name: environment.mjs --fix --yes
-        shell: pwsh
         run: node primo-videos/scripts/environment.mjs --fix --yes
       - name: A suíte
-        shell: pwsh
         working-directory: primo-videos
         run: node --test --test-reporter=spec "tests/*.test.mjs"
+
+  # O caminho de um vídeo, pelos comandos que o SKILL.md manda rodar, no Git Bash (onde o Claude Code do Windows roda
+  # os comandos). Sobe o MP4 e as folhas como artefato.
+  video:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: bash
+    env:
+      SK: ${{ github.workspace }}\primo-videos
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Cache do Playwright, do Chromium e do Python da trilha
+        uses: actions/cache@v6
+        with:
+          path: |
+            ~\.videostudio\node
+            ~\.videostudio\venv
+            ~\AppData\Local\ms-playwright
+          key: ambiente-${{ runner.os }}-${{ hashFiles('primo-videos/scripts/environment.mjs') }}-1
+      - name: ffmpeg pelo winget
+        shell: pwsh
+        run: |
+          winget install ffmpeg --accept-source-agreements --accept-package-agreements --disable-interactivity
+          Join-Path $env:LOCALAPPDATA 'Microsoft\WinGet\Links' | Out-File -Append -Encoding utf8 $env:GITHUB_PATH
+      - name: environment.mjs --fix --yes
+        run: |
+          node "$SK/scripts/environment.mjs" --fix --yes
+          node "$SK/scripts/playwright.cjs" --gpu || true
+      - name: Projeto novo a partir do molde e o rascunho
+        run: |
+          set -euo pipefail
+          P="$RUNNER_TEMP/e2e/demo"
+          node "$SK/scripts/new-project.mjs" "$P" --title "Teste no Windows" --duration 8 --bpm 120 --formats 16x9
+          node "$P/tools/render.cjs" --project "$P" --mode draft
+          ls "$P/out" "$P/previas"
+      - name: A trilha sintetizada em Python, conferida
+        run: |
+          set -euo pipefail
+          P="$RUNNER_TEMP/e2e/demo"
+          PY=$(node -e "console.log(require(process.argv[1]).acharPython())" "$SK/scripts/where.cjs")
+          echo "python da trilha: $PY"
+          cp "$SK/assets/audio/api_example.py" "$SK/assets/audio/sheet_api_example.json" "$P/audio/"
+          cd "$P/audio"
+          "$PY" api_example.py
+          "$PY" verify.py sheet_api_example.json
+      - name: Finalizar e conferir o MP4
+        run: |
+          set -euo pipefail
+          P="$RUNNER_TEMP/e2e/demo"
+          node "$P/tools/finalize.mjs" --project "$P" --video out/draft-16x9.mp4 --audio audio/exemplo-api.wav --sheet audio/sheet_api_example.json --out "$RUNNER_TEMP/e2e/entrega/demo-16x9.mp4"
+          ffprobe -v error -show_entries stream=codec_type,codec_name,width,height,r_frame_rate,sample_rate:format=duration -of compact "$RUNNER_TEMP/e2e/entrega/demo-16x9.mp4"
+          ffmpeg -v error -y -i "$RUNNER_TEMP/e2e/entrega/demo-16x9.mp4" -vf "fps=3,scale=480:-1,tile=6x4" -frames:v 1 "$RUNNER_TEMP/e2e/entrega/folha-demo-16x9.png"
+      - name: O refino lê o texto do vídeo com o OCR do Windows
+        run: |
+          set -euo pipefail
+          node "$SK/scripts/refine/video.mjs" "$RUNNER_TEMP/e2e/entrega/demo-16x9.mp4" --json --checks legibilidade,area-segura > "$RUNNER_TEMP/e2e/entrega/refino.json" || true
+          node -e "const j = require(process.argv[1]); console.log(JSON.stringify({ ocr: j.medidas.ocr, quadros: j.medidas.quadrosOcr, linhas: j.medidas.linhasOcr, achados: j.achados.map((a) => a.nivel + ' ' + a.msg) }, null, 1)); if (j.medidas.ocr !== 'windows' || !(j.medidas.linhasOcr > 0)) process.exit(1)" "$RUNNER_TEMP/e2e/entrega/refino.json"
+      - name: O painel de revisão sobe, responde e ouve o clique (pelo Playwright)
+        run: |
+          set -euo pipefail
+          P="$RUNNER_TEMP/e2e/demo"
+          cp "$P/previas/auto-cenas.png" "$P/still-1.png"
+          cat > "$RUNNER_TEMP/board.json" <<'EOF'
+          { "title": "Teste no Windows", "subtitle": "8 s · 16:9",
+            "scenes": [ { "id": "s1", "title": "A demo do motor", "seconds": 8, "state": "concept", "still": "still-1.png" },
+                        { "id": "s2", "title": "O rascunho", "seconds": 8, "state": "animated-preview", "still": "still-1.png", "video": "out/draft-16x9.mp4" } ] }
+          EOF
+          node "$SK/scripts/board.mjs" set "$P" "$RUNNER_TEMP/board.json"
+          URL=$(node "$SK/scripts/board.mjs" open "$P" --no-open)
+          echo "painel: $URL"
+          cat > "$RUNNER_TEMP/painel.cjs" <<'EOF'
+          const { abrirNavegador } = require(process.env.SK + '/scripts/playwright.cjs')
+          ;(async () => {
+            const [url, saida] = process.argv.slice(2)
+            const { browser } = await abrirNavegador()
+            const pg = await browser.newPage({ viewport: { width: 1280, height: 900 } })
+            await pg.goto(url)
+            await pg.getByRole('button', { name: 'Approve still' }).first().click()
+            await pg.getByText('You approved the still.').first().waitFor({ timeout: 15000 })
+            await pg.screenshot({ path: saida, fullPage: true })
+            await browser.close()
+          })().catch((e) => { console.error(e); process.exit(1) })
+          EOF
+          node "$RUNNER_TEMP/painel.cjs" "$URL" "$RUNNER_TEMP/e2e/entrega/painel.png"
+          node "$SK/scripts/board.mjs" events "$P" | tee "$RUNNER_TEMP/e2e/entrega/eventos.jsonl"
+          grep -q '"approve-still"' "$RUNNER_TEMP/e2e/entrega/eventos.jsonl"
+          node "$SK/scripts/board.mjs" stop "$P"
+      - name: Sobe o vídeo, as folhas e o painel
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: video-windows
+          path: |
+            ${{ runner.temp }}\e2e\entrega
+            ${{ runner.temp }}\e2e\demo\previas
+          if-no-files-found: warn
+          retention-days: 7
