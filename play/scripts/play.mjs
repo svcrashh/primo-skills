@@ -137,6 +137,7 @@ export async function sondar(abs) {
     tipo: video ? (audio ? 'video-com-audio' : 'video-sem-audio') : 'audio',
     temAudio: Boolean(audio), temVideo: Boolean(video),
     faixaAudio: audio?.index ?? null, faixaVideo: video?.index ?? null,
+    codecAudio: audio?.codec_name ?? null, taxaAudio: num(audio?.sample_rate),
     duracaoAudio: num(audio?.duration) || duracao,
     largura: null, altura: null, quadrosNoVideo: null,
   }
@@ -256,7 +257,8 @@ async function pedirTranscricao(chave, arquivo, { modelo, idioma }) {
   const formato = formatoDoModelo(modelo)
   for (let tentativa = 1; ; tentativa++) {
     const corpo = new FormData()
-    corpo.append('file', new Blob([fs.readFileSync(arquivo)], { type: 'audio/mpeg' }), path.basename(arquivo))
+    const tipo = TIPO_MIME[path.extname(arquivo).slice(1)] ?? 'application/octet-stream'
+    corpo.append('file', new Blob([fs.readFileSync(arquivo)], { type: tipo }), path.basename(arquivo))
     corpo.append('model', modelo)
     corpo.append('response_format', formato)
     if (formato === 'diarized_json') corpo.append('chunking_strategy', 'auto')
@@ -300,13 +302,22 @@ async function emParalelo(tarefas, n) {
   return res
 }
 
-/** Converte o áudio para mp3 mono de 16 kHz (leve, e é a taxa com que os modelos ouvem). */
-async function converterAudio(info, saida, { inicio = null, dur = null, pausas = false } = {}) {
+// O áudio vai como está quando a API aceita o formato, só trocando o contêiner. Comprimir de novo piora a transcrição:
+// em 12/10/2026 um áudio .opus convertido para mp3 de 16 kHz voltou com duas palavras trocadas, e o original veio certo.
+// O que a API não aceita vira FLAC mono, que não perde nada.
+const COPIA = { opus: 'ogg', vorbis: 'ogg', aac: 'm4a', mp3: 'mp3', flac: 'flac' }
+const TIPO_MIME = { ogg: 'audio/ogg', m4a: 'audio/mp4', mp3: 'audio/mpeg', flac: 'audio/flac' }
+export const extensaoDoAudio = (codec) => COPIA[codec] ?? 'flac'
+
+/** Tira a faixa de áudio para mandar (sem os metadados do arquivo, como a localização) e, se pedir, acha as pausas. */
+async function extrairAudio(info, saida, { inicio = null, dur = null, pausas = false } = {}) {
   const args = ['-nostdin', '-hide_banner', '-nostats', '-y']
   if (inicio != null) args.push('-ss', inicio.toFixed(3), '-t', dur.toFixed(3))
-  args.push('-i', info.arquivo, '-map', `0:${info.faixaAudio}`, '-vn', '-ac', '1', '-ar', '16000')
-  if (pausas) args.push('-af', 'silencedetect=noise=-35dB:d=0.4')
-  args.push('-c:a', 'libmp3lame', '-b:a', '48k', saida)
+  args.push('-i', info.arquivo, '-map', `0:${info.faixaAudio}`, '-vn', '-map_metadata', '-1')
+  if (COPIA[info.codecAudio]) args.push('-c:a', 'copy')
+  else args.push('-ac', '1', '-ar', String(Math.min(info.taxaAudio || 48000, 48000)), '-c:a', 'flac')
+  args.push(saida)
+  if (pausas) args.push('-map', `0:${info.faixaAudio}`, '-af', 'silencedetect=noise=-35dB:d=0.4', '-f', 'null', '-')
   try {
     return (await rodar('ffmpeg', args)).stderr
   } catch (e) {
@@ -328,13 +339,14 @@ async function transcrever(info, dir, op) {
 
   const tmp = fs.mkdtempSync(path.join(dir, 'audio-'))
   try {
-    const inteiro = path.join(tmp, 'audio.mp3')
-    const stderr = await converterAudio(info, inteiro, { pausas: true })
+    const ext = extensaoDoAudio(info.codecAudio)
+    const inteiro = path.join(tmp, `audio.${ext}`)
+    const stderr = await extrairAudio(info, inteiro, { pausas: true })
     const limiteBytes = Number(process.env.PLAY_LIMITE_BYTES) || LIMITE_BYTES
     const partes = planejarPartes(info.duracaoAudio, fs.statSync(inteiro).size, lerPausas(stderr, info.duracaoAudio), { limiteBytes })
     const arquivos = partes.length === 1 ? [inteiro] : await emParalelo(partes.map((p, i) => async () => {
-      const f = path.join(tmp, `parte-${i + 1}.mp3`)
-      await converterAudio(info, f, { inicio: p.inicio, dur: p.fim - p.inicio })
+      const f = path.join(tmp, `parte-${i + 1}.${ext}`)
+      await extrairAudio(info, f, { inicio: p.inicio, dur: p.fim - p.inicio })
       return f
     }), 3)
     const respostas = await emParalelo(arquivos.map((f) => () => pedirTranscricao(chave.valor, f, op)), 3)

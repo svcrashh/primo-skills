@@ -47,8 +47,9 @@ export function trechosComSom(dados) {
     if (ini != null) sil.push([ini, dur])
     const som = []
     let t = 0
-    for (const [a, b] of sil) { if (a - t > 0.05) som.push([t, a]); t = b }
-    if (dur - t > 0.05) som.push([t, dur])
+    // menos de 0,2 s é estalo, não fala: o começo de uma parte cortada sem recomprimir pode estalar
+    for (const [a, b] of sil) { if (a - t > 0.2) som.push([t, a]); t = b }
+    if (dur - t > 0.2) som.push([t, dur])
     return { dur, som }
   } finally {
     fs.rmSync(tmp, { force: true })
@@ -80,7 +81,7 @@ export async function subirApiFalsa({ chave }) {
         metodo: req.method, caminho: req.url, autorizacao: req.headers.authorization,
         modelo: campos.model, formato: campos.response_format, idioma: campos.language ?? null,
         chunking: campos.chunking_strategy ?? null, granularidade: campos['timestamp_granularities[]'] ?? null,
-        nomeArquivo: campos.file?.arquivo ?? null, bytes: campos.file?.dados.length ?? 0,
+        nomeArquivo: campos.file?.arquivo ?? null, bytes: campos.file?.dados.length ?? 0, conteudo: campos.file?.dados ?? null,
       }
       pedidos.push(p)
       const json = (status, dados) => { res.writeHead(status, { 'content-type': 'application/json' }); res.end(JSON.stringify(dados)) }

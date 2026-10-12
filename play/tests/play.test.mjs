@@ -34,7 +34,9 @@ before(async () => {
   ff(...bipes(5), '-c:a', 'libopus', '-b:a', '24k', m('Meu áudio (1).opus'))
   ff('-f', 'lavfi', '-i', 'color=c=red:s=64x64', '-frames:v', '1', m('capa.png'))
   ff(...bipes(3), '-i', m('capa.png'), '-map', '0:a', '-map', '1:v', '-c:a', 'libmp3lame', '-c:v', 'png', '-disposition:v', 'attached_pic', '-id3v2_version', '3', m('com capa.mp3'))
-  ff('-f', 'lavfi', '-i', 'testsrc=s=320x180:r=10:d=12', ...bipes(12), '-map', '0:v', '-map', '1:a', '-c:v', 'libx264', '-preset', 'ultrafast', '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-shortest', m('tela.mp4'))
+  ff('-f', 'lavfi', '-i', 'testsrc=s=320x180:r=10:d=12', ...bipes(12), '-map', '0:v', '-map', '1:a', '-c:v', 'libx264', '-preset', 'ultrafast', '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-shortest',
+    '-metadata', 'title=Reunião secreta da Ana', '-metadata', 'location=+12.3456-045.6789/', m('tela.mp4'))
+  ff(...bipes(3), '-c:a', 'pcm_s16le', m('gravador.wav'))
   ff('-f', 'lavfi', '-i', 'testsrc=s=320x180:r=10:d=8', '-c:v', 'libx264', '-preset', 'ultrafast', '-pix_fmt', 'yuv420p', m('mudo.mp4'))
   ff('-display_rotation:v:0', '90', '-i', m('tela.mp4'), '-c', 'copy', m('em pé.mp4'))
   ff('-f', 'lavfi', '-i', 'anullsrc=r=8000:cl=mono', '-t', '1860', '-c:a', 'libmp3lame', '-b:a', '8k', m('longo.mp3'))
@@ -81,6 +83,7 @@ test('o caminho colado em todas as formas', async () => {
   const partido = await play(abs.split(' '))
   assert.equal(partido.code, 0, partido.stderr)
   assert.match(partido.stdout, /^Meu áudio \(1\)\.opus · áudio · 0:05/)
+  assert.equal(api.pedidos.at(-1).nomeArquivo, 'audio.ogg', 'o opus vai como está, só no contêiner ogg')
   const comEscape = await play([escapado])
   assert.equal(comEscape.code, 0, comEscape.stderr)
   assert.equal(api.pedidos.length, 1, 'a segunda vez vem do cache')
@@ -95,6 +98,10 @@ test('os tipos de arquivo: áudio, vídeo com áudio, vídeo sem áudio, e o que
 
   const tela = await play([m('tela.mp4')])
   assert.equal(tela.code, 0, tela.stderr)
+  // a faixa vai como está (aac → m4a), sem os metadados do arquivo
+  const enviado = api.pedidos.at(-1)
+  assert.equal(enviado.nomeArquivo, 'audio.m4a')
+  assert.ok(!enviado.conteudo.includes('Reunião secreta') && !enviado.conteudo.includes('+12.3456'), 'os metadados não sobem')
   assert.match(tela.stdout, /^tela\.mp4 · vídeo com áudio · 0:12 · 320×180, horizontal$/m)
   assert.match(tela.stdout, /O que é dito \(gpt-4o-transcribe-diarize; 0:12 de áudio enviados à OpenAI\):\n\[00:00\] som 1\./)
   assert.match(tela.stdout, /O que aparece: 6 quadros em 1 folha de contato/)
@@ -108,6 +115,11 @@ test('os tipos de arquivo: áudio, vídeo com áudio, vídeo sem áudio, e o que
   const folhaEmPe = /^(\S.*folha-1\.jpg) {2}\(3×2\)/m.exec(emPe.stdout)
   assert.ok(folhaEmPe, emPe.stdout)
   assert.equal(dimensoes(folhaEmPe[1]), `${3 * 180 + 4 * 8}x${2 * 320 + 3 * 8}`, 'células no formato do vídeo, em pé')
+
+  const wav = await play([m('gravador.wav')])
+  assert.equal(wav.code, 0, wav.stderr)
+  assert.equal(api.pedidos.at(-1).nomeArquivo, 'audio.flac', 'formato que a API não aceita vira FLAC')
+  assert.match(wav.stdout, /\n\[00:00\] som 1\..*\n/)
 
   const antes = api.pedidos.length
   const mudo = await play([m('mudo.mp4')])
