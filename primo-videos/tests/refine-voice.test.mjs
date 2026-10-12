@@ -132,10 +132,10 @@ describe('refinarLocucao: fixes the narration.json and keeps the original', () =
   })
 })
 
-describe('real speech from the Mac `say`', { skip: !temSay() && 'no `say` here (it is macOS only)' }, () => {
+describe('real speech (the Mac `say`, the Windows voices)', { skip: !temSay() && 'no speech synthesizer here (it uses the Mac `say` or the Windows voices)' }, () => {
   test('first sound, the pause at the period, last sound and the measures come out of a real voice', () => {
     const arq = falaDoSay(path.join(tmp(), 'say.wav'), 'Open the app and tap on Book. Then pick the time you want.')
-    assert.ok(arq, 'say produced audio')
+    assert.ok(arq, 'the synthesizer produced audio')
     const w = lerWav(arq)
     const iv = inicioVoz(w.amostras, w.taxa), fv = fimDaVoz(w.amostras, w.taxa)
     assert.ok(iv != null && iv < 0.5, `first sound ${iv}`)

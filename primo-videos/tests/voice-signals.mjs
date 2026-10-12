@@ -1,7 +1,7 @@
 // Fala sintética para os testes de voz, sem gravação de ninguém no repositório: cada palavra é uma rajada de tom no
 // tempo dela (o gabarito do teste é exato), com silêncio entre as palavras. `viva` dá o tom e o volume variando de uma
 // palavra para outra, como uma leitura animada; sem ela, o tom e o volume ficam iguais, como uma leitura apagada.
-// E, no Mac, fala de verdade gerada na hora pelo `say`, sem rede.
+// E fala de verdade gerada na hora, sem rede: pelo `say` no Mac e pelas vozes do Windows (System.Speech) no Windows.
 import fs from 'node:fs'
 import path from 'node:path'
 import { spawnSync } from 'node:child_process'
@@ -44,14 +44,20 @@ export function falaDoWav(dir, arquivo, { id, onde, palavras }) {
   return { id, onde, texto: ps.map((p) => p.texto).join(' '), arquivo, duracao: r3(w.n / w.taxa), inicio_voz: iv, palavras: ps }
 }
 
-/** Fala de verdade pelo `say` do macOS, convertida para 48 kHz mono 16 bits. null fora do Mac (o teste pula). */
+// No Windows, o texto vai pela variável de ambiente: nada de aspas do PowerShell na linha de comando.
+const SAPI = 'Add-Type -AssemblyName System.Speech; $s = New-Object System.Speech.Synthesis.SpeechSynthesizer; ' +
+  'if (-not $s.GetInstalledVoices().Count) { exit 3 }; if ($env:FALA_ARQ) { $s.SetOutputToWaveFile($env:FALA_ARQ); $s.Speak($env:FALA_TEXTO) }; $s.Dispose()'
+const powershell = (env = {}) => spawnSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', SAPI], { env: { ...process.env, ...env }, windowsHide: true })
+
+/** Fala de verdade (o `say` do macOS, as vozes do Windows), convertida para 48 kHz mono 16 bits. null sem nenhum dos dois (o teste pula). */
 export function falaDoSay(arq, texto) {
-  const aiff = arq.replace(/\.wav$/, '.aiff')
-  const r = spawnSync('say', ['-o', aiff, texto])
+  const bruto = arq.replace(/\.wav$/, process.platform === 'win32' ? '.sapi.wav' : '.aiff')
+  const r = process.platform === 'win32' ? powershell({ FALA_ARQ: bruto, FALA_TEXTO: texto }) : spawnSync('say', ['-o', bruto, texto])
   if (r.error || r.status !== 0) return null
   fs.mkdirSync(path.dirname(arq), { recursive: true })
-  const c = spawnSync('ffmpeg', ['-v', 'error', '-y', '-i', aiff, '-ar', String(TAXA), '-ac', '1', '-c:a', 'pcm_s16le', arq])
-  fs.rmSync(aiff, { force: true })
+  const c = spawnSync('ffmpeg', ['-v', 'error', '-y', '-i', bruto, '-ar', String(TAXA), '-ac', '1', '-c:a', 'pcm_s16le', arq])
+  fs.rmSync(bruto, { force: true })
   return c.status === 0 ? arq : null
 }
-export const temSay = () => !spawnSync('say', ['-v', '?']).error
+let _temSay = null
+export const temSay = () => (_temSay ??= process.platform === 'win32' ? powershell().status === 0 : !spawnSync('say', ['-v', '?']).error)
