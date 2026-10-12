@@ -164,7 +164,7 @@ test('no Windows o texto fala de winget, do PowerShell e da pasta do usuário', 
   const velho = naCasa(casa('casa-windows-velho'), () => relatorio({ so: 'win32', env: { PATH: '' }, versaoNode: '16.20.0' }).texto)
   assert.equal(falta, true)
   confereFormato(texto)
-  for (const t of ['winget install ffmpeg', 'feche e abra o PowerShell', 'notepad "$env:USERPROFILE\\.claude\\secrets\\openai.env"', 'New-Item -ItemType Directory']) {
+  for (const t of ['winget install ffmpeg', 'digite Y e Enter', 'feche e abra o PowerShell', 'notepad "$env:USERPROFILE\\.claude\\secrets\\openai.env"', 'New-Item -ItemType Directory']) {
     assert.ok(texto.includes(t), `falta "${t}" em:\n${texto}`)
   }
   assert.doesNotMatch(texto, /brew|chmod/)

@@ -72,7 +72,10 @@ export function noPath(nome, env = process.env, so = process.platform) {
 }
 
 export function comoInstalarFfmpeg(so = process.platform, env = process.env) {
-  if (so === 'win32') return ['No PowerShell:', '     winget install ffmpeg', 'Depois feche e abra o PowerShell, para ele achar o ffmpeg.']
+  if (so === 'win32') {
+    return ['No PowerShell:', '     winget install ffmpeg', 'Se o winget perguntar se você aceita os termos, digite Y e Enter.',
+      'Depois feche e abra o PowerShell, para ele achar o ffmpeg.']
+  }
   if (so === 'darwin') {
     return ['No Terminal:', '     brew install ffmpeg',
       ...(noPath('brew', env, so) ? [] : ['Sem o Homebrew (o comando brew)? Instale ele antes, com o comando que está em brew.sh.'])]
