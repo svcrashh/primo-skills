@@ -9,13 +9,26 @@ import path from 'node:path'
 const INICIO = 0.12   // onde o som começa no MP3 falso; o alinhamento põe a 1ª letra em 0, como a API real
 const POR_LETRA = 0.055
 
-function mp3Falso(seg) {
-  const tmp = path.join(os.tmpdir(), `fake-api-${process.pid}-${Math.random().toString(36).slice(2)}.mp3`)
-  execFileSync('ffmpeg', ['-hide_banner', '-v', 'error', '-y', '-f', 'lavfi', '-i', `sine=frequency=220:sample_rate=44100:duration=${(seg - INICIO).toFixed(3)}`,
-    '-af', `adelay=${Math.round(INICIO * 1000)},apad=pad_dur=0.05`, '-ac', '1', '-c:a', 'libmp3lame', '-b:a', '128k', tmp])
-  const b = fs.readFileSync(tmp)
-  fs.rmSync(tmp)
-  return b
+// O MP3 de uma fala: uma rajada de tom por palavra, no tempo que o alinhamento falso dá a ela, com o vão do espaço entre
+// as palavras (como a fala de verdade, que respira entre elas: sem vão, o finalize não mede o destaque da voz).
+function mp3Falso(seg, texto = null) {
+  const SR = 44100, n = Math.round((seg + 0.05) * SR), x = new Int16Array(n)
+  const trechos = []
+  if (texto) {
+    const al = alinhamentoFalso(texto)
+    let ini = null
+    al.characters.forEach((c, i) => {
+      if (/\s/.test(c)) { if (ini != null) trechos.push([ini, al.character_end_times_seconds[i - 1]]); ini = null; return }
+      if (ini == null) ini = i ? al.character_start_times_seconds[i] : INICIO
+    })
+    if (ini != null) trechos.push([ini, al.character_end_times_seconds.at(-1)])
+  } else trechos.push([INICIO, seg])
+  for (const [a, b] of trechos) {
+    const i0 = Math.round(a * SR), i1 = Math.min(n, Math.round(b * SR)), rampa = Math.round(0.005 * SR)
+    for (let i = i0; i < i1; i++) x[i] = Math.round(16000 * Math.min(1, (i - i0) / rampa, (i1 - i) / rampa) * Math.sin(2 * Math.PI * 220 * (i - i0) / SR))
+  }
+  return execFileSync('ffmpeg', ['-hide_banner', '-v', 'error', '-f', 's16le', '-ar', String(SR), '-ac', '1', '-i', 'pipe:0', '-c:a', 'libmp3lame', '-b:a', '128k', '-f', 'mp3', 'pipe:1'],
+    { input: Buffer.from(x.buffer), maxBuffer: 1 << 26 })
 }
 
 export function alinhamentoFalso(texto) {
@@ -68,7 +81,7 @@ export async function subirApiFalsa({ chave }) {
         const seg = al.character_end_times_seconds.at(-1) + 0.03
         const custo = +(d.text.length * estado.custoPorLetra).toFixed(1)
         estado.usados += Math.ceil(custo)
-        return json(200, { audio_base64: mp3Falso(seg).toString('base64'), alignment: al, normalized_alignment: al }, { 'character-cost': String(custo) })
+        return json(200, { audio_base64: mp3Falso(seg, d.text).toString('base64'), alignment: al, normalized_alignment: al }, { 'character-cost': String(custo) })
       }
       if (req.method === 'POST' && url.pathname === '/v1/forced-alignment') {
         const texto = campoMultipart(corpo, 'text')
