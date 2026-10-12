@@ -59,6 +59,7 @@ jobs:
   testes:
     name: testes (Node ${{ matrix.node }})
     runs-on: windows-latest
+    timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
@@ -89,6 +90,7 @@ jobs:
   jornada:
     name: do clone à play (PowerShell 5.1)
     runs-on: windows-latest
+    timeout-minutes: 15
     defaults:
       run:
         shell: powershell
@@ -201,6 +203,7 @@ jobs:
   instalador:
     name: instalador (${{ matrix.ps }})
     runs-on: windows-latest
+    timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
@@ -251,6 +254,21 @@ jobs:
             $r = Rodar ${{ matrix.ps }} @('-ExecutionPolicy', 'Bypass', '-File', $inst, $outro)
             Confere ($r.Codigo -eq 0 -and (Todas $outro)) "outra pasta de perfil: $outro"
           }
+      - name: numa janela de console de verdade (a do Windows 10), os sinais que a fonte dela tem
+        run: |
+          . ([scriptblock]::Create($env:AJUDA))
+          # Start-Process sem redirecionar abre uma janela de console nova, sem Windows Terminal; a transcricao do
+          # PowerShell guarda o que aparece nela
+          $t = "$env:RUNNER_TEMP\janela.txt"
+          $embrulho = "$env:RUNNER_TEMP\janela.ps1"
+          Set-Content $embrulho "Start-Transcript -LiteralPath '$t' | Out-Null; & '$env:GITHUB_WORKSPACE\instalar.ps1' '$env:RUNNER_TEMP\skills da janela'; Stop-Transcript | Out-Null"
+          Remove-Item Env:WT_SESSION, Env:TERM_PROGRAM -ErrorAction SilentlyContinue
+          Start-Process ${{ matrix.ps }} -ArgumentList "-ExecutionPolicy Bypass -File `"$embrulho`"" -Wait
+          $texto = Get-Content -LiteralPath $t -Raw -Encoding UTF8
+          Write-Host $texto
+          Confere ($texto.Contains('√ Node') -and $texto.Contains('× ffmpeg') -and $texto.Contains('× chave da OpenAI')) 'tem e falta com os sinais que a Consolas tem'
+          Confere (-not $texto.Contains('✔') -and -not $texto.Contains('✖')) 'nenhum sinal que a fonte do console nao tem'
+          Confere ($texto.Contains('play — entende um arquivo de áudio')) 'os acentos continuam certos'
       - name: sem Node e sem Python, e skills de mentira com requisitos.py, nos dois
         run: |
           . ([scriptblock]::Create($env:AJUDA))
@@ -311,6 +329,7 @@ jobs:
 
   fontes:
     runs-on: windows-latest
+    timeout-minutes: 15
     steps:
       - name: as fontes do console tem os sinais?
         shell: pwsh
@@ -320,7 +339,7 @@ jobs:
             $p = Join-Path $env:WINDIR "Fonts\$f"
             if (-not (Test-Path $p)) { "$f nao existe"; continue }
             $g = New-Object System.Windows.Media.GlyphTypeface ([uri]$p)
-            $f + ' ' + ((0x2714, 0x2716, 0x25CB, 0x2014, 0xE1, 0xB7, 0xD7) | ForEach-Object { '{0:X4}={1}' -f $_, $g.CharacterToGlyphMap.ContainsKey($_) }) -join ' '
+            $f + ' ' + ((0x2714, 0x2716, 0x221A, 0x25CB, 0x2014, 0xE1, 0xB7, 0xD7) | ForEach-Object { '{0:X4}={1}' -f $_, $g.CharacterToGlyphMap.ContainsKey($_) }) -join ' '
           }
           Get-ChildItem "$env:ProgramFiles\WindowsApps" -Directory -Filter 'Microsoft.WindowsTerminal*' -ErrorAction SilentlyContinue | ForEach-Object { Get-ChildItem $_.FullName -Filter *.ttf -Recurse -ErrorAction SilentlyContinue | Select-Object -ExpandProperty FullName }
           reg query "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\FontLink\SystemLink" /v Consolas
