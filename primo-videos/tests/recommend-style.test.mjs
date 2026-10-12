@@ -112,7 +112,8 @@ test('o exemplo de todo estilo é o exemplo de formato do molde dele, que existe
   for (const canal of Object.keys(CANAIS)) for (const id of Object.keys(ESTILOS)) {
     const ex = recomendar({ objetivo: 'update', canal, aprovado: id }).recomendado.exemplo
     assert.ok(ex, `${id} sem exemplo`)
-    assert.equal(path.relative(SKILL, ex), ESTILOS[id].exemplo, id)
+    // ex é o caminho do sistema, para abrir; o exemplo do estilo é o relativo da skill, sempre com /
+    assert.equal(path.relative(SKILL, ex), path.normalize(ESTILOS[id].exemplo), id)
     assert.ok(fs.existsSync(ex), ex)
     assert.doesNotMatch(path.relative(SKILL, ex), /gallery|sample\.mp4/)
   }

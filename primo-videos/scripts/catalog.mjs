@@ -38,7 +38,7 @@ export class Falha extends Error {
 }
 
 const casa = (p) => (p && p.startsWith(os.homedir()) ? '~' + p.slice(os.homedir().length) : p)
-const expandir = (p) => (p && p.startsWith('~/') ? path.join(os.homedir(), p.slice(2)) : p)
+const expandir = (p) => (p && /^~[\\/]/.test(p) ? path.join(os.homedir(), p.slice(2)) : p)
 const escHtml = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c])
 const celula = (s) => String(s ?? '').replace(/\|/g, '\\|').replace(/\s*\n\s*/g, ' ')
 
@@ -297,11 +297,14 @@ export function tabelaDirecoes(direcoes, lingua = 'en') {
   return L.join('\n')
 }
 
+// No Windows, o explorer abre o arquivo no programa padrão sem passar pelo cmd (o `start` leria &, ^ e % do caminho).
+// As aspas vão por nossa conta, sem o Node mexer: o explorer corta o caminho sem aspas na vírgula, e nome de arquivo no
+// Windows não tem aspas.
 function abrirNoNavegador(arq) {
   const aviso = `couldn't open it myself: open it in the browser ${arq}`
-  const [cmd, args] = process.platform === 'darwin' ? ['open', [arq]] : process.platform === 'win32' ? ['cmd', ['/c', 'start', '', arq]] : ['xdg-open', [arq]]
+  const [cmd, args, extra] = process.platform === 'darwin' ? ['open', [arq]] : process.platform === 'win32' ? ['explorer.exe', [`"${arq}"`], { windowsVerbatimArguments: true }] : ['xdg-open', [arq]]
   try {
-    const p = spawn(cmd, args, { detached: true, stdio: 'ignore' })
+    const p = spawn(cmd, args, { detached: true, stdio: 'ignore', ...extra })
     p.on('error', () => console.error(aviso))
     p.unref()
   } catch { console.error(aviso) }
