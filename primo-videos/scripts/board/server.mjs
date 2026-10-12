@@ -1,5 +1,5 @@
 // The review board's local server: one project, 127.0.0.1 only, every request under the random token in the URL.
-// It reads <project>/board/board.json, serves the project's pictures and videos read-only, and turns each click,
+// It reads <project>/board/board.json, serves the project's pictures, videos and audio read-only, and turns each click,
 // message and pasted picture into a line of events.jsonl plus the matching change in board.json. What the skill says
 // back (`board.mjs say`, `status`) arrives through the same events.jsonl, and whether it is listening through the
 // heartbeat that `board.mjs wait` leaves in listening.json.
@@ -32,6 +32,7 @@ export function listenerState(beat, now = Date.now()) {
 const MIME = {
   png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', webp: 'image/webp', gif: 'image/gif',
   mp4: 'video/mp4', mov: 'video/quicktime', webm: 'video/webm',
+  mp3: 'audio/mpeg', wav: 'audio/wav', m4a: 'audio/mp4',
 }
 const APP = { 'page.css': 'text/css; charset=utf-8', 'page.mjs': 'text/javascript; charset=utf-8', 'render.mjs': 'text/javascript; charset=utf-8' }
 const KIT_FILES = {
@@ -74,8 +75,8 @@ export function looksLike(ext, head) {
 
 function mediaPaths(board) {
   const paths = []
-  for (const c of board.choices || []) for (const o of c.options || []) paths.push(o.image)
-  for (const s of board.scenes || []) paths.push(s.still, s.video)
+  for (const c of board.choices || []) for (const o of c.options || []) paths.push(o.image, o.audio)
+  for (const s of board.scenes || []) paths.push(s.still, s.video, s.narration?.audio)
   for (const p of board.pieces || []) paths.push(p.image)
   for (const r of board.references || []) paths.push(r.file)
   return [...new Set(paths.filter((p) => typeof p === 'string'))]

@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 // The review board: a local page that goes through the video one scene at a time. The person sees each still before
-// it is animated, picks between options, pastes a better picture, and talks to the skill in a thread per scene. The
-// assistant writes the board, hears each click with `wait` and answers with `say`.
+// it is animated, picks between options, pastes a better picture, and talks to the skill in a thread per scene. With a
+// voice-over, they also approve the script before any voice is recorded, pick the voice by ear and listen to each take;
+// and the page shows what the video spent. The assistant writes the board, hears each click with `wait` and answers with `say`.
 //   node board.mjs set    <project> <board.json | - | '{…}'>        replace the board (validated; the files must exist)
 //   node board.mjs patch  <project> <patch.json | - | '{…}'>        partial update: scenes and choices by id, references by file
 //   node board.mjs open   <project> [--no-open]                     start (or reuse) the server, open the browser, print the URL
@@ -271,6 +272,8 @@ export function agentPrompt(project) {
     '   - message: answer in the same thread; if it asks for a change, make it and show the scene again',
     '   - approve-still: animate that scene and show the preview. Never animate a scene before its approve-still',
     '   - approve-preview: that scene is done; render it final',
+    '   - approve-script: the voice-over script is approved: record the approved lines and put each take in its scene\'s narration.audio. Never record a line before its approve-script',
+    '   - redo-line: record only that scene\'s line again, with the new words or the change the person wrote (text), and show it again',
     `   While you work on a scene: ${board} status ${p} --scene <id> working "<what you are doing>"`,
     `4. Show the result on the page: ${board} patch ${p} '<json>'   and say it there: ${board} say ${p} --scene <id> "<text>"`,
     '5. Back to 2.',

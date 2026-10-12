@@ -5,25 +5,37 @@ import fs from 'node:fs'
 import path from 'node:path'
 
 export const STATES = ['concept', 'still-approved', 'animated-preview', 'final']
+export const SCRIPT_STATES = ['draft', 'approved']
 export const IMAGE_EXT = ['png', 'jpg', 'jpeg', 'webp', 'gif']
 export const VIDEO_EXT = ['mp4', 'mov', 'webm']
+export const AUDIO_EXT = ['mp3', 'wav', 'm4a']
+// What the person can drop on the page as a reference: a picture or a video. Audio is only served, never taken in.
 export const MEDIA_EXT = [...IMAGE_EXT, ...VIDEO_EXT]
 // What the person does on the page, and what the skill writes back into the same log (those carry from: "skill").
-export const EVENT_TYPES = ['choice', 'approve-still', 'approve-preview', 'message', 'reference', 'attach-reference', 'replace-still']
+export const EVENT_TYPES = ['choice', 'approve-still', 'approve-preview', 'message', 'reference', 'attach-reference', 'replace-still', 'approve-script', 'redo-line']
 export const SKILL_STATES = ['working', 'idle']
 export const TEXT_MAX = 2000
 
 const ID = /^[A-Za-z0-9][A-Za-z0-9_-]{0,39}$/
 const KEYS = {
-  board: ['title', 'subtitle', 'progress', 'choices', 'scenes', 'pieces', 'references'],
+  board: ['title', 'subtitle', 'progress', 'costs', 'script', 'choices', 'scenes', 'pieces', 'references'],
   progress: ['label', 'percent', 'text'],
+  costs: ['images', 'voice'],
+  imageCosts: ['usd', 'capUsd', 'count'],
+  voiceCosts: ['credits', 'capCredits', 'accountLeft'],
+  script: ['state', 'words', 'seconds', 'credits', 'voice'],
   choice: ['id', 'title', 'intro', 'scene', 'options', 'chosen'],
-  option: ['label', 'title', 'line', 'image', 'willMove', 'recommended'],
-  scene: ['id', 'title', 'seconds', 'state', 'still', 'video', 'onScreen', 'willMove', 'pendingChoice', 'previewApproved', 'rebuilding'],
+  option: ['label', 'title', 'line', 'image', 'audio', 'generated', 'willMove', 'recommended'],
+  scene: ['id', 'title', 'seconds', 'state', 'still', 'video', 'onScreen', 'willMove', 'narration', 'generated', 'pendingChoice', 'previewApproved', 'rebuilding'],
+  narration: ['text', 'audio', 'seconds', 'credits'],
+  generated: ['model', 'usd'],
   rebuilding: ['file', 'text', 'at'],
-  piece: ['kind', 'name', 'image', 'goesTo'],
+  piece: ['kind', 'name', 'image', 'generated', 'goesTo'],
   reference: ['file', 'name', 'scene', 'take'],
 }
+
+/** The scenes that have a line to say, in order: the script. */
+export const linesOf = (board) => (Array.isArray(board?.scenes) ? board.scenes : []).filter((s) => isObject(s?.narration) && isText(s.narration.text))
 
 export const extOf = (p) => path.extname(String(p)).slice(1).toLowerCase()
 const isObject = (v) => v !== null && typeof v === 'object' && !Array.isArray(v)
@@ -93,6 +105,25 @@ export function validateBoard(board, { root } = {}) {
   const id = (obj, where) => {
     if (typeof obj.id !== 'string' || !ID.test(obj.id)) bad(`${where}.id`, 'is required: a short text of letters, digits, "-" or "_", like "01"')
   }
+  // Money, credits, words and seconds: never negative. `above` for what cannot be zero either (a length).
+  const amount = (obj, key, where, { required = false, above = false, whole = false } = {}) => {
+    const v = obj[key]
+    const what = `${whole ? 'a whole number' : 'a number'} ${above ? 'above 0' : 'from 0 up'}`
+    if (v === undefined) { if (required) bad(`${where}.${key}`, `is required: ${what}`); return }
+    if (typeof v !== 'number' || !Number.isFinite(v) || (above ? !(v > 0) : !(v >= 0)) || (whole && !Number.isInteger(v))) bad(`${where}.${key}`, `must be ${what} (got ${JSON.stringify(v)})`)
+  }
+  const block = (obj, key, kind, where, what) => {
+    if (obj[key] === undefined) return null
+    if (!isObject(obj[key])) { bad(where, `must be an object with ${what}`); return null }
+    known(obj[key], kind, where)
+    return obj[key]
+  }
+  const generated = (obj, where) => {
+    const g = block(obj, 'generated', 'generated', `${where}.generated`, 'model and usd')
+    if (!g) return
+    text(g, 'model', `${where}.generated`)
+    amount(g, 'usd', `${where}.generated`)
+  }
 
   known(board, 'board', 'board')
   text(board, 'title', 'board', true)
@@ -106,6 +137,29 @@ export function validateBoard(board, { root } = {}) {
       text(p, 'text', 'progress', true)
       text(p, 'label', 'progress')
     }
+  }
+  const costs = block(board, 'costs', 'costs', 'costs', 'images and voice (what `costs.mjs board <project>` prints)')
+  if (costs) {
+    const images = block(costs, 'images', 'imageCosts', 'costs.images', 'usd, capUsd and count')
+    if (images) {
+      amount(images, 'usd', 'costs.images', { required: true })
+      amount(images, 'capUsd', 'costs.images', { required: true })
+      amount(images, 'count', 'costs.images', { whole: true })
+    }
+    const voice = block(costs, 'voice', 'voiceCosts', 'costs.voice', 'credits, capCredits and accountLeft')
+    if (voice) {
+      amount(voice, 'credits', 'costs.voice', { required: true })
+      amount(voice, 'capCredits', 'costs.voice', { required: true })
+      amount(voice, 'accountLeft', 'costs.voice')
+    }
+  }
+  const script = block(board, 'script', 'script', 'script', 'state, and maybe words, seconds, credits and voice')
+  if (script) {
+    if (!SCRIPT_STATES.includes(script.state)) bad('script.state', `is required: one of ${SCRIPT_STATES.join(', ')}${script.state === undefined ? '' : ` (got ${JSON.stringify(script.state)})`}`)
+    amount(script, 'words', 'script', { whole: true })
+    amount(script, 'seconds', 'script')
+    amount(script, 'credits', 'script')
+    text(script, 'voice', 'script')
   }
 
   const scenes = items('scenes', 'scene'), choices = items('choices', 'choice')
@@ -125,7 +179,11 @@ export function validateBoard(board, { root } = {}) {
       text(o, 'label', at, true)
       text(o, 'title', at, true)
       text(o, 'line', at)
-      media(o, 'image', at, IMAGE_EXT, true)
+      // an option is a still to look at, a sample to listen to (a voice), or both
+      if (o.image === undefined && o.audio === undefined) bad(`${at}.image`, `is required (a picture: ${IMAGE_EXT.join(', ')}), or an audio to listen to (${AUDIO_EXT.join(', ')})`)
+      media(o, 'image', at, IMAGE_EXT, false)
+      media(o, 'audio', at, AUDIO_EXT, false)
+      generated(o, at)
       lines(o, 'willMove', at)
       if (o.recommended !== undefined && typeof o.recommended !== 'boolean') bad(`${at}.recommended`, 'must be true or false')
       options.push([o, at])
@@ -155,6 +213,19 @@ export function validateBoard(board, { root } = {}) {
     if (s.pendingChoice !== undefined && !choiceIds.has(s.pendingChoice)) bad(`${where}.pendingChoice`, `no choice with id "${s.pendingChoice}"`)
     media(s, 'video', where, VIDEO_EXT, s.state === 'animated-preview')
     media(s, 'still', where, IMAGE_EXT, s.video === undefined && s.pendingChoice === undefined)
+    // a scene that waits on a choice shows that choice's pictures: every option needs one
+    const waitsOn = s.still === undefined && s.video === undefined && choices.find(([c]) => c.id === s.pendingChoice)?.[0]
+    if (waitsOn && Array.isArray(waitsOn.options) && waitsOn.options.some((o) => isObject(o) && o.image === undefined)) {
+      bad(`${where}.pendingChoice`, `choice "${waitsOn.id}" has an option with no image, so this scene would have nothing to show: give the scene a still, or every option an image`)
+    }
+    const n = block(s, 'narration', 'narration', `${where}.narration`, 'text, and maybe audio, seconds and credits')
+    if (n) {
+      text(n, 'text', `${where}.narration`, true)
+      media(n, 'audio', `${where}.narration`, AUDIO_EXT, false)
+      amount(n, 'seconds', `${where}.narration`, { above: true })
+      amount(n, 'credits', `${where}.narration`)
+    }
+    generated(s, where)
   }
   unique(scenes, 'id', 'scene id')
 
@@ -162,6 +233,7 @@ export function validateBoard(board, { root } = {}) {
     text(p, 'kind', where, true)
     text(p, 'name', where, true)
     media(p, 'image', where, IMAGE_EXT, true)
+    generated(p, where)
     text(p, 'goesTo', where)
   }
 
@@ -177,13 +249,22 @@ export function validateBoard(board, { root } = {}) {
   return problems
 }
 
-// The person's marks belong to the picture they were made on: a new picture starts clean.
+// The person's marks belong to what they were made on: a new picture, a new take or new words start clean. And what the
+// skill says about a picture (that it was generated) belongs to that picture.
 const MARKS = {
-  scenes: { when: ['still', 'video', 'state'], drop: ['previewApproved', 'rebuilding'] },
-  choices: { when: ['options'], drop: ['chosen'] },
+  scenes: [
+    { when: ['still', 'video', 'state'], drop: ['previewApproved', 'rebuilding'] },
+    { when: ['narration.text', 'narration.audio'], drop: ['previewApproved'] },
+    { when: ['still'], drop: ['generated'] },
+  ],
+  choices: [{ when: ['options'], drop: ['chosen'] }],
 }
+// Blocks merged field by field, at the top of the board and inside an item of a list.
+const MERGED = ['progress', 'costs', 'script']
+const MERGED_IN = { scenes: ['narration', 'generated'] }
 const LIST_KEY = { scenes: 'id', choices: 'id', references: 'file' }
 const same = (a, b) => JSON.stringify(a) === JSON.stringify(b)
+const at = (obj, dotted) => dotted.split('.').reduce((v, k) => (isObject(v) ? v[k] : undefined), obj)
 
 function mergeFields(target, fields) {
   const out = { ...target }
@@ -191,16 +272,28 @@ function mergeFields(target, fields) {
   return out
 }
 
+// One level deeper too: `{ "costs": { "voice": { "accountLeft": 900 } } }` keeps what the voice block already had.
+function mergeBlock(target, fields) {
+  const out = { ...target }
+  for (const [k, v] of Object.entries(fields)) {
+    if (v === null) delete out[k]
+    else out[k] = isObject(v) && isObject(out[k]) ? mergeFields(out[k], v) : v
+  }
+  return out
+}
+
 /**
- * A partial update. Texts and `pieces` are replaced; `progress` is merged; `scenes` and `choices` are merged by `id` and
- * `references` by `file` (a new id is added at the end, `"remove": true` takes the item out); `null` removes a field.
+ * A partial update. Texts and `pieces` are replaced; `progress`, `costs` and `script` are merged; `scenes` and `choices`
+ * are merged by `id` and `references` by `file` (a new id is added at the end, `"remove": true` takes the item out), and
+ * inside a scene its `narration` and `generated`; `null` removes a field.
+ * An approved script is approved on its words: a patch that changes what a line says puts it back to "draft".
  */
 export function patchBoard(board, patch) {
   if (!isObject(patch)) throw new Error('the patch must be a JSON object')
   const out = { ...board }
   for (const [key, value] of Object.entries(patch)) {
     if (value === null) { delete out[key]; continue }
-    if (key === 'progress' && isObject(value) && isObject(out.progress)) { out.progress = mergeFields(out.progress, value); continue }
+    if (MERGED.includes(key) && isObject(value) && isObject(out[key])) { out[key] = mergeBlock(out[key], value); continue }
     const by = LIST_KEY[key]
     if (!by || !Array.isArray(value)) { out[key] = value; continue }
     const list = [...(Array.isArray(out[key]) ? out[key] : [])]
@@ -210,10 +303,12 @@ export function patchBoard(board, patch) {
       const { remove, ...fields } = item
       if (remove === true) { if (i >= 0) list.splice(i, 1); continue }
       if (i < 0) { list.push(mergeFields({}, fields)); continue }
-      let merged = mergeFields(list[i], fields)
-      const marks = MARKS[key]
-      if (marks && marks.when.some((k) => !same(merged[k], list[i][k]))) {
-        merged = mergeFields(merged, Object.fromEntries(marks.drop.filter((k) => !(k in fields)).map((k) => [k, null])))
+      const inside = Object.fromEntries((MERGED_IN[key] || []).filter((k) => isObject(fields[k]) && isObject(list[i][k])).map((k) => [k, mergeFields(list[i][k], fields[k])]))
+      let merged = mergeFields(list[i], { ...fields, ...inside })
+      for (const marks of MARKS[key] || []) {
+        if (marks.when.some((k) => !same(at(merged, k), at(list[i], k)))) {
+          merged = mergeFields(merged, Object.fromEntries(marks.drop.filter((k) => !(k in fields)).map((k) => [k, null])))
+        }
       }
       list[i] = merged
     }
@@ -221,7 +316,16 @@ export function patchBoard(board, patch) {
   }
   const open = new Set((out.choices || []).map((c) => c.id))
   if (Array.isArray(out.scenes)) out.scenes = out.scenes.map((s) => (s.pendingChoice !== undefined && !open.has(s.pendingChoice) ? mergeFields(s, { pendingChoice: null }) : s))
+  if (board.script?.state === 'approved' && out.script?.state === 'approved' && patch.script?.state === undefined && wordsChanged(board, out)) {
+    out.script = { ...out.script, state: 'draft' }
+  }
   return out
+}
+
+/** Whether a line says something new: different words in a scene, or a line in a scene that had none. */
+function wordsChanged(before, after) {
+  const said = new Map(linesOf(before).map((s) => [s.id, s.narration.text]))
+  return linesOf(after).some((s) => said.get(s.id) !== s.narration.text)
 }
 
 export class ActionError extends Error {
@@ -301,6 +405,22 @@ export function applyAction(board, action, { now = new Date() } = {}) {
         },
         event,
       }
+    }
+    // The voice is recorded only on words the person approved: this is that approval.
+    case 'approve-script': {
+      const script = board.script
+      if (!isObject(script)) throw new ActionError(404, 'this board has no script to approve')
+      if (script.state === 'approved') throw new ActionError(409, 'the script is already approved')
+      if (!linesOf(board).length) throw new ActionError(409, 'the script has no lines yet')
+      return { board: { ...board, script: { ...script, state: 'approved' } }, event: { type: 'approve-script' } }
+    }
+    // A new take of one line, maybe with new words or what to change: only said, the new take comes in a patch.
+    case 'redo-line': {
+      const s = scenes[find(scenes, 'id', action.scene, 'scene')]
+      if (!isObject(s.narration) || s.narration.audio === undefined) throw new ActionError(409, `scene "${s.id}" has no recorded line to redo yet`)
+      const event = { type: 'redo-line', scene: s.id }
+      if (typeof action.text === 'string' && action.text.trim()) event.text = said(action.text, 'the note')
+      return { board, event }
     }
     default:
       throw new ActionError(400, `unknown action "${action.type}" (use ${EVENT_TYPES.join(', ')})`)
