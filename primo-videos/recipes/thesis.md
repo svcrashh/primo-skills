@@ -198,15 +198,16 @@ The thesis's intent decides the format **before** the style is recommended and b
 |---|---|---|---|
 | **Structure** | hook (up to 3 s: the pain or the promise) → the proof scene (the core) → call to action (what to do now) | the task's title → the steps → the screen that proves the task is done | the before (short) → the after → where to see it |
 | **On-screen text** | only what reinforces the proof: the thesis sentence, a number the product shows, the name of what it just did | step card, the sentence in the imperative, the button name as it is on screen | what changed and where to see it |
-| **Forbidden** | "Step N of M"; instruction card; usage text in the imperative ("Tap…", "Click…"); a tour of the screens; anything from part 4 of the thesis | a sales promise in the middle of the steps; skipping a step | the full tutorial of the new feature |
+| **Forbidden** | "Step N of M"; instruction card; usage text in the imperative, and with voice a spoken line in the imperative ("Tap…", "Click…"); a tour of the screens; anything from part 4 of the thesis | a sales promise in the middle of the steps; skipping a step | the full tutorial of the new feature |
 | **Type** (`references/types.md`) | demo, launch, social cut, teaser. **Never a tutorial** | tutorial, explainer | update, feature launch |
 | **`--goal`** (`recommend-style.mjs`) | `launch`; `attention` for a piece of up to 15 s | `teach` | `update` |
-| **Real screen** | comes in as proof: recorded in full, with no step card (`legenda.rotulo: "nenhum"` in the series) and with the caption saying what the product just did | tutorial mode, as always | the same framing in both states |
+| **Real screen** | comes in as proof: recorded in full, with no step card (`legenda.rotulo: "nenhum"` in the series) and with the caption saying what the product just did (with voice, the caption is the narration line, and the line says it) | tutorial mode, as always | the same framing in both states |
 | **The count** | mandatory, with a verdict | informative | informative |
 
 A real screen in a sales video does not turn the video into a tutorial. The recorder is the same (`scripts/tutorial/`),
 but the one shown doing the work is the product: the scene is recorded from start to finish, the product's waiting time
-is cut (`cortarEsperas`), and no text tells the viewer to do anything.
+is cut (`cortarEsperas`) or, with voice, covered by the line (the cut never takes a line in progress), and no text or
+line tells the viewer to do anything.
 
 ## The screen-time rule
 

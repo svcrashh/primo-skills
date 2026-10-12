@@ -10,12 +10,20 @@ frames, the caption, the refinement and direction numbers, the owner's request, 
 below. It never receives the script, the maker's history, or what the author thinks they fixed.
 
 ```sh
-node $SKILL/scripts/critic.mjs <video.mp4> --request "<what the owner asked for, in their words>" [--thesis <thesis.md>] [--guide <file>] [--channel <channel>]
+node $SKILL/scripts/critic.mjs <video.mp4> --request "<what the owner asked for, in their words>" [--thesis <thesis.md>] [--guide <file>] [--channel <channel>] [--captions <.srt>]
 ```
 
 The refinement check it runs underneath takes the briefing's `--channel` (or `--player <px>`): lettering that disappears
 on a phone goes into the package as a defect, measured at the size the video plays at (`references/refine.md`,
 "Reading in the player").
+
+**With voice, the transcript goes into the package.** The narration also writes what the voice says as a `.srt`.
+`critic.mjs` takes the one next to the video (`<video>.srt`) on its own; when it has another name or sits elsewhere in
+the project (`legenda.srt`, `<id>-<device>.srt`), pass it with `--captions`. The package then carries the transcript,
+the share of the video with voice and the longest stretch without it, and the critic reads the rubric with the voice
+(R1, R4 to R7, R16). A narrated video sent without its `.srt` is judged as if it had no voice: pass it. Without voice
+there is no `.srt`, and the package's "no .srt caption" warning is expected: the caption is the on-screen text, read in
+the frames. The logo opening (`scripts/opening.mjs`) shifts the `.srt` next to the video along with it.
 
 **The thesis goes into the package** (`recipes/thesis.md`): what the product sells, the scene that proves it, what stays
 out and the intent. It was written before the script, from the repository, so it is not the opinion of whoever made the
@@ -52,13 +60,18 @@ videos the owner has already rejected and approved (rejected app tutorials; appr
 reference reels), plus what is measured in product launch videos: an opening that is already a finished composition, no
 empty frame, no text over text, each change born from the previous one.
 
+The package's transcript says which video this is. **No transcript:** the video has no voice, and the caption is the
+on-screen text. **A transcript:** the video has voice; the transcript is what the voice says and when, and the items
+that change with it say how to read them "with voice".
+
 **Image**
 
 - **R1 · Does the screen come in whole?** When a **new** screen comes in, the device appears whole (bezel, bottom bar)
   for about 0.75 s and only then the camera moves in on the current field. That zoom after the wide shot is the "wide
   then detail" the owner approved: the app filling the width and fading out at the bottom during the detail is **not** a
   defect. Severe: the new screen already comes in zoomed, only the top half, without ever having appeared whole before
-  the zoom; or a frame in which the device is cut in a way that gets in the way of reading what the caption points to.
+  the zoom; or a frame in which the device is cut in a way that gets in the way of reading what the caption points to
+  (with voice, what the voice is saying).
 - **R2 · Is there leftover empty background?** In some frame more than a quarter of the image is plain background with
   no function: cream, an empty column next to the caption, a small device in the middle of nowhere, a flat color band.
   Severe when it lasts more than 1 s in a row; minor when it is a glimpse, during a transition. An exception the owner has
@@ -71,18 +84,27 @@ empty frame, no text over text, each change born from the previous one.
 - **R4 · Is anything cut off or on top of something else?** Text cut by the edge, one text over another, a caption on
   top of what it tells you to read, a finger or highlight off target, a strange color band at the edge. **Severe** when,
   at the moment the caption points to something, the caption or its target does not fit whole in the frame (cut by the
-  edge, hidden behind another card); minor when it is a ghost from a transition, a glimpse.
+  edge, hidden behind another card); minor when it is a ghost from a transition, a glimpse. With voice, the target is
+  what the voice tells you to read: a caption on top of it is a defect, and it is **severe** when, at the moment the
+  voice says the line, the caption or the line's target does not fit whole in the frame.
 - **R5 · Can it be read on a phone?** Is what the on-screen text points to (a button, a number, a status) big enough at
-  the moment it appears? The whole screen small, in passing, does not count.
+  the moment it appears? The whole screen small, in passing, does not count. With voice: what the voice tells you to
+  read, at the moment it is said.
 
-**Text and image** (the video has no voice: the caption is the on-screen text)
+**Text and image** (without voice, the caption is the on-screen text; with voice, the transcript is what the voice
+says, and when)
 
 - **R6 · Does what the text says match what is seen?** When the caption says "Sales", the screen shows Sales. An
   explanatory caption over a frozen screen, a silent tap, a button with a different name from the one on screen. Also
   severe: text or a screen in a language other than the video's, at any size (proper names and commands do not count).
+  With voice, the same question for what the voice says, at the transcript's time: when the voice says "Sales", the
+  screen shows Sales; a line of explanation over a frozen screen is a defect. A video the request says is narrated, with
+  no transcript in the package: judge only by what is written in the frames and say the transcript was missing.
 - **R7 · Is there time to read it?** A caption, title or support line that disappears before it is read: a short
   sentence held for less than ~0.7 s, or a long line that changes before ~1 s per 12 characters. Severe when it happens
-  to the text that carries the message.
+  to the text that carries the message. With voice, the question is whether the voice stops: more than 2.5 s without
+  voice in the middle of the video, or a voice that ends long before the end (the transcript's numbers give the longest
+  stretch without voice and how long the end goes without it).
 
 **Pace**
 
@@ -126,9 +148,9 @@ summary that the thesis was missing)
   Severe, with intent "vender": a person in more than a quarter of those frames. With intent "ensinar" the person works
   on purpose: not a defect.
 - **R16 · Is the format the one for the intent?** "vender" is hook, the proof and call to action: "Step N of M", a card
-  that narrates or orders a step, usage text in the imperative and a tour of the screens are tutorial format, and are
-  severe. "ensinar" is a tutorial: missing the step by step or the screen of the finished task is severe. "novidade" is
-  the before and the after: missing one of the two is severe.
+  that narrates or orders a step, usage text in the imperative (with voice, also a spoken line in the imperative) and a
+  tour of the screens are tutorial format, and are severe. "ensinar" is a tutorial: missing the step by step or the
+  screen of the finished task is severe. "novidade" is the before and the after: missing one of the two is severe.
 
 In a thesis defect, the "second" is the one of the first frame in which it shows (the first step card, the first person
 scene); if the defect is the proof scene missing, it is the second at which the product comes on screen.
@@ -152,6 +174,7 @@ scene); if the defect is the proof scene missing, it is the second at which the 
 | R1, R2, R3 | the defects that send an app tutorial back: the screen that comes in cut in half, instead of appearing whole first and then getting the zoom (the "wide then detail" of `references/tutorial.md`); leftover cream background; no 3D, motion or transition |
 | R5, R6, R9 | the tutorial rule: one sentence, one new screen; more than 4 identical frames in a row is "static" |
 | R7 | the workflow's quality bar (`references/workflow.md`): a short sentence held and legible for ≥ ~0.7 s; a sentence that disappears before it is read is the most common mistake |
+| R6 and R7 with voice | the same tutorial rule, narrated: one line, one new screen; the voice does not stop |
 | R8, R11, R12 | what usually gets approved: a hook in the first 2–3 seconds (short social videos, 3D demo), the logo that assembles at the end, the video that ends on the proof |
 | R4, R5 and "rank, point to the second" | from `echris6/motion-video-kit` (MIT): a film's quality list (no empty frame, no text over text, frame 0 is already a finished composition, legible at phone size, the closing legible for ~1.5 s) and the format of the critic's report (ranked, with the time of each defect) |
 | R10 | from `feitangyuan/onetake` (PolyForm Noncommercial; the idea only): the measure of continuity between one scene and the next, to reject the video that switches slides instead of flowing |
@@ -160,7 +183,9 @@ scene); if the defect is the proof scene missing, it is the second at which the 
 
 Left out on purpose: the sound critic (loudness, effects against the music), because there is no video approved or
 rejected because of sound to calibrate against; and onetake's continuity oracle, which measures the HTML composition
-before rendering. Here the video is already finished, so continuity is measured only in the pixels (hard cuts).
+before rendering. Here the video is already finished, so continuity is measured only in the pixels (hard cuts). With
+voice, the voice over the soundtrack is measured by `finalize.mjs` (the voice at least 15 dB above what plays under it:
+`references/voice-mix.md`), not by the critic, which does not hear the video: it reads the transcript.
 
 ## How the fresh conversation is called
 
@@ -176,7 +201,7 @@ claude -p --model sonnet --system-prompt <the critic's role> --tools Read \
 - **Isolated:** no profile `CLAUDE.md`, no project memory, no skills, no MCP, no history. Only the `Read` tool, and only
   inside the package folder.
 - **Uses the account already logged in** to `claude` (the subscription): it does not ask for an API key and does not
-  spend paid-service credit.
+  spend paid-service credit, not even when the video has voice or generated images (no ElevenLabs, no OpenAI).
 - **Cost:** the JSON Claude returns carries `total_cost_usd` and the token usage; `critic.mjs` writes both to
   `critique.json` and prints them at the end. The measured numbers are in "Calibration".
 - If the answer comes back out of format, it asks again once, saying what was wrong.
@@ -251,5 +276,5 @@ what changed and why, as a general rule: no product name, person name or date.
   detail, is minor and stays as the owner's decision. Without the exception, the rubric rejected the approved video for
   "leftover background".
 - **R4 says what "gets in the way of reading" means:** a caption or the sentence's target that does not fit whole in the
-  frame, at the moment the caption points to it, is severe. When it only said "severe when it gets in the way of
-  reading", the cut screen came out as minor.
+  frame, at the moment the caption points to it (with voice, at the moment the voice says it), is severe. When it only
+  said "severe when it gets in the way of reading", the cut screen came out as minor.
