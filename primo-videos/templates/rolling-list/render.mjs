@@ -92,7 +92,7 @@ if (comFalas && narra) {
   fs.writeFileSync(path.join(proj, 'voice', 'script.json'), JSON.stringify(roteiro, null, 2))
 }
 if (tem('script')) {
-  if (!comFalas || !narra) { console.error(narra ? 'the JSON has no "falas": there is no voice script to write' : 'this skill has no voiceover.'); process.exit(1) }
+  if (!comFalas || !narra) { console.error(narra ? 'the JSON has no "falas": there is no voice script to write' : 'this copy of the skill has no voice module (scripts/tutorial/locucao.mjs is missing): reinstall the skill.'); process.exit(1) }
   console.log(`script: ${path.join(proj, 'voice', 'script.json')} (the voiceover goes to ${dirVoz})`)
   process.exit(0)
 }
@@ -106,10 +106,10 @@ if (comFalas && !fs.existsSync(arqLoc)) {
       `  or run with --no-voice if the video really has no voice (the soundtrack becomes the lead).`)
     process.exit(1)
   }
-  console.log('this skill has no voiceover: the "falas" in the JSON become captions only, timed from the text, and the soundtrack is the lead.')
+  console.log('this copy of the skill has no voice module (scripts/tutorial/locucao.mjs is missing): the "falas" in the JSON become captions only, timed from the text, and the soundtrack is the lead.')
 }
 if (comFalas && fs.existsSync(arqLoc)) {
-  if (!narra) { console.error(`this video has a voiceover (${arqLoc}), but this skill has no voiceover. Run with --no-voice to output with the soundtrack only`); process.exit(1) }
+  if (!narra) { console.error(`this video has a voiceover (${arqLoc}), but this copy of the skill has no voice module (scripts/tutorial/locucao.mjs is missing): reinstall the skill, or run with --no-voice to output with the soundtrack only`); process.exit(1) }
   const loc = JSON.parse(fs.readFileSync(arqLoc, 'utf8'))
   for (const f of plano.falas) {
     const lf = loc.falas.find((x) => x.id === f.id)

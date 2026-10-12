@@ -44,7 +44,7 @@ const narra = fs.existsSync(path.join(SKILL, 'scripts', 'tutorial', 'locucao.mjs
 if (P.voz && P.voz.locucao) {
   const a = cam(P.voz.locucao)
   if (!fs.existsSync(a) && narra) falha(`could not find the voiceover ${a}: generate the voice before the render (the voice step in SKILL.md), or remove "voz" from the JSON to output with the soundtrack only`)
-  if (!fs.existsSync(a)) console.log('this skill has no voiceover: the voiceover in the JSON is left out and the soundtrack is the lead.')
+  if (!fs.existsSync(a)) console.log('this copy of the skill has no voice module (scripts/tutorial/locucao.mjs is missing): the voiceover in the JSON is left out and the soundtrack is the lead.')
   else { loc = JSON.parse(fs.readFileSync(a, 'utf8')); LOCDIR = path.dirname(a) }
 }
 const fala = (onde) => loc && loc.falas.find((f) => (typeof f.onde === 'string' ? f.onde === onde : f.onde.passo === onde))

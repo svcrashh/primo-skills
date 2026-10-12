@@ -39,7 +39,7 @@ const CANAL = new URL('../app/canal.mjs', import.meta.url)
 const canalDoApp = async () => (fs.existsSync(CANAL) ? import(CANAL.href) : null)
 // A locução só vem nos pacotes com narração: sem scripts/tutorial/locucao.mjs, o tutorial é sem voz.
 const LOCUCAO = new URL('./locucao.mjs', import.meta.url)
-const SEM_NARRACAO = 'video.voz is the voiceover, and this skill has no voiceover: remove "voz" from video.mjs (the tutorial comes out with the soundtrack and the caption of each step).'
+const SEM_NARRACAO = 'video.voz is the voiceover, and this copy of the skill has no voice module (scripts/tutorial/locucao.mjs is missing): reinstall the skill, or remove "voz" from video.mjs (the tutorial comes out with the soundtrack and the caption of each step).'
 
 // mesmo achador da skill (ou da cópia do motor num repositório): PLAYWRIGHT_PATH, node_modules, npm -g, npx
 const achador = () => [path.join(AQUI, '..', 'playwright.cjs'), path.join(AQUI, 'playwright.cjs'), path.join(AQUI, '..', 'tools', 'playwright.cjs')].find((c) => fs.existsSync(c))

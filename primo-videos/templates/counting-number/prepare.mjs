@@ -47,10 +47,10 @@ const emPadrao = (b) => (b.tipo === 'contador' ? (b.sozinho ?? 1.6) + 0.25 : 0.4
 P.blocos.forEach((b, i) => { if (typeof b.fala === 'string') b.fala = { texto: b.fala }; if (b.fala) { b.fala.id = `b${i + 1}`; b.fala.em ??= emPadrao(b) } })
 const comFala = P.blocos.filter((b) => b.fala)
 const narra = fs.existsSync(path.join(SKILL, 'scripts', 'tutorial', 'locucao.mjs'))   // os níveis da skill com narração
-if (comFala.length && !narra && !opt('narration')) console.log('this skill has no voiceover: the "falas" in the JSON are left out and the soundtrack is the lead.')
+if (comFala.length && !narra && !opt('narration')) console.log('this copy of the skill has no voice module (scripts/tutorial/locucao.mjs is missing): the "falas" in the JSON are left out and the soundtrack is the lead.')
 
 const loc = opt('narration') ? path.resolve(opt('narration')) : null
-if (loc && !narra) { console.error(`this video has a voiceover (${loc}), but this skill has no voiceover.`); process.exit(1) }
+if (loc && !narra) { console.error(`this video has a voiceover (${loc}), but this copy of the skill has no voice module (scripts/tutorial/locucao.mjs is missing): reinstall the skill.`); process.exit(1) }
 if (loc) {
   const L = JSON.parse(fs.readFileSync(loc, 'utf8'))
   for (const b of comFala) {

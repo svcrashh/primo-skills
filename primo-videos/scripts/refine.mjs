@@ -56,7 +56,7 @@ export function acharVideo(projeto, formato, unico) {
 // scripts/refine/locucao.mjs, o vídeo não tem locução e essas checagens ficam de fora.
 const LOCUCAO = new URL('./refine/locucao.mjs', import.meta.url)
 const narracao = async () => (fs.existsSync(LOCUCAO) ? import(LOCUCAO.href) : null)
-const SEM_NARRACAO = 'this skill has no voiceover.'
+const SEM_NARRACAO = 'this copy of the skill has no voice module (scripts/refine/locucao.mjs is missing): reinstall the skill.'
 
 const plataformaDe = (p, formato) => (p && typeof p === 'object' ? p[formato] ?? null : p ?? null)
 
@@ -152,7 +152,7 @@ export async function refinar(alvo, o = {}) {
     const r = N.refinarLocucao(locArq, { corrigir: !o.soChecar && !ehMp4 && !obra, referencia: gab?.voz || null, perfil })   // na obra a locução é cópia: corrige-se a original
     achados.push(...r.achados.map((a) => ({ ...a, tVideo: falaNoVideo(montagem, a.fala) })))
     medidas.voz = { locucao: locArq, ...r.medidas, mudancas: r.mudancas }
-    if (!o.soChecar && !ehMp4 && (r.mudancas.length || r.sobras.length)) correcoes.push(`${path.relative(projeto, locArq)}: ${r.mudancas.length} word time(s) fixed by the voice, ${r.sobras.length} line(s) trimmed; the original stays in locucao.antes-do-refine.json`)
+    if (!o.soChecar && !ehMp4 && (r.mudancas.length || r.sobras.length)) correcoes.push(`${path.relative(projeto, locArq)}: ${r.mudancas.length} word time(s) fixed by the voice, ${r.sobras.length} line(s) trimmed; the original stays in narration.before-refine.json`)
     falas = r.falas
     marca(['alinhamento', 'silencio-fim'], 'ok')
     marca(['voz-apagada'], r.medidas.referencia ? 'ok' : `no baseline: the product has no reference profile and the narration profile is not reels`)

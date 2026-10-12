@@ -111,7 +111,7 @@ if (!fs.existsSync(css) || familias.some((f) => !fs.readFileSync(css, 'utf8').in
 }
 
 // ---------- 2. voz e linha do tempo ----------
-if (P.voz && P.voz.locucao && !narra && !tem('no-voice')) console.log('this skill has no voiceover: the scenes move at reading pace and the soundtrack leads.')
+if (P.voz && P.voz.locucao && !narra && !tem('no-voice')) console.log('this copy of the skill has no voice module (templates/drawn-explainer/voice/narracao.mjs is missing): the scenes move at reading pace and the soundtrack leads.')
 const semVoz = tem('no-voice') || !P.voz || !P.voz.locucao || !narra
 let locucao = null
 let dirLoc = null
@@ -280,6 +280,8 @@ for (const f of formatos) {
     const ss = parcial ? ['-ss', String(de ?? 0), ...(ate !== undefined ? ['-to', String(ate)] : [])] : []
     execFileSync('ffmpeg', ['-v', 'error', '-y', '-i', mudo, ...ss, '-i', trilha, '-map', '0:v', '-map', '1:a', '-c:v', 'copy', '-c:a', 'aac', '-b:a', '256k', '-shortest', '-movflags', '+faststart', final])
   } else fs.copyFileSync(mudo, final)
+  // a legenda da voz ao lado do vídeo; a abertura com o logo, logo abaixo, a desloca junto
+  if (N && falas.length && !parcial && fs.existsSync(path.join(obra, N.LEGENDA))) fs.copyFileSync(path.join(obra, N.LEGENDA), final.replace(/\.mp4$/i, '.srt'))
   if (P.aberturaLogo && !parcial) {   // o logo no começo (scripts/opening.mjs), antes da folha
     try { console.log(relatar(aberturaDoJson(final, P.aberturaLogo, path.dirname(path.resolve(arqJson))))) } catch (e) { console.error(`✗ ${f}: ${e.message}`); process.exitCode = 1 }
   }

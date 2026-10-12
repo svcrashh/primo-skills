@@ -26,8 +26,8 @@ is exactly as before, sample by sample.
 Sheet with "voz" (mix_voz.py): the bed is composed the same way and the voiceover goes on top. The music ducks for
 the voice, the transition effects go down under the speech, and soundtrack.wav becomes the final mix (music, effects and
 voice), mastered to the sheet's loudness. stems/ gets voz, musica, efeitos and ref/ (the music and the effects before
-the voice). Without "voz", none of this runs and mix_voz.py is not even imported.
-This skill makes videos without narration.
+the voice). Without "voz", none of this runs and mix_voz.py is not even imported: the video without narration is exactly
+as before.
 """
 import json
 import math
@@ -227,7 +227,7 @@ def main(argv):
             import mix_voz as mv
         except ModuleNotFoundError:
             raise SystemExit('the sheet has "voz", but mix_voz.py is not next to arrange_series.py. '
-                             'This skill makes videos without narration: remove "voz" from the sheet.')
+                             'This copy of the skill has no voice mix: reinstall the skill, or remove "voz" from the sheet.')
     if voz and voz.get('perfil') not in mv.PERFIS:
         raise ValueError(f'voz: profile {voz.get("perfil")!r} does not exist. Use {" or ".join(mv.PERFIS)}')
 

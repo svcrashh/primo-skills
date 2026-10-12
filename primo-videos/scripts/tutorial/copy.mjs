@@ -22,7 +22,7 @@ const ARQUIVOS = [
 ]
 // Só existem nos pacotes com narração (e o canal, só no que tem o app): vão junto quando estão lá, sem aviso quando não
 // estão. Com o canal, o gravar e o compor da cópia também avisam o app.
-const DOS_MODULOS = ['assets/audio/mix_voz.py', 'references/voz-tutorial.md', 'references/voz-mix.md', 'scripts/app/canal.mjs']
+const DOS_MODULOS = ['assets/audio/mix_voz.py', 'references/voice-tutorial.md', 'references/voice-mix.md', 'scripts/app/canal.mjs']
 ARQUIVOS.push(...DOS_MODULOS.filter((f) => fs.existsSync(path.join(SKILL, f))))
 let n = 0
 for (const f of ARQUIVOS) {

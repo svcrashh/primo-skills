@@ -39,7 +39,7 @@ const falas = []
 const narra = fs.existsSync(path.join(skill, 'scripts', 'tutorial', 'locucao.mjs'))   // os níveis da skill com narração
 const semLocucao = (P.voz?.trechos || []).map((tr) => path.resolve(base, tr.locucao || P.voz.locucao)).filter((a) => !fs.existsSync(a))
 if (semLocucao.length && narra) { console.error(`could not find the voiceover ${semLocucao[0]}: generate the voice before the render (the voice step in SKILL.md), or remove "voz" from the JSON to output with the soundtrack`); process.exit(1) }
-if (semLocucao.length) console.log('this skill has no voiceover: the voice excerpts in the JSON are left out and the soundtrack is the lead.')
+if (semLocucao.length) console.log('this copy of the skill has no voice module (scripts/tutorial/locucao.mjs is missing): the voice excerpts in the JSON are left out and the soundtrack is the lead.')
 for (const tr of semLocucao.length ? [] : P.voz?.trechos || []) {
   const locArq = path.resolve(base, tr.locucao || P.voz.locucao)
   const loc = JSON.parse(fs.readFileSync(locArq, 'utf8'))

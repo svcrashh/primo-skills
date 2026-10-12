@@ -7,8 +7,9 @@
 // se reprovar, a −16) e, com --deliver, roda o finalize.mjs de cada formato: o vídeo sai pronto e conferido.
 // Cenas: as pastas scenes/NN-nome com out/<format>.mp4, em ordem. 00-… é a abertura, 99-… o fecho, NN o capítulo
 // NN (a fala { "capitulo": NN } da locução). Cada fala começa em <início da cena> + --speech-at.
-// Sai: out/assembled-<format>.mp4 (mudo), audio/voz.wav, audio/sheet.json (duração, bloco voz, whoosh em cada
-// passagem de capítulo) e out/assembly.json (onde cada cena e cada fala caem). Depois: a trilha
+// Sai: out/assembled-<format>.mp4 (mudo), audio/voz.wav e out/assembled.srt (com voz), audio/sheet.json (duração, bloco
+// voz, whoosh em cada passagem de capítulo) e out/assembly.json (onde cada cena e cada fala caem). Com --deliver, a
+// legenda vai ao lado de cada entrega (<name>-<format>.srt). Depois: a trilha
 // (references/soundtrack.md, com mix_voz) e o finalize.mjs de cada formato.
 // Com <project>/opening-logo.json ({ "logo": "media/…png", "fundo": "#…", "dur": 1 }), cada entrega ganha a abertura com
 // o logo (scripts/opening.mjs) depois de conferida.
@@ -75,7 +76,7 @@ for (const f of formatos) {
 let falas = [], LV = null
 const locArg = opt('narration')
 if (locArg) {
-  if (!fs.existsSync(FALAS)) erro('--narration is for voiceover, and this skill has no voice: remove --narration (the video comes out with the soundtrack and the on-screen text).')
+  if (!fs.existsSync(FALAS)) erro('--narration needs the voice module (scripts/chapters/falas.mjs), and this copy of the skill does not have it: reinstall the skill, or remove --narration (the video comes out with the soundtrack and the on-screen text).')
   const [F, L] = await Promise.all([import(FALAS.href), import(new URL('../tutorial/locucao.mjs', import.meta.url).href)])
   LV = L
   try { falas = F.colocarFalas(path.resolve(projeto, locArg), cenas, { falaEm, saida: SAIDA }) } catch (e) { erro(e.message) }
@@ -83,7 +84,8 @@ if (locArg) {
   if (semFala.length) console.log(`  warning: chapter with no voiceover line: ${semFala.map((c) => c.nome).join(', ')}`)
   fs.mkdirSync(path.join(projeto, 'audio'), { recursive: true })
   LV.escreverVozWav(falas, total, path.join(projeto, 'audio', 'voz.wav'))
-  console.log(`✓ audio/voz.wav · ${falas.length} lines in place (scene start + ${falaEm} s)`)
+  fs.writeFileSync(path.join(projeto, 'out', 'assembled.srt'), LV.srt(falas))
+  console.log(`✓ audio/voz.wav and out/assembled.srt · ${falas.length} lines in place (scene start + ${falaEm} s)`)
 }
 
 const folhaP = path.join(projeto, 'audio', 'sheet.json')
@@ -136,6 +138,8 @@ if (args.includes('--soundtrack')) {
       const v = spawnSync(process.execPath, [path.join(projeto, 'tools', 'finalize.mjs'), '--project', projeto, '--video', `out/assembled-${f}.mp4`, '--audio', 'audio/soundtrack.wav', '--out', destino], { encoding: 'utf8', timeout: 300000 })
       if (!/delivery verified\.|entrega verificada\./.test(v.stdout || '')) erro(`finalizar flagged a problem in ${f}:\n${(v.stdout || '') + (v.stderr || '')}`)
       console.log(`✓ ${destino} · delivery verified`)
+      // a legenda da voz ao lado da entrega; a abertura com o logo, logo abaixo, a desloca junto com o vídeo
+      if (falas.length) fs.copyFileSync(path.join(projeto, 'out', 'assembled.srt'), destino.replace(/\.mp4$/i, '.srt'))
       const arqAbertura = path.join(projeto, 'opening-logo.json')
       if (fs.existsSync(arqAbertura)) {
         try { console.log(relatar(aberturaDoJson(destino, JSON.parse(fs.readFileSync(arqAbertura, 'utf8')), projeto))) } catch (e) { erro(`the logo opening failed in ${f}: ${e.message}`) }

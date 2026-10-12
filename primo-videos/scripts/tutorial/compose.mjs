@@ -48,7 +48,7 @@ const CANAL = new URL('../app/canal.mjs', import.meta.url)
 const canalDoApp = async () => (fs.existsSync(CANAL) ? import(CANAL.href) : null)
 // A locução só vem nos pacotes com narração: sem scripts/tutorial/locucao.mjs, o tutorial é sem voz.
 const LOCUCAO = new URL('./locucao.mjs', import.meta.url)
-const SEM_NARRACAO = 'video.voz is the voiceover, and this skill has no voiceover: remove "voz" from video.mjs (the tutorial comes out with the soundtrack and the caption of each step).'
+const SEM_NARRACAO = 'video.voz is the voiceover, and this copy of the skill has no voice module (scripts/tutorial/locucao.mjs is missing): reinstall the skill, or remove "voz" from video.mjs (the tutorial comes out with the soundtrack and the caption of each step).'
 
 // O achador do ambiente da skill (scripts/where.cjs). A cópia do motor num repositório pode não ter: aí vale a busca de antes.
 const ONDE = path.join(RAIZ, 'scripts', 'where.cjs')

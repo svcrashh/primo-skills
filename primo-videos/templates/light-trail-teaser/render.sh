@@ -1,10 +1,12 @@
 #!/bin/zsh
-# Renderiza o light-trail-teaser de um arquivo de parâmetros: monta o projeto, faz a trilha (sem voz: a trilha é a
-# protagonista), renderiza cada formato a 60 fps, junta o som e tira a folha.
+# Renderiza o light-trail-teaser de um arquivo de parâmetros: monta o projeto, faz a trilha (com a voz, se a locução já
+# está em <folder>/project/voice/pt/narration.json; sem ela, a trilha é a protagonista), renderiza cada formato a 60 fps,
+# junta o som e tira a folha.
 #   templates/light-trail-teaser/render.sh meu.json ~/Desktop/teaser [16x9 9x16 19x9 21x9]
 #   MODO=draft templates/light-trail-teaser/render.sh …     → 30 fps rápido, para olhar
 #   SUB=1 … → 60 fps sem motion blur (4× mais rápido que o padrão de 4 subquadros)
-# Vídeo com voz ainda está em desenvolvimento: uma locução em <folder>/project/voice/pt é ignorada, com aviso.
+# O molde não gera voz: a locução, quando há, vem antes, do passo de voz da skill (scripts/voice.mjs generate … --out
+# <folder>/project/voice/pt), com uma fala por item de "falas" do JSON (mesmo id; ela toca a partir do "em").
 # O Python da trilha (numpy e scipy): o venv do `node <skill>/scripts/environment.mjs --fix` (~/.videostudio/venv,
 # ou $VIDEOSTUDIO_HOME/venv) quando existe, senão o python3 do sistema. PYTHON ou VIDEOSTUDIO_PYTHON forçam outro.
 set -e
@@ -16,9 +18,14 @@ PY=${PYTHON:-${VIDEOSTUDIO_PYTHON:-}}; [[ -z $PY && -x $VENV_PY ]] && PY=$VENV_P
 mkdir -p $S; P=$S/project
 node $M/assemble.mjs $J $P
 NOME=${${J:t}:r}
-[[ -f $P/voice/pt/narration.json ]] && echo "This skill makes videos without narration. The voiceover in $P/voice/pt is ignored: the soundtrack is the lead."
+LOC=$P/voice/pt/narration.json
+if [[ -f $LOC && ! -f $SKILL/scripts/tutorial/locucao.mjs ]]; then
+  echo "This copy of the skill has no voice module (scripts/tutorial/locucao.mjs is missing): the voiceover in $P/voice/pt is ignored and the soundtrack is the lead."
+  LOC=-
+fi
+[[ -f $LOC ]] || LOC=-
 if $PY -c 'import numpy, scipy' 2>/dev/null; then
-  mkdir -p $P/audio; $PY $M/soundtrack.py $J - $P/audio/mix.wav
+  mkdir -p $P/audio; $PY $M/soundtrack.py $J $LOC $P/audio/mix.wav
 else
   rm -f $P/audio/mix.wav
   echo "WARNING: no Python with numpy and scipy, the video comes out silent. Run once: node $SKILL/scripts/environment.mjs --fix"

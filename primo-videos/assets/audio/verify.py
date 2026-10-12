@@ -11,7 +11,7 @@ integrated loudness (BS.1770) and true peak (4x) — all here, without ffmpeg. I
 Sheet with "voz" (mix_voz.py): it also measures, on the stems, what the mix did — the voice where the sheet puts it,
 every line at the same level, the voice ≥ 12 dB above the soundtrack (and on a phone speaker), how much and when the
 music ducks, the 1.5–4 kHz cut, the effects under the speech and pumping. The markers are then measured on the
-soundtrack without the voice. This skill makes videos without narration.
+soundtrack without the voice. Without "voz", none of this runs and mix_voz.py is not even imported.
 Exit code: 0 if everything passed, 1 if something failed.
 """
 import json
