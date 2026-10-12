@@ -22,7 +22,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  sonda:
+  experimento:
     runs-on: windows-latest
     timeout-minutes: 20
     defaults:
@@ -33,57 +33,42 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
-      - name: sistema
+      - name: um .cmd entre o python e o programa estraga o prompt?
         continue-on-error: true
         run: |
-          [Environment]::OSVersion
-          (Get-CimInstance Win32_OperatingSystem).Caption
-          "sessao: $([System.Diagnostics.Process]::GetCurrentProcess().SessionId)  interativo: $([Environment]::UserInteractive)"
-          query session 2>&1
-          "usuario: $env:USERNAME"
-          Get-Command winget, wt, bash, pwsh, powershell, python, py -ErrorAction SilentlyContinue | Format-Table Name, Source -AutoSize | Out-String -Width 300
-          Get-AppxPackage *WindowsTerminal* | Format-List Name, Version, InstallLocation | Out-String -Width 300
+          New-Item -ItemType Directory -Force cmdteste | Out-Null
+          Set-Content cmdteste\eco.cmd '@python -c "import sys, json; print(json.dumps(sys.argv[1:], ensure_ascii=False))" %*'
+          python -c "import subprocess, json; p = 'Leia \"docs/x.md\" e % ^ & | > < ação\nsegunda linha'; r = subprocess.run(['cmdteste\\eco.cmd', p], capture_output=True, text=True, encoding='utf-8', errors='replace'); print('saida:', r.stdout, r.stderr); print('igual:', r.stdout.strip() == json.dumps([p], ensure_ascii=False))"
+      - name: claude pelo npm
+        continue-on-error: true
+        run: |
+          npm install -g @anthropic-ai/claude-code 2>&1 | Select-Object -Last 3
+          Get-Command claude -All -ErrorAction SilentlyContinue | Format-Table Name, CommandType, Source -AutoSize | Out-String -Width 300
+          python -c "import shutil; print('which:', shutil.which('claude'))"
+          claude --version
+      - name: claude nativo (instalador oficial)
+        continue-on-error: true
+        run: |
+          npm uninstall -g @anthropic-ai/claude-code 2>&1 | Select-Object -Last 1
+          irm https://claude.ai/install.ps1 | iex
+          "user PATH tem .local\bin: $([Environment]::GetEnvironmentVariable('Path','User') -like '*\.local\bin*')"
+          Get-ChildItem "$env:USERPROFILE\.local\bin" -ErrorAction SilentlyContinue | Format-Table Name, Length | Out-String
+          $env:Path = [Environment]::GetEnvironmentVariable('Path','Machine') + ';' + [Environment]::GetEnvironmentVariable('Path','User')
+          python -c "import shutil; print('which:', shutil.which('claude'))"
+          claude --version
+      - name: python pelo winget
+        continue-on-error: true
+        run: |
+          winget install --id Python.Python.3.12 -e --accept-source-agreements --accept-package-agreements --disable-interactivity 2>&1 | Select-Object -Last 3
+          "user PATH: $([Environment]::GetEnvironmentVariable('Path','User'))"
+          "machine PATH tem Python312: $([Environment]::GetEnvironmentVariable('Path','Machine') -like '*Python312*')"
+          $env:Path = [Environment]::GetEnvironmentVariable('Path','Machine') + ';' + [Environment]::GetEnvironmentVariable('Path','User')
+          Get-Command python -All -ErrorAction SilentlyContinue | Format-Table Name, Source -AutoSize | Out-String -Width 300
+      - name: resolução maior
+        continue-on-error: true
+        run: |
+          Get-Command Set-DisplayResolution -ErrorAction SilentlyContinue | Format-List Name, Source
+          Set-DisplayResolution -Width 1920 -Height 1080 -Force
+          Start-Sleep 2
           Add-Type -AssemblyName System.Windows.Forms
-          [System.Windows.Forms.Screen]::AllScreens | Format-List DeviceName, Bounds, WorkingArea, Primary | Out-String -Width 300
-          Get-Command Set-DisplayResolution -ErrorAction SilentlyContinue
-          fsutil 8dot3name query C:
-          fsutil 8dot3name query D:
-          "TEMP=$env:TEMP RUNNER_TEMP=$env:RUNNER_TEMP"
-      - name: testes simulados no Python do Windows
-        continue-on-error: true
-        run: |
-          python terminal-claude/scripts/teste_windows_simulado.py
-          python terminal-claude/scripts/teste_mac_simulado.py
-      - name: tenta winget
-        continue-on-error: true
-        run: |
-          winget --version
-          winget install --id Microsoft.WindowsTerminal -e --accept-source-agreements --accept-package-agreements --disable-interactivity
-          Get-AppxPackage *WindowsTerminal* | Format-List Name, Version | Out-String
-          Get-Command wt -ErrorAction SilentlyContinue | Format-List Source
-      - name: abre uma janela do wt
-        continue-on-error: true
-        run: |
-          $wt = (Get-Command wt -ErrorAction SilentlyContinue).Source
-          if (-not $wt) { $wt = Join-Path $env:LOCALAPPDATA "Microsoft\WindowsApps\wt.exe" }
-          "wt: $wt  existe: $(Test-Path $wt)"
-          Start-Process $wt -ArgumentList '-w','new','nt','--title','sonda','cmd','/k','echo oi'
-          Start-Sleep 8
-          Get-Process WindowsTerminal, OpenConsole -ErrorAction SilentlyContinue | Format-Table Id, ProcessName, SessionId, MainWindowTitle -AutoSize | Out-String -Width 300
-          python -c "import sys; sys.path.insert(0, 'terminal-organizar/scripts'); import janelas_win as w; print('monitores', w.monitores()); print('janelas', w.janelas())"
-      - name: captura da tela
-        continue-on-error: true
-        run: |
-          Add-Type -AssemblyName System.Windows.Forms, System.Drawing
-          $b = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds
-          $img = New-Object System.Drawing.Bitmap $b.Width, $b.Height
-          $g = [System.Drawing.Graphics]::FromImage($img)
-          $g.CopyFromScreen($b.Location, [System.Drawing.Point]::Empty, $b.Size)
-          New-Item -ItemType Directory -Force captura | Out-Null
-          $img.Save("captura\sonda.png")
-      - uses: actions/upload-artifact@v7
-        if: always()
-        with:
-          name: sonda
-          path: captura/
-          if-no-files-found: ignore
+          [System.Windows.Forms.Screen]::AllScreens | Format-List Bounds, WorkingArea | Out-String
