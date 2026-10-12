@@ -9,21 +9,22 @@ Entende um arquivo de áudio ou de vídeo: o que é dito e, se for vídeo, o que
 do WhatsApp, um vídeo do celular, uma gravação de tela) e você segue o trabalho sabendo o que tem nele.
 
 ```sh
-# Mac (zsh)
+# Mac (zsh), e no Windows a ferramenta Bash, que roda no Git Bash
 P=~/.claude/skills/play/scripts/play.mjs
-node $P '<caminho>'                        # o que é dito e o que aparece
-node $P quadro '<caminho>' --em 01:23      # um quadro em resolução cheia
-node $P limpar ['<caminho>']               # apaga o cache (o de um arquivo, ou todo)
+node "$P" '<caminho>'                        # o que é dito e o que aparece
+node "$P" quadro '<caminho>' --em 01:23      # um quadro em resolução cheia
+node "$P" limpar ['<caminho>']               # apaga o cache (o de um arquivo, ou todo)
 ```
 
 ```powershell
-# Windows (PowerShell): os mesmos comandos
+# Windows, na ferramenta PowerShell: os mesmos comandos
 $P = "$HOME\.claude\skills\play\scripts\play.mjs"
 node $P 'C:\caminho\do\video.mp4'
 ```
 
-Olha em que sistema você está antes de escrever o comando. Não pede confirmação para rodar: colar o arquivo já é o
-pedido. A exceção é arquivo longo (seção 2).
+Olha em que shell você está antes de escrever o comando. No Git Bash o `"$P"` vai entre aspas: sem elas, o nome de
+usuário com espaço parte o caminho. O caminho do arquivo vai como veio, até `C:\…` no Git Bash. Não pede confirmação
+para rodar: colar o arquivo já é o pedido. A exceção é arquivo longo (seção 2).
 
 ## 1. Quando entra
 
@@ -41,7 +42,7 @@ Imagem (.png, .jpg, .heic) não é com ela: abre direto com a ferramenta de ler 
 diz o prazo"). Tira só o caminho, do jeito que veio, e passa entre aspas simples. Não precisa limpar: o script aceita
 aspas em volta, espaço escapado com barra (`Meu\ audio.opus`, como o Terminal do Mac cola), `~`, `file://`, espaço ou
 quebra de linha sobrando, e caminho do Windows. Se o caminho tiver aspas simples dentro, troca cada `'` por `'\''` no
-zsh ou por `''` no PowerShell.
+zsh e no Git Bash, ou por `''` no PowerShell.
 
 Vários arquivos na mesma mensagem: uma chamada por arquivo.
 
@@ -87,7 +88,7 @@ três frases, e a legenda do próprio vídeo trazia o nome certo. Quando corrigi
 tempo.
 
 ```sh
-node $P quadro '<caminho>' --em 00:12
+node "$P" quadro '<caminho>' --em 00:12
 ```
 
 A ferramenta de ler imagem reduz imagem grande: o quadro do vídeo do celular (2160×3840) chega com uns 1125×2000. Se o texto continuar
@@ -116,7 +117,8 @@ ou visível a outras pessoas.
 Roda o diagnóstico. Ele não grava nada e não usa a rede:
 
 ```sh
-node ~/.claude/skills/play/scripts/requisitos.mjs
+node ~/.claude/skills/play/scripts/requisitos.mjs                  # Mac e Git Bash
+node "$HOME\.claude\skills\play\scripts\requisitos.mjs"           # PowerShell
 ```
 
 Cada linha é uma coisa de que a play precisa: `✔` tem, `✖` falta. Embaixo de cada `✖` vêm os passos, escritos para
@@ -124,7 +126,8 @@ quem nunca fez isso; repassa à pessoa como estão.
 
 - **Node 18 ou mais novo:** `brew install node` no Mac, `winget install OpenJS.NodeJS.LTS` no Windows.
 - **ffmpeg** (o ffprobe vem junto): `brew install ffmpeg` no Mac, `winget install ffmpeg` no Windows (e depois fecha e
-  abre o PowerShell). Sem ele nada funciona.
+  abre o PowerShell). Na primeira vez, o winget pergunta se a pessoa aceita os termos: é responder Y. Sem o ffmpeg
+  nada funciona.
 - **Chave da OpenAI:** é ela que transcreve. A API da OpenAI é paga por uso e é separada da assinatura do ChatGPT. A
   chave se cria em platform.openai.com, em "API keys", e precisa de crédito na conta da API, em "Billing". Ela vale
   como a variável de ambiente `OPENAI_API_KEY` ou como uma linha `OPENAI_API_KEY=...` no arquivo
@@ -170,7 +173,8 @@ Sem a chave, o vídeo ainda mostra o que aparece; só a fala fica de fora.
   troca o endereço da API, e `PLAY_LIMITE_BYTES` o tamanho máximo de cada parte (os testes usam os dois).
 - **Arquivos:** `scripts/play.mjs` faz o trabalho; `scripts/requisitos.mjs` é o diagnóstico, e dele o `play.mjs` tira a
   leitura da chave e as instruções, para os dois dizerem a mesma coisa. Testes: `node --test play/tests/*.test.mjs`, sem
-  rede, com uma OpenAI de mentira e arquivos feitos na hora pelo ffmpeg.
+  rede, com uma OpenAI de mentira e arquivos feitos na hora pelo ffmpeg; o `windows.test.mjs`, que chama a play pelo
+  PowerShell e pelo Git Bash, só roda no Windows.
 
 ### Limites
 
@@ -187,17 +191,27 @@ Sem a chave, o vídeo ainda mostra o que aparece; só a fala fica de fora.
 
 ### No Windows
 
-**Escrito no Mac em 12/10/2026 e ainda não rodado num Windows de verdade.** Os testes passam no Mac; as chamadas no
-Windows nunca foram executadas. Na primeira vez:
+**Rodou num Windows de verdade em 12/10/2026:** o Windows Server 2025 do GitHub Actions, com o ffmpeg 9.0.2 instalado
+por `winget install ffmpeg`, no Node 18 e no 24, com uma OpenAI de mentira no lugar da de verdade. O workflow
+`.github/workflows/windows-play.yml` roda tudo de novo a cada mudança na play ou no instalador.
 
-1. `node $HOME\.claude\skills\play\scripts\requisitos.mjs`: confere se acha o ffmpeg e a chave em
-   `%USERPROFILE%\.claude\secrets\openai.env`.
-2. `node $P 'C:\caminho\de\um\audio.opus'` com um áudio curto: confere a transcrição e que o cache foi para
-   `%LOCALAPPDATA%\play`.
-3. Um vídeo curto, e abrir a folha de contato.
-4. `node --test play\tests\*.test.mjs` na pasta do repositório (no Windows os testes criam junção em vez de link).
-
-O que falhar, conserta no `play.mjs` ou no `requisitos.mjs` e, quando tudo rodar, tira este parágrafo.
+- **O que passou lá:** os testes; a play chamada pelo PowerShell 5.1, pelo PowerShell 7 e pelo Git Bash, numa pasta de
+  usuário com acento e espaço, com o caminho entre aspas simples ou duplas, com barra normal, colado do "Copiar como
+  caminho" (com as aspas dentro), com `~`, como `/c/…` no Git Bash e com aspa simples no nome, e a saída chegando em
+  UTF-8, com os acentos certos; o cache em `%LOCALAPPDATA%\play`, a segunda chamada saindo dele, `quadro --em`,
+  `--recorte` e `limpar`; um vídeo deitado e um de celular (o quadro deitado e a rotação guardada à parte), com as folhas
+  de contato abertas e conferidas; o `requisitos.mjs` antes e depois do ffmpeg e da chave, seguindo ao pé da letra os
+  comandos que ele imprime; a chave lida do arquivo com BOM e CRLF (como o Bloco de Notas pode salvar) e em UTF-16 (como
+  o `echo … >` do PowerShell 5.1 grava).
+- **Os testes no Windows:** `node --test play/tests/*.test.mjs` na pasta do repositório, no PowerShell, com o Node 22 ou
+  mais novo (rodou no 24). O Node 18 e o 20 não expandem o `*`: liste os três arquivos (`play.test.mjs`, `requisitos.test.mjs` e
+  `windows.test.mjs`).
+- **O que ficou sem prova** (o runner não tem tela, nem conta do Claude, nem a OpenAI de verdade): o Bloco de Notas
+  abrindo e salvando o arquivo da chave (o teste grava o arquivo como ele salvaria), a transcrição de verdade e o Claude
+  Code chamando a play. Na primeira vez numa máquina de verdade:
+  1. O diagnóstico (seção 5) com tudo `✔`.
+  2. Um áudio curto: a transcrição faz sentido e a pasta `%LOCALAPPDATA%\play` aparece.
+  3. Um vídeo curto: abre a folha de contato e confere que os quadros estão de pé quando o vídeo está de pé.
 
 ## O que não fazer
 
