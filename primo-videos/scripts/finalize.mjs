@@ -59,7 +59,9 @@ for (const [s0, s1] of (folha && folha.silencios) || []) {
 if (voz) conferirVoz()
 console.log(`poster: ${poster}`)
 console.log(falhas.length ? `\n${falhas.length} problem(s) — fix them before delivering.` : '\ndelivery verified.')
-process.exit(falhas.length ? 1 : 0)
+// exitCode, não process.exit(): depois da conferência da voz, o process.exit() às vezes trava para sempre esperando o
+// compilador do V8 terminar em outra thread (medido no Node 24: 2 de 3 rodadas); saindo sozinho, o Node termina limpo
+process.exitCode = falhas.length ? 1 : 0
 
 // ---------------------------------------------------------------- voz: sincronia e destaque no AAC
 // A voz da folha (voz.wav, a mesma que o compose.mjs pôs na linha do tempo) é o gabarito. Em cada trecho:
