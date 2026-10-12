@@ -99,17 +99,31 @@ def osa(*args):
 
 
 def vivas():
-    """id → tty de cada janela aberta."""
+    """id → tty de cada janela que a leitura do Terminal enxerga agora."""
     # Sem o Terminal aberto não chama o AppleScript: um "tell" abriria o app.
     if subprocess.run(["pgrep", "-xq", "Terminal"]).returncode != 0:
         return {}
     return {int(i): tty for i, tty in (l.split() for l in osa("-e", VIVAS_AS).splitlines() if l.strip())}
 
 
-def viva(abertas, jid, marca):
+def ttys_do_terminal():
+    """ttys que ainda são de uma aba do Terminal: o login de cada aba é filho direto do app."""
+    ps = subprocess.run(["ps", "-axo", "pid=,ppid=,tty=,comm="], capture_output=True, text=True).stdout
+    procs = [p for p in (linha.split(None, 3) for linha in ps.splitlines()) if len(p) == 4]
+    terminal = {pid for pid, _, _, comm in procs if comm.endswith("/Terminal.app/Contents/MacOS/Terminal")}
+    return {"/dev/" + tty for _, pai, tty, _ in procs if pai in terminal}
+
+
+def viva(abertas, linha):
+    jid, tty = int(linha[0]), linha[1]
     # Confere o tty junto: o Terminal recomeça a contagem dos ids quando reabre, e um id velho no
     # registro faria o fechar-terminal.sh fechar a janela errada.
-    return abertas.get(jid) == marca
+    if abertas.get(jid) == tty:
+        return True
+    # A leitura não ver a janela não prova que ela fechou: o AppleScript erra ou dá "visible" falso
+    # por um instante, e em 12/10/2026 uma janela foi esquecida assim com o claude dela rodando. Ela
+    # só morreu se outra janela já usa o tty ou se ele não é mais de aba nenhuma do Terminal.
+    return tty not in abertas.values() and tty in ttys_do_terminal()
 
 
 def lancador(t, base, cfg, args):

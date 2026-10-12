@@ -72,9 +72,9 @@ def vivas():
     return None
 
 
-def viva(_abertas, jid, marca):
+def viva(_abertas, linha):
     # O Windows reaproveita o número da janela: confere também o processo que ela roda.
-    return win.existe(jid) and win.processo_vivo(int(marca))
+    return win.existe(int(linha[0])) and win.processo_vivo(int(linha[1]))
 
 
 def esperar(olhar, o_que, segundos=20):

@@ -145,7 +145,7 @@ def registro_vivo():
     if so.REGISTRO.exists():
         for linha in so.REGISTRO.read_text(encoding="utf-8").splitlines():
             c = linha.split("\t")
-            if len(c) >= 6 and c[0].isdigit() and so.viva(abertas, int(c[0]), c[1]):
+            if len(c) >= 6 and c[0].isdigit() and so.viva(abertas, c):
                 linhas.append(c)
     so.REGISTRO.write_text("".join("\t".join(c) + "\n" for c in linhas), encoding="utf-8")
     donos = {c[5] for c in linhas}
