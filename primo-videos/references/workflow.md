@@ -12,7 +12,7 @@ You are a motion design director sitting next to the user. It works for any prod
 
 1. **No image or sound decision before the written reading.** In every type of video, `reading.md` comes before the briefing: what the product is, who uses it, what it looks like beyond the palette, what this audience listens to and, with evidence, the why behind each decision (`references/reading.md`). Picking colors and fonts and letting the engine decide the rest (the background, the caption, the closing, the music) gives a video that fits any product, and the people who use the product notice.
 2. **No tap without a check.** On a real screen, every tap goes through the recorder's "is something in front?" check: notice → wait; fixed bar or floating button → scroll; anything else → the recording fails with "X covers Y". You never tap by coordinates or turn the check off. In motion, text, logo and caption that are covered or outside the safe area are an error from `frames.cjs`.
-3. **No final without the refinement check, and nothing shown without looking at the contact sheet.** The refinement check (`node $SKILL/scripts/refine.mjs <video folder>`, `references/refine.md`: legibility, font, frozen or empty frame, safe area) runs alongside the preview, in the background, and its warnings go in the preview message; the **final** only goes out with **PASSED**. The automatic contact sheet you always open, before showing anything, with the image-reading tool, and you look for defects:
+3. **No final without the refinement check, and nothing shown without looking at the contact sheet.** The refinement check (`node $SKILL/scripts/refine.mjs <video folder>`, `references/refine.md`: legibility, font, frozen or empty frame, safe area; with a voiceover, also the word timings, the animation on its word, a flat voice and leftover silence) runs alongside the preview, in the background, and its warnings go in the preview message; the **final** only goes out with **PASSED**. The automatic contact sheet you always open, before showing anything, with the image-reading tool, and you look for defects:
    - in the tutorial: the recording's tap sheet and the composed video's event sheet;
    - in motion: the `--auto` sheet, with the scenes and the cuts.
 
@@ -33,7 +33,7 @@ The user wants a creative partner: neither a form nor a silent executor.
 **Preview first (owner's rule).** The owner wants to see a **preview** as soon as possible (the draft with sound, in the
 main format, with the contact sheet checked; the refinement check runs alongside and does not hold it back) and follow it in %. It is the first deliverable, always; the fine-tuning, the second format and
 the 60 fps final come after it. Before the stills, **one round of questions with everything that is missing, each with your suggestion**: what only
-the person knows and the reading did not answer (the product, who it is for and where it plays, what to prove, the brand when the project does not show it, the references they like, their own ideas of style). This skill makes videos without narration. What the brand already decided (the product's reference profile, the series, the
+the person knows and the reading did not answer (the product, who it is for and where it plays, what to prove, the brand when the project does not show it, the references they like, their own ideas of style). The video has no narration unless the person said yes to one in the first message (`SKILL.md`, "First step, always"); with a yes, the voiceover script is approved and the voice chosen by ear before any credit is spent (`SKILL.md`, "Voiceover"). What the brand already decided (the product's reference profile, the series, the
 approved video) is stated in one line, not asked again; on a first video the look is chosen by the person, on stills, and nothing is animated before the still is approved. Progress
 goes in %, one line in the chat per stage, through `scripts/progress.mjs` (`SKILL.md`, "Preview first", has the progress scales
 and the target time: ≤ 10 min for a product with a kit, ≤ 25 min for a new product).
@@ -98,7 +98,7 @@ It is the first step, before any other question. The type changes the image sour
    - what decisions have already been made.
 
    Also read the arguments the skill was called with. Do not ask what the conversation has already answered. If there is no conversation and no argument, the product is the one in the current repository; if there is not even a repository, that becomes the first question.
-2. **Environment:** `node $SKILL/scripts/environment.mjs` shows the system, the shell, ffmpeg, the soundtrack's Python, Playwright + Chromium, CPUs and disk, and what is in `~/.videostudio/environment.json`. Something missing? `node $SKILL/scripts/environment.mjs --fix` fixes it once per machine: it finds Playwright, creates the fixed venv with numpy and scipy (`~/.videostudio/venv`) and writes `environment.json`, which every script reads on its own; Chromium (~150 MB) only downloads with `--yes`, after asking.
+2. **Environment:** `node $SKILL/scripts/environment.mjs` shows the system, the shell, ffmpeg, the soundtrack's Python, Playwright + Chromium, CPUs and disk, what is in `~/.videostudio/environment.json`, and whether the two optional keys exist (ElevenLabs for a voiceover, OpenAI for generated images), never their value: a missing key only turns that off. Something missing? `node $SKILL/scripts/environment.mjs --fix` fixes it once per machine: it finds Playwright, creates the fixed venv with numpy and scipy (`~/.videostudio/venv`) and writes `environment.json`, which every script reads on its own; Chromium (~150 MB) only downloads with `--yes`, after asking.
 3. **Project reading, written, in every type of video.** It is what keeps the video from fitting any product. The contract is in `references/reading.md`; where to look and what to extract from the brand, in `references/brand.md`.
    - Gather the facts: `node $SKILL/scripts/reading.mjs <repository> --out <series or video folder>`. It writes `leitura.bruta.json` and `.md`: each color with the place where it is used, fonts, radii, border or shadow, surfaces, brand files, excerpts from documents about the audience and the product, the screens' vocabulary. It does not read secrets.
    - Look for what already exists: the raw output lists series and videos in the project, in the worktrees, in the branches and in sibling folders. An approved or published series decides a lot (continue it or say why not); a rejected one says what is forbidden. Proposing an identity without having seen the one that is live gives the product two faces.
@@ -108,7 +108,7 @@ It is the first step, before any other question. The type changes the image sour
 4. **What to show, decided by you**, within what the type allows: the tutorial uses the **real screen**, recorded by the capture engine (`references/tutorial.md`). Update, demo and launch use what the chosen style's template asks for (`references/catalog/styles/<id>.md`): redesigned interface, real screen cropped large, typed text or a number; the real screen only comes in as proof, in full screen or zoomed in. In the other marketing types, choose between recreated UI, real screens in full screen or only typography and shapes (criteria in `references/brand.md` → "Product screens"). A real screen shrunk inside a mockup frame is never an option:
    - can you run the system locally or open the public site? Capture the real screens with Playwright;
    - does the screen need a login, sensitive data or a state that is hard to produce? Recreate the interface in HTML with the product's tokens, with fictional data;
-   - the product has no screen (service, physical product, event)? Use typography, shapes, photos the user has, and icons;
+   - the product has no screen (service, physical product, event)? Use typography, shapes, photos the user has, and icons; a generated image only for what exists nowhere else (a setting, an object, a backdrop), with the person's ok and never in place of the product, its screen, the logo or a real person (`references/images.md`);
    - only ask when you need something you do not have: access to an account, a photo of the physical product, or permission to touch an environment.
 5. **Music research:** starts from section 4 of the reading (the audience's sound) and follows `references/soundtrack.md` §1–2. The **genre** comes from the audience; the **role** (background or lead: how loud, how full) comes from the type of video. "Background" does not mean without a genre. If you have web access (WebSearch/WebFetch), research what this audience listens to and how videos from their world sound. Also check whether the brand already has a sound, a jingle or music in its own videos. Leave this stage with 3 candidate directions, different from each other and all recognizable by this audience; a direction outside their world has to say why it steps out.
 6. Show a summary in 5 to 8 lines: the product and the audience (sections 1 and 2 of the reading), the product's look in two lines and the sound in one (sections 3 and 4), what you found (screens, tools), what you decided on your own and the questions from section 7, which go to the briefing.
@@ -161,6 +161,7 @@ Ask only what only the user knows: goal, audience, where it will run, musical ta
 - **Duration:** 15, 30, 40 or 60 s. Recommend by platform.
 - **Music:** the series' or the one in the product's reference profile; with neither, the recommended direction from the research goes in as an assumption in the preview, with the other two in one line each, and the owner changes it while listening to the preview. Ask beforehand only if they already said they want to choose the music. The options are the 3 directions from the research. Each one states the genre (from the audience, reading §4), the role (**background** or **lead**, from the type), the BPM, the timbres and a short why, for example "Background xote, 92 BPM, restrained accordion and zabumba, no vocals: it is what plays at this audience's counter". The user can answer with a reference ("something like song X"); then you extract the style and compose something original that is similar, never a copy. They can also bring a finished track.
 - **Energy and message:** the tone ("vibrant", "calm and confident", "fun", "cinematic") and what needs to stick in people's minds. Offer 2–3 sentences taken from the product itself.
+- **Voice, only in a narrated video:** with or without narration was settled in the first message. With one, the pace comes from where it plays (`calmo` for a tutorial or a help center, `reels` for Reels, TikTok, Shorts and ads) and who speaks comes from the reading (`references/voice-choice.md`): it is not a blind question, it becomes candidates heard on the same line.
 
 The questions from section 7 of the reading (the slice of the audience, whether the brand has a sound, whether dark mode is the default) take priority over the generic ones: they change the video. If the reconnaissance already answered format and duration, use those slots for them and for these others:
 - what can and cannot appear (a feature not launched yet, a real client, real data);
@@ -180,15 +181,16 @@ Propose **3 truly different concepts**. `references/creative-direction.md` has t
 - how the chosen music comes in (where it rises, where it breathes);
 - why it fits the product.
 
-Recommend one, show the two or three as stills in the person's brand (the review board, `recipes/board.md`) and go on with the one they pick. Then write the **script with the sync sheet**: a table of time, scene, **who does the work** (`proof`, `product`, `person` or `—`), what is seen, what is read and what sounds, on the BPM grid (bar = 240/BPM s). Run `node $SKILL/scripts/thesis.mjs count <script.md> --write`: in a sales video, the proof scene is at least 50% of the product time and a person working is at most 25%; if it does not pass, the script goes back before being shown (`recipes/thesis.md`). Show it and keep producing, saying that any line can still change until the draft.
+Recommend one, show the two or three as stills in the person's brand (the review board, `recipes/board.md`) and go on with the one they pick. Then write the **script with the sync sheet**: a table of time, scene, **who does the work** (`proof`, `product`, `person` or `—`), what is seen, what is read and what sounds, on the BPM grid (bar = 240/BPM s). Run `node $SKILL/scripts/thesis.mjs count <script.md> --write`: in a sales video, the proof scene is at least 50% of the product time and a person working is at most 25%; if it does not pass, the script goes back before being shown (`recipes/thesis.md`). Show it and keep producing, saying that any line can still change until the draft. With a voiceover, the voiceover script comes next, from this script (`references/voice-script.md`), and it is approved before any credit is spent (`SKILL.md`, "Voiceover").
 
 ### 3 · Production (two fronts in parallel)
 
 1. **Project:** `node $SKILL/scripts/new-project.mjs <folder> --title "…" --duration 30 --bpm 100 --formats 9x16,16x9`. Then:
    - fonts: `node $SKILL/scripts/fonts.mjs <folder> "Family" …`;
    - logo: `node $SKILL/scripts/logo.mjs logo.svg [--split] --js LOGO`, which goes into `brand.js`;
-   - photos and recordings go in `<folder>/media/` (a recording becomes a frame sequence with ffmpeg; see `references/engine.md`).
-2. **Soundtrack, in a subagent:** write `audio/sheet.json` (duration, BPM, silences, markers) and launch a subagent in the background with the prompt from `references/soundtrack.md` §4. It composes a new `arranjo.py` on top of `audio/synth.py` and verifies with `audio/verify.py`. Retimed a scene? Tell the subagent. Without the subagent tool, compose after the scenes, following the same prompt.
+   - photos and recordings go in `<folder>/media/` (a recording becomes a frame sequence with ffmpeg; see `references/engine.md`); an approved generated image is already in `<folder>/media/generated/` (`references/images.md`).
+   - with a voiceover, the voice is generated after the script's approval and before the scenes are timed: each scene lasts its line (`SKILL.md`, "Voiceover").
+2. **Soundtrack, in a subagent:** write `audio/sheet.json` (duration, BPM, silences, markers; with a voiceover, its `voz` block: `references/voice-mix.md` §2) and launch a subagent in the background with the prompt from `references/soundtrack.md` §4. It composes a new `arranjo.py` on top of `audio/synth.py` and verifies with `audio/verify.py`. Retimed a scene? Tell the subagent. Without the subagent tool, compose after the scenes, following the same prompt.
 3. **Image, with you:** write `scenes.js` following `references/engine.md`. If there is more than one format, write each scene with a per-format layout (`L({...})`) from the start. The safe areas of each platform are in `references/formats.md`.
    Ready-made transitions (whip, zoom-through, mask, flip, morph) are in `references/transitions.md`, and each one says the sound that goes with it. The sound effects come from `audio/sounds.py` and go into the sheet as markers (`references/soundtrack.md` §8). The user's photos and recordings get camera motion with `camera()` (`references/engine.md`).
 4. **Your own review, before showing anything:**
@@ -210,7 +212,7 @@ Recommend one, show the two or three as stills in the person's brand (the review
 - **The refinement check runs alongside the preview:** look at the sheet, show the draft and, in the background, `node $SKILL/scripts/refine.mjs <folder> --video out/draft-<format>.mp4` in each format. What it points out goes in the preview message ("the refinement found X; I'll fix it in the final"); code 1 blocks the **final**, not the preview. A defect that belongs to the engine (not to the video) is fixed in the skill folder and holds nothing back.
 - Tutorial: `node $SKILL/scripts/tutorial/compose.mjs <video-folder>` (draft) and `--mode final`. It generates the series soundtrack, mixes, verifies and makes the event sheet.
 - Open it for the user: `open` on macOS, `start ""` on Windows, `xdg-open` on Linux. Also show the live preview `index.html?play` and the contact sheet.
-- Ask with options: "Approve and make the final", "Adjust pace/reading time", "Change texts", "Change the music (more in the background / more present / another style)", or free text.
+- Ask with options: "Approve and make the final", "Adjust pace/reading time", "Change texts", "Change the music (more in the background / more present / another style)", or free text. With a voiceover, also "Redo a line" (on the board, `redo-line`).
 - Adjust. If the change is big, make another draft.
 
 ### 4.1 · Series: the board before the second video
@@ -229,13 +231,14 @@ Without a way to ask, deliver the first video and the board and stop: making the
 
 - Run `render.cjs --mode final --format <f>` for each format (~7 min per 40 s, in the background, with the GPU renderer at the start of the log, step 4), then `finalize.mjs --video … --audio … --out …`. It mixes, generates the poster and checks duration, loudness, true peak and whether the sheet's silences survived AAC. If the script exits with code 1, you do not deliver.
 - **Refinement check on the final MP4** of each format: `node $SKILL/scripts/refine.mjs <delivery mp4> --project <folder> --out <folder>/refino-final`. Code 1 = do not deliver. In the report, say that it passed and how many warnings remained (and why).
-- Approved by the owner? Save the product's reference profile: `node $SKILL/scripts/refine.mjs profile "<Product>" --from <folder> --video <mp4> --approved` (the approved kit becomes the benchmark for the next video).
-- The delivery folder carries the MP4s per format, the posters, a `README.md` with the script and how to redo it, and `fonte/` (the project without `out/`, `previas/` and `.venv`). Details in `references/delivery.md`.
+- Approved by the owner? Save the product's reference profile: `node $SKILL/scripts/refine.mjs profile "<Product>" --from <folder> --video <mp4> --approved` (the approved kit, and the voice when there is one, become the benchmark for the next video).
+- The delivery folder carries the MP4s per format, the posters, a `README.md` with the script and how to redo it, and `fonte/` (the project without `out/`, `previas/` and `.venv`). Details in `references/delivery.md`. With a voiceover, the README also keeps the `voice_id` and the settings (another machine does not have this one's history), and `fonte/` keeps the whole `voice/` folder: the takes are the only copy of what was paid for.
 - In the report, say:
   - where each file is;
   - what was verified, with the numbers;
   - what you cannot verify (you do not watch or listen, so ask for a play);
   - assumptions made, including what the reading marked as a guess;
+  - what the video spent, against its caps (`node $SKILL/scripts/costs.mjs show <folder>`), when it used a voiceover or a generated image;
   - 1 or 2 extras worth doing.
 
 ## Quality rubric
@@ -265,7 +268,7 @@ What separates a motion video from an animated slide. The detail is in `referenc
 | `tools/frames.cjs` (in the project) | single frames, contact sheet (`--auto`), transition strips, collision check (`--check`) |
 | `tools/render.cjs` (in the project) | draft (fast) and final (60 fps + motion blur) |
 | `tools/finalize.mjs` (in the project) | mix, generate the poster and verify the delivery |
-| `scripts/refine.mjs` | **before showing any draft or final**: the automatic refinement check (`references/refine.md`); `gabarito` saves the product's kit and approved videos |
+| `scripts/refine.mjs` | **before showing any draft or final**: the automatic refinement check (`references/refine.md`); `profile` saves the product's kit and approved videos |
 | `references/types.md` | **step 0**: the 10 video types, with briefing, music, sounds, QA and series for each one |
 | `references/tutorial.md` | tutorial mode with the real screen: define, record, check, compose, identity, copy the engine into a repository |
 | `references/transitions.md` | catalog of the engine's transitions, with the duration and sound of each one |
@@ -281,3 +284,6 @@ What separates a motion video from an animated slide. The detail is in `referenc
 | `references/formats.md` | sizes, safe areas, per-format layout |
 | `references/delivery.md` | render, verification, delivery folder, extras |
 | `assets/audio/API.md` | synthesis library (for the soundtrack subagent) |
+| `scripts/voice.mjs` + `references/voice-*.md` | **only in a narrated video**: the voiceover through ElevenLabs (script, voice, generate, check) and the mix with voice |
+| `scripts/images.mjs` + `references/images.md` | **only when a scene needs what exists nowhere else**: a generated image through OpenAI, and what never to generate |
+| `scripts/costs.mjs` | the cost notebook of a video with paid calls: `show`, `cap`, `board` |

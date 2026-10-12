@@ -6,8 +6,8 @@ tutorial) and to copy the previous video's direction (the new video comes out id
 swaps guessing for a conversation: the skill says what it thinks, brings the questions and decides the topics and the
 direction **together** with the person, and only then writes the prompt.
 
-Language: reply in the user's language. The video's on-screen language follows the briefing (without one, the language
-of the product's screens and site) and there is one language per video. The brand's options hold throughout
+Language: reply in the user's language. The video's on-screen language (and the voice's, when there is one) follows the
+briefing (without one, the language of the product's screens and site) and there is one language per video. The brand's options hold throughout
 (`node $SKILL/scripts/brand.mjs show "<brand>"`; `SKILL.md`, "The brand's options"): by default the brand's logo opens
 and closes the video, and a slogan or a call to action only goes in when the brand has one and the person wants it.
 
@@ -28,8 +28,23 @@ recommended one:
   - **Go ahead with the request as it is (recommended)**
   - **Talk first and bring me the prompt**
 
+**With or without narration.** When the request does not say it, it goes in this same message as a second question
+(`AskUserQuestion` takes several; in Copilot, two questions at the end of the reply), with your suggestion first:
+
+> With narration (a voiceover read by an AI voice, paid with your ElevenLabs key) or without it (on-screen text, an
+> original soundtrack and effects)?
+
+- **A tutorial, an explainer, a video in chapters:** "With narration" first, as the recommended one.
+- **A sting, an animated logo, a teaser, a short cut for Reels:** "Without narration" first, as the recommended one.
+- Offer narration only when the video can take one (`SKILL.md`, "Narration and the style"). The request names a style
+  that cannot? Say so in the question, with the closest one that can.
+- A voiceover is never an assumption: without a yes, the video has no voice and is made as always. With a yes, the
+  first voice command, after the answer, is `node $SKILL/scripts/voice.mjs account` (free): no key, an account that is
+  not active or without the credits this video needs, say so in one line and go on without voice.
+
 The question is **the last thing in the reply**: stop and wait. In Copilot, do not run any command after it.
 **The only exception:** the message itself says the prompt is already approved or asks not to be asked ("just do it").
+Then the video has no voice, unless the message asks for one.
 
 ## 2. The conversation, in three rounds
 
@@ -40,7 +55,8 @@ Each round ends on the questions and **stops**. The person can go back a round a
 
 Read the product first (README, docs, the screens and, for what it does and does not do, the code). Then show:
 
-1. **What I understood**, in 3 to 5 lines: the product, who it is for, what the video needs to do.
+1. **What I understood**, in 3 to 5 lines: the product, who it is for, what the video needs to do, and whether it has
+   narration (as answered in the first message).
 2. **The topic map:** every candidate you found, in a table:
 
    | # | Topic | What appears on screen | Why it matters to this audience | Evidence | Cost | My opinion |
@@ -110,7 +126,8 @@ section. Only produce after the ok; the stopwatch (`progress.mjs start`) starts 
 | 4 | **format and duration** | 19:9, ~75 s; 9:16, 20 s |
 | 5 | **what appears, and in what order** | the topics and their order |
 | 6 | **visual** | theme; style; how much motion and 3D |
-| 7 | **restrictions** | what to blur; sample data; no voice (this skill makes videos without narration) |
+| 7 | **restrictions** | what to blur; sample data |
+| 8 | **with or without narration** | without (the default); with a voiceover, in the video's language. Asked in the first message when missing, and it does not count toward the three items above |
 
 ## 4. The prompt template (neutral)
 
@@ -121,29 +138,36 @@ one video's visual direction does not fit the next one. Sections in this order; 
 2. **The thesis:** the five-part table from `recipes/thesis.md`, with the source of each sentence.
 3. **The topics:** the ones chosen in round 1, in order, with the time for each; and a line with the ones left out.
 4. **The direction:** the ten chosen axes, why this direction, and the output of `variety.mjs check`.
-5. **Format:** aspect ratio and pixels, duration, preview and final fps, no voice, language (follows the briefing;
-   without one, the product's), audience.
+5. **Format:** aspect ratio and pixels, duration, preview and final fps, with or without voice (with one: the pace,
+   `calmo` or `reels`, the proposed voice and the voiceover script approved before any credit is spent), language
+   (follows the briefing; without one, the product's), audience.
 6. **This direction's visual, concretely:** how each topic comes in, what moves and how much, the transition between
    topics, the layout (text never over the image), the brand (the product's `reading.md`, sections 3 and 5), the
-   opening and the closing as the brand's options say (by default: the logo first, and only the logo at the end).
+   opening and the closing as the brand's options say (by default: the logo first, and only the logo at the end). A
+   generated image only where neither the product's screens nor the brand's own material has it, said scene by scene
+   (`references/images.md`).
 7. **Script, scene by scene:** a table with `#`, time, scene, who does the work (`proof`, `product`, `person`, `—`),
    what is seen, on-screen text (informative only, up to 7 words) and motion. The sum of the times gives the duration.
-8. **Sound:** the soundtrack (role, genre, BPM), the accents, the UI sounds, the LUFS.
+   With a voiceover, a column with what the voice says: a first draft of the voiceover script, approved again on the
+   board before the voice is generated.
+8. **Sound:** the soundtrack (role, genre, BPM), the accents, the UI sounds, the LUFS; with a voiceover, the soundtrack
+   going down under the voice (`references/voice-mix.md`).
 9. **Data and privacy:** where the sample data comes from, what stays blurred, what never appears (real people's
    data, secrets, a number without a source).
 10. **How I check before the preview:** the contact sheet looked at, the refinement check, the text review, the critic.
 11. **Technical notes for whoever produces it:** how to open the tool (URL, parameters, test account), the selector of
     each element the script touches, what to blur, and the template or the series (and the variant) with the starting
     command.
-12. **Approval:** the questions that still block; after the ok, the answers and "nothing left to ask: go ahead and
-    produce".
+12. **Approval:** the questions that still block; with a voiceover or a generated image, what will be paid, the
+    estimate and the video's caps (US$ 0.50 of images and 1,500 voice credits by default); after the ok, the answers
+    and "nothing left to ask: go ahead and produce".
 
 ## 5. Rules
 
 - **Read before giving an opinion:** the topic map and the evidence come from the product (README, docs, screens,
   code), never from imagination. What could not be confirmed becomes a question.
 - **Talking is not producing:** reading files is fine; recording the screen, taking screenshots and rendering only
-  after the prompt's ok.
+  after the prompt's ok, and no paid call (voice samples, a line, a generated image) before it either.
 - **Everything in the conversation:** the topic map, the directions and the prompt go whole in the message, not just a
   file path (in Copilot, the text between one tool call and the next may not reach the person who asked).
 - **At delivery**, record the direction in the brand's history:
