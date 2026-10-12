@@ -17,12 +17,24 @@ quadrados de todas as janelas do lote, para cada uma já nascer no lugar.
 
 Mudou a grade? Muda só aqui, vale para todos.
 
-**No Windows** (11/10/2026) o mesmo `organizar.py` arruma as janelas do Windows Terminal: a grade é
-igual, e só ler as telas, ler as janelas e movê-las muda (está no fim do `organizar.py`, sobre o
+**No Windows** o mesmo `organizar.py` arruma as janelas do Windows Terminal: a grade é igual, e só
+ler as telas, ler as janelas e movê-las muda (está no fim do `organizar.py`, sobre o
 `scripts/janelas_win.py`). O comando é `python $HOME\.claude\skills\terminal-organizar\scripts\organizar.py`.
-Lá não existe "notebook": toda tela conta como monitor externo. **Escrito no Mac e ainda não rodado
-num Windows de verdade**; a lógica passa no teste simulado do `terminal-claude`. As medidas e as
-armadilhas abaixo são do Mac.
+**Rodou num Windows de verdade em 12/10/2026**, no Windows Server 2025 do GitHub Actions, com janelas
+do Windows Terminal de verdade numa tela de 1920×1080: o `--dry-run` planejou sem mexer, e depois cada
+janela caiu no quadrado do plano, conferida lendo de volta a posição e o tamanho (é o
+`teste_windows_real.py` do `terminal-claude`). Lá:
+
+- Não existe "notebook": toda tela conta como monitor externo, e `--monitor notebook` não acha nada.
+- O `--dry-run` dá o quadrado em coordenadas da tela (esquerda, topo, direita, base; y para baixo).
+- Janela minimizada fica de fora, como no Mac.
+- Entre duas colunas fica uma fresta de uns 16 px: é a borda invisível que o Windows conta no
+  tamanho da janela.
+- **Sem prova:** mais de um monitor e tela com escala acima de 100% (o Python lê tudo na escala de
+  100%, e o Windows converte). Na primeira vez num desses, rode com `--dry-run`, depois sem, e confira
+  que as janelas caíram nos quadrados.
+
+As medidas e as armadilhas abaixo são do Mac.
 
 ## A grade
 
@@ -87,6 +99,8 @@ Não pergunta.
 ```sh
 python3 ~/.claude/skills/terminal-organizar/scripts/organizar.py [--monitor notebook|horizontal|vertical|externo]
 ```
+
+No Windows, no PowerShell: `python $HOME\.claude\skills\terminal-organizar\scripts\organizar.py`.
 
 `--dry-run` mostra para onde cada janela iria, em `frame` (coordenadas globais, y para cima), sem
 mexer em nada.
