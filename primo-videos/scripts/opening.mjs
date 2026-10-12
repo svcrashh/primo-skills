@@ -34,7 +34,7 @@ const ETIQUETA = 'logo'
 
 function sondar(arq) {
   const r = spawnSync('ffprobe', ['-v', 'error', '-show_entries', 'stream=codec_type,width,height,r_frame_rate,sample_rate:format=duration:format_tags=abertura,abertura_s', '-of', 'json', arq], { encoding: 'utf8' })
-  if (r.status !== 0) throw new Falha(`could not read ${arq} with ffprobe (${String(r.stderr || r.error?.message || '').trim().split('\n')[0]}): check the file and whether ffmpeg is installed (brew install ffmpeg)`)
+  if (r.status !== 0) throw new Falha(`could not read ${arq} with ffprobe (${String(r.stderr || r.error?.message || '').trim().split('\n')[0]}): check the file and whether ffmpeg is installed (${process.platform === 'win32' ? 'winget install ffmpeg' : 'brew install ffmpeg'})`)
   const j = JSON.parse(r.stdout)
   const v = (j.streams || []).find((s) => s.codec_type === 'video')
   if (!v) throw new Falha(`${arq} has no video stream`)

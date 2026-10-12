@@ -9,7 +9,8 @@ import { spawnSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 
 const PW = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'scripts', 'playwright.cjs')
-const roda = (codigo, env) => spawnSync(process.execPath, ['-e', codigo], { encoding: 'utf8', cwd: env.HOME, env: { PATH: process.env.PATH, ...env } })
+// a casa isolada: no Windows, o os.homedir() lê o USERPROFILE, não o HOME
+const roda = (codigo, env) => spawnSync(process.execPath, ['-e', codigo], { encoding: 'utf8', cwd: env.HOME, env: { PATH: process.env.PATH, USERPROFILE: env.HOME, ...env } })
 
 test('depois de achar uma vez (PLAYWRIGHT_PATH), a pasta sem node_modules acha sozinha; sem memória, falha alto', (t) => {
   const casa = fs.mkdtempSync(path.join(os.tmpdir(), 'pw-casa-'))
