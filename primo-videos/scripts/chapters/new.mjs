@@ -59,4 +59,4 @@ console.log(`\nchapter video created in ${dest}
   2. make ONE whole chapter (copy scenes/01-example) and render it: node ${path.join(aqui, 'render.mjs')} ${dest} 01-example --mode draft;
   3. look at out/sheet-*.png for each format; only then the other chapters, in parallel, with CONTRACT.md filled in;
      (01-example stays out of the assembly; delete it once the first real chapter exists)
-  4. assemble (with --soundtrack --deliver <folder> it composes, measures and finalizes): node ${path.join(aqui, 'assemble.mjs')} ${dest}${comVoz ? ' --narration voice/<device>/narration.json' : ' --soundtrack --deliver <folder>'}`)
+  4. assemble (with --soundtrack --deliver <folder> it composes, measures and finalizes): node ${path.join(aqui, 'assemble.mjs')} ${dest} --soundtrack --deliver <folder>${comVoz ? '\n     (with a voiceover: add --narration voice/<version>/narration.json, after chapters/tempos.mjs and the scene renders)' : ''}`)
