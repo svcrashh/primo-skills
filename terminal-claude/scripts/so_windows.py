@@ -72,9 +72,20 @@ def vivas():
     return None
 
 
+def linha_de_comando(pid):
+    """Como o processo foi chamado; vazio se não der pra saber."""
+    ps = f"(Get-CimInstance Win32_Process -Filter 'ProcessId={pid}').CommandLine"
+    return subprocess.run(["powershell", "-NoProfile", "-Command", ps], capture_output=True, text=True).stdout
+
+
 def viva(_abertas, linha):
-    # O Windows reaproveita o número da janela: confere também o processo que ela roda.
-    return win.existe(int(linha[0])) and win.processo_vivo(int(linha[1]))
+    hwnd, pid, base = int(linha[0]), int(linha[1]), linha[5]
+    if not win.processo_vivo(pid):
+        return False
+    # O Windows reaproveita o número da janela e o do processo: os dois juntos são a janela. Não ver
+    # a janela não basta para esquecê-la (a aba pode ter ido para outra): com o número do processo
+    # ainda em uso, ela só morreu se quem o usa já não for o `rodar` desta trilha.
+    return win.existe(hwnd) or linha_de_comando(pid).strip().strip('"').endswith(base)
 
 
 def esperar(olhar, o_que, segundos=20):

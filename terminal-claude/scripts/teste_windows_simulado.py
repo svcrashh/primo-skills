@@ -126,6 +126,22 @@ confere("manteve acordado enquanto o claude rodava e soltou depois", fake.acorda
 estados = sorted(Path(c[5] + ".estado").read_text(encoding="utf-8") for c in reg)
 confere("depois que o claude sai o estado vira encerrada", estados == ["encerrada"] * 3, str(estados))
 
+# --- registro: sem ver a janela, só a esquece se o processo já não for o da trilha ---------
+def no_registro(): return [c[0] for c in terminais.registro_com_trava()]
+fake.comandos = {os.getpid(): f'"C:/python.exe" C:/skills/terminais.py rodar {reg[1][5]}'}
+so.linha_de_comando = lambda pid: fake.comandos.get(pid, "")
+janela_b = fake.jan.pop(int(reg[1][0]))     # a janela B some da leitura, com o processo dela rodando
+confere("janela que a leitura não viu, com o processo da trilha rodando, continua no registro", reg[1][0] in no_registro(), str(no_registro()))
+confere("e os arquivos dela continuam no cache", Path(reg[1][5] + ".json").exists() and Path(reg[1][5] + ".estado").exists())
+fake.jan[int(reg[1][0])] = janela_b
+alheia = str(so.CACHE / "alheia")
+Path(alheia + ".estado").write_text("trabalhando", encoding="utf-8"); Path(alheia + ".json").write_text("{}", encoding="utf-8")
+with so.REGISTRO.open("a", encoding="utf-8") as f:
+    f.write("\t".join(["3001", "4242", pasta, "outra-sessao", "2026-10-12 02:00", alheia]) + "\n")
+fake.vivos.add(4242); fake.comandos[4242] = "C:/Windows/notepad.exe"
+confere("janela que fechou sai do registro mesmo com o número do processo reaproveitado por outro programa", "3001" not in no_registro() and not Path(alheia + ".json").exists(), str(no_registro()))
+fake.vivos.discard(4242); fake.comandos.clear()   # as três janelas dividem o processo do teste: daqui em diante vale só a janela
+
 # --- marcar, status, ver -----------------------------------------------------------------
 os.environ["TERMINAL_CLAUDE_ESTADO"] = reg[0][5] + ".estado"
 sys.argv = ["terminais.py", "marcar", "trabalhando"]; terminais.main()
