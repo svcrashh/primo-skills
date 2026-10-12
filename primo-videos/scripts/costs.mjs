@@ -139,7 +139,7 @@ function main(argv) {
   console.log(`image cap ${usd(caps.imageUsd)} · voice cap ${thousands(caps.voiceCredits)} credits`)
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+if (process.argv[1] && (() => { try { return fs.realpathSync(process.argv[1]) === fs.realpathSync(fileURLToPath(import.meta.url)) } catch { return false } })()) {
   try { main(process.argv.slice(2)) } catch (e) {
     if (!e.code) throw e
     console.error(e.message)
