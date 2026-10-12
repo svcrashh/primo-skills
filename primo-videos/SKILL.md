@@ -70,8 +70,8 @@ when the request seems clear ("mix concept 1 with 3" still gets its stills first
   "Approve preview"**. The person can paste their own picture into a scene (`replace-still`) and you rebuild the still
   from it; they write to you per scene and you answer there (`board.mjs say`). The loop is `set → open → wait → act →
   patch / say → wait`. **Never animate a scene before its "Approve still"**, and never render it final before its
-  "Approve preview". If the board cannot open, show the files (`open <file>`; in Copilot, the path and one line on what
-  it shows) and ask in the chat.
+  "Approve preview". If the board cannot open, show the files (`open <file>` on the Mac, `start "" "<file>"` on Windows; in Copilot, the
+  path and one line on what it shows) and ask in the chat.
 - **With a voiceover, the board starts earlier:** the script → "Approve script" → the voice, chosen by ear (the same line
   read by two or three voices) → then, per scene, the still → animate → the preview with its line and the soundtrack →
   "Approve preview". **Never generate a line before "Approve script"**: it spends credits. A video without a voice has
@@ -158,11 +158,47 @@ This skill runs the same in Copilot chat (VS Code, Agent mode) and in Claude Cod
 - Commands run in the terminal (in Copilot, through Agent mode's terminal tool). Ask permission before installing anything.
 - Where the text says `AskUserQuestion`: ask in the chat, with the recommended option first.
 - Where it says subagent, `Agent` or "in the background": in Copilot, use the chat's subagent if it is available; otherwise, do it in sequence, in this conversation.
-- `thesis.mjs write` and `critic.mjs` call Claude Code (`claude -p`) and find the command on their own, even outside the PATH (`~/.local/bin`, Homebrew). Only without Claude Code installed: write the thesis yourself following `recipes/thesis.md` and validate it with `thesis.mjs validate`; instead of the critic, review the finished video against the rubric in `recipes/critic.md` and say the review was yours.
+- `thesis.mjs write` and `critic.mjs` call Claude Code (`claude -p`, the prompt through stdin) and find the command on their own, even outside the PATH (`~/.local/bin`, Homebrew; on Windows, `claude.exe` in `%USERPROFILE%\.local\bin` or the `claude.cmd` that npm installs). Only without Claude Code installed: write the thesis yourself following `recipes/thesis.md` and validate it with `thesis.mjs validate`; instead of the critic, review the finished video against the rubric in `recipes/critic.md` and say the review was yours.
 - **Long request:** after the prompt's ok (or the "go ahead as it is"), keep going until the preview without stopping to ask whether to continue, showing the `progress.mjs` line at each stage. If Copilot chat asks to continue, that is its step limit (`chat.agent.maxRequests`), not the skill: answer continue.
 - Write the skills' paths in full in commands (`node ~/.claude/skills/primo-videos/scripts/…`), not in a variable: that way the terminal's auto-approval recognizes the command.
-- **macOS only, for now.** The skill is built and tested on the Mac (the GPU through Metal, the OCR of the refinement check, `open <file>`). Windows comes later: on another system, say so in one line before starting, and do not improvise a Windows path.
+- **macOS and Windows.** On Windows, read "On Windows", below, before the first command. On another system (Linux), say in one line that the skill is not made for it, and do not improvise.
 - The skill is installed as a link (`~/.claude/skills/primo-videos` points to its folder in the `primo-skills` repository): fix an engine defect in that folder, and `git pull` there updates it.
+
+## On Windows
+
+Proven on 12/10/2026 on GitHub Actions' `windows-latest` (Windows Server 2025, no graphics card, no Claude account, the
+paid APIs replaced by the tests' fake one), with every command of this page run in Git Bash, the shell Claude Code uses
+on Windows: the whole test suite; `instalar.ps1`'s check (`requisitos.mjs`) and `environment.mjs --fix --yes` on a clean
+machine; a draft of the engine template with the Python soundtrack and `finalize.mjs`; `counting-number` and
+`light-trail-teaser` from their example to the MP4; a chapters video with a voiceover; the refinement check reading the
+text with the Windows OCR; the review board opened in the browser and hearing the click; a native window recorded with a
+click; the terminal recorder; `board.mjs agent --terminal` opening Windows Terminal.
+
+- **The commands are the same.** Write them as on the Mac (`node ~/.claude/skills/primo-videos/scripts/…`): Claude Code
+  runs them in Git Bash, where `~` and `/` work. In the person's own PowerShell, the path is
+  `"$env:USERPROFILE\.claude\skills\primo-videos\scripts\…"`.
+- **Installing:** `node ~/.claude/skills/primo-videos/scripts/requisitos.mjs` says what is missing, with the `winget`
+  command for each (Node `winget install OpenJS.NodeJS.LTS`, ffmpeg `winget install ffmpeg`, Python
+  `winget install Python.Python.3.12`); after a `winget install`, only a new PowerShell and a reopened Claude Code see
+  the program. Then `environment.mjs --fix --yes` once (it downloads Chromium, ~300 MB, and creates the soundtrack's
+  Python in `%USERPROFILE%\.videostudio\venv`). The keys go in `%USERPROFILE%\.claude\secrets\<service>.env`, written
+  in Notepad (a BOM and CRLF are fine).
+- **Opening a file** for the person: `start "" "<file>"` (in Git Bash), in place of `open`. The catalog and the board
+  open the browser on their own.
+- **The render draws on the CPU** (SwiftShader): the `WebGL:` line says so, and that is expected on Windows — do not
+  stop for it. Same image, slower, most of all in 3D scenes; on a machine with few cores, render one format at a time.
+  It was never measured on a Windows PC with a graphics card.
+- **The refinement check reads text with the Windows OCR** (Windows PowerShell 5.1, which every Windows has), in the
+  language of the person's Windows. Without an OCR language installed, the legibility check is skipped with a warning
+  that says why, and the other checks run.
+- **A native program's window** is recorded with ffmpeg (`gdigrab`): no permission to turn on; the window has to stay
+  restored, whole on the screen and with nothing on top while it records.
+- **A command-line program** is recorded in Git Bash (it comes with Git for Windows, which Claude Code needs).
+- **Not proven on the runner, check on the first use:** the thesis and the critic with a real Claude account (only a
+  stand-in `claude` ran there: run `claude --version` in the same terminal; if it does not answer, the thesis and the
+  critic are written by you, as above); the voiceover and the images with real keys; a graphics card; screen scaling
+  other than 100% and a second monitor when recording a window; Windows 10 and 11 (the runner is Windows Server 2025);
+  an OCR language other than English.
 
 ## The brand comes from the product (read before anything else)
 
@@ -286,15 +322,15 @@ in the engine goes with the preview.
 **How the work runs:** in this conversation.
 
 1. **The conversation plans, decides and talks to the owner:** every question goes through `AskUserQuestion`, the
-   recommended one first, with the table or the contact sheet in `preview` and the previews open on the Mac
-   (`open <file>`; audio and video with `open -a "QuickTime Player" <files>`).
+   recommended one first, with the table or the contact sheet in `preview` and the previews open on the computer
+   (Mac: `open <file>`, audio and video with `open -a "QuickTime Player" <files>`; Windows: `start "" "<file>"`).
 2. **A recipe that is already written and heavy can go to background subagents** (`Agent` with
    `run_in_background: true`): recording several screens, the chapters in parallel, the formats of a final. Each one
    gets a short request: goal and inputs (paths), the thesis, the skill's commands, the rules and what to deliver. The
    creative direction, the contact sheet review and the final review stay with you.
 3. **Render, at most 2 at the same time**, counting this conversation and the subagents.
 4. **Paid only when the person asks:** the thesis and the critic use the Claude account's quota; soundtrack, effects
-   and render run on the Mac. The voiceover (ElevenLabs) and the generated images (OpenAI) are the only paid calls:
+   and render run on the person's computer. The voiceover (ElevenLabs) and the generated images (OpenAI) are the only paid calls:
    the cost is said before, each call stays under the video's cap, and the spend is on the board ("Paid calls").
 5. **A defect in the skill is fixed in the skill folder** (`$SKILL`), and the tests run again
    (`node --test "$SKILL/tests/*.test.mjs"`).
@@ -351,7 +387,8 @@ final at 60 fps.
 
 Every Chromium in the video pipeline (the render, the contact sheets, the screen recording, the refinement check) comes
 from `scripts/playwright.cjs`, which on the Mac launches with `--use-angle=metal --enable-gpu --ignore-gpu-blocklist`.
-3D on the CPU (SwiftShader) is ~13× slower.
+3D on the CPU (SwiftShader) is ~13× slower. On Windows the video is drawn on the CPU on purpose ("On Windows", above):
+there, the checks below report the line and go on.
 
 - **Before the draft and before the final**, run `node $SKILL/scripts/playwright.cjs --gpu` and report the `WebGL: …`
   line along with the rest. It has to be the graphics card (on the Mac, something like
@@ -620,7 +657,7 @@ it, skip this section: the video is made as always. The references: `references/
      "Chapters", below);
    - `rolling-list`: `"voz"` in the JSON, `render.mjs … --script` writes the voice script, `generate` into
      `<name>/voice/v1`, then the render; `counting-number`: `"voz"` in the JSON, `prepare.mjs` writes
-     `voice/script.json`, `generate` into `voice/pt`, then `render.sh`; `drawn-explainer`: `voz.locucao` in the
+     `voice/script.json`, `generate` into `voice/pt`, then `render.mjs`; `drawn-explainer`: `voz.locucao` in the
      `video.json`; `real-screen-camera`: `voz.locucao`; `typing-text`: `voz.trechos`; `before-after`: `--narration`;
      `light-trail-teaser`: the narration in `project/voice/pt`, one line per item of `falas`, with the same id.
    - The soundtrack goes down under each line and comes back in the pauses (`references/voice-mix.md`).

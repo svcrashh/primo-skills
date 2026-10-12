@@ -12,10 +12,10 @@ Sem voz e sem imagem gerada, tudo roda na sua máquina, sem API externa; a voz e
 
 ## Instalar
 
-Hoje roda no **macOS**. Windows vem depois.
+Roda no **macOS** e no **Windows** (o que muda no Windows está em [No Windows](#no-windows)).
 
 A skill mora na pasta `primo-videos/` do repositório [primo-skills](https://github.com/svcrashh/primo-skills), que
-tem uma pasta por skill e um `instalar.sh` que liga cada uma em `~/.claude/skills`:
+tem uma pasta por skill e um instalador que liga cada uma na pasta de skills do Claude Code. No Mac, no Terminal:
 
 ```sh
 git clone https://github.com/svcrashh/primo-skills.git ~/Documents/GitHub/primo-skills
@@ -23,12 +23,21 @@ git clone https://github.com/svcrashh/primo-skills.git ~/Documents/GitHub/primo-
 node ~/.claude/skills/primo-videos/scripts/environment.mjs --fix
 ```
 
+No Windows, no PowerShell:
+
+```powershell
+git clone https://github.com/svcrashh/primo-skills.git "$env:USERPROFILE\Documents\GitHub\primo-skills"
+powershell -ExecutionPolicy Bypass -File "$env:USERPROFILE\Documents\GitHub\primo-skills\instalar.ps1"
+node "$env:USERPROFILE\.claude\skills\primo-videos\scripts\environment.mjs" --fix
+```
+
 O terceiro comando confere o ambiente uma vez por máquina: acha o Playwright e o Chromium, cria o Python da trilha
 (numpy e scipy, num venv em `~/.videostudio`) e diz o que faltar, com o comando certo. Com `--yes` ele baixa o
-Chromium do Playwright se não houver (~150 MB). O ffmpeg você instala pelo sistema (`brew install ffmpeg`). Para
-atualizar depois: `git pull` na pasta do primo-skills (é ligação, não cópia).
+Chromium do Playwright se não houver (~300 MB). O ffmpeg você instala pelo sistema (Mac: `brew install ffmpeg`;
+Windows: `winget install ffmpeg`, e depois feche e abra o PowerShell e o Claude Code). Para atualizar depois:
+`git pull` na pasta do primo-skills (é ligação, não cópia).
 
-Logo depois de ligar a skill, o `instalar.sh` mostra o que ela precisa e o que falta nesta máquina (Node, ffmpeg, a
+Logo depois de ligar a skill, o instalador mostra o que ela precisa e o que falta nesta máquina (Node, ffmpeg, a
 conferência do ambiente e as duas chaves opcionais), com o comando ou os passos de cada coisa. Para ver de novo quando
 quiser: `node ~/.claude/skills/primo-videos/scripts/requisitos.mjs` (com `--lang en`, em inglês).
 
@@ -89,13 +98,19 @@ Só a do que você for usar; uma não depende da outra.
 | A linha | `ELEVENLABS_API_KEY=` e a chave | `OPENAI_API_KEY=` e a chave |
 
 1. Crie a chave no serviço (a tabela diz onde).
-2. No Terminal, crie a pasta e o arquivo, fechados só para você, e abra o arquivo no TextEdit. Para a OpenAI:
+2. No Mac, no Terminal, crie a pasta e o arquivo, fechados só para você, e abra o arquivo no TextEdit. Para a OpenAI:
    ```sh
    mkdir -p ~/.claude/secrets && chmod 700 ~/.claude/secrets
    touch ~/.claude/secrets/openai.env && chmod 600 ~/.claude/secrets/openai.env
    open -e ~/.claude/secrets/openai.env
    ```
-   Para a ElevenLabs, os mesmos três comandos com `elevenlabs.env` no lugar de `openai.env`.
+   No Windows, no PowerShell, crie a pasta e abra o arquivo no Bloco de Notas (ele pergunta se cria o arquivo: diga
+   que sim). O arquivo fica em `%USERPROFILE%\.claude\secrets\`:
+   ```powershell
+   New-Item -ItemType Directory -Force "$env:USERPROFILE\.claude\secrets" | Out-Null
+   notepad "$env:USERPROFILE\.claude\secrets\openai.env"
+   ```
+   Para a ElevenLabs, os mesmos comandos com `elevenlabs.env` no lugar de `openai.env`.
 3. No arquivo, escreva uma linha só, a da tabela, com a chave logo depois do `=` (sem espaço nem aspas), e salve.
 4. Confira: `node ~/.claude/skills/primo-videos/scripts/requisitos.mjs`. A linha da chave passa a ✔, sem mostrar o
    valor.
@@ -107,12 +122,32 @@ com o seu editor. Em vez do arquivo, também vale a variável de ambiente de mes
 
 - Node.js 18 ou mais novo, Python 3 e ffmpeg;
 - o Chromium do Playwright (o comando de ambiente resolve);
-- macOS (Windows vem depois);
+- macOS ou Windows;
 - Claude Code, que a skill também usa para escrever a tese do vídeo e para a crítica (`claude -p`);
 - opcional: a conta e a chave da ElevenLabs (voz) e da OpenAI (imagens geradas), em
   [Como conseguir e guardar cada chave](#como-conseguir-e-guardar-cada-chave).
 
 O render final é pesado (alguns minutos por vídeo): em notebook, deixe na tomada.
+
+## No Windows
+
+Rodou num Windows de verdade em 12/10/2026: o `windows-latest` do GitHub Actions (Windows Server 2025, sem placa de
+vídeo e sem conta do Claude). Lá passaram a suíte de testes inteira, a instalação do zero (os passos do `requisitos.mjs` e a conferência do
+ambiente), vídeos de ponta a ponta
+(com trilha, com voz em off de uma API de mentira, em capítulos), a conferência de legibilidade, o quadro de revisão
+no navegador e a gravação da janela de um programa. O que muda em relação ao Mac:
+
+- **O vídeo é desenhado pelo processador**, não pela placa de vídeo: a mesma imagem, mais devagar, sobretudo nas cenas
+  em 3D.
+- **A conferência de legibilidade** lê o texto com o reconhecimento de texto do próprio Windows, no idioma do seu
+  Windows. Se ele não tiver um idioma com esse recurso, a conferência de legibilidade é pulada com um aviso, e as
+  outras seguem.
+- **Gravar o terminal** de um programa de linha de comando usa o Git Bash (vem com o Git for Windows, que o Claude
+  Code também usa). **Gravar a janela** de um programa não pede permissão: deixe a janela inteira na tela, sem nada por
+  cima, enquanto grava.
+- **Não deu para provar no runner,** confira na primeira vez: a tese e a crítica com a sua conta do Claude (rode
+  `claude --version` no mesmo terminal), a voz e as imagens com as suas chaves, a placa de vídeo, tela com escala
+  diferente de 100% ou dois monitores na gravação de janela, e Windows 10 ou 11.
 
 A documentação completa está em [`SKILL.md`](SKILL.md) e em [`references/`](references/), em inglês.
 
@@ -136,10 +171,11 @@ paid, with your own key.
 
 ### Install
 
-Today it runs on **macOS**. Windows comes later.
+It runs on **macOS** and **Windows** (what changes on Windows is in [On Windows](#on-windows)).
 
 The skill lives in the `primo-videos/` folder of the [primo-skills](https://github.com/svcrashh/primo-skills)
-repository, which has one folder per skill and an `instalar.sh` that links each one into `~/.claude/skills`:
+repository, which has one folder per skill and an installer that links each one into Claude Code's skills folder. On a
+Mac, in Terminal:
 
 ```sh
 git clone https://github.com/svcrashh/primo-skills.git ~/Documents/GitHub/primo-skills
@@ -147,12 +183,21 @@ git clone https://github.com/svcrashh/primo-skills.git ~/Documents/GitHub/primo-
 node ~/.claude/skills/primo-videos/scripts/environment.mjs --fix
 ```
 
+On Windows, in PowerShell:
+
+```powershell
+git clone https://github.com/svcrashh/primo-skills.git "$env:USERPROFILE\Documents\GitHub\primo-skills"
+powershell -ExecutionPolicy Bypass -File "$env:USERPROFILE\Documents\GitHub\primo-skills\instalar.ps1"
+node "$env:USERPROFILE\.claude\skills\primo-videos\scripts\environment.mjs" --fix
+```
+
 The third command checks the environment once per machine: it finds Playwright and Chromium, creates the soundtrack's
 Python (numpy and scipy, in a venv under `~/.videostudio`) and says what is missing, with the right command. With
-`--yes` it downloads Playwright's Chromium when there is none (~150 MB). ffmpeg comes from your system
-(`brew install ffmpeg`). To update later: `git pull` in the primo-skills folder (it is a link, not a copy).
+`--yes` it downloads Playwright's Chromium when there is none (~300 MB). ffmpeg comes from your system (Mac:
+`brew install ffmpeg`; Windows: `winget install ffmpeg`, then close and reopen PowerShell and Claude Code). To update
+later: `git pull` in the primo-skills folder (it is a link, not a copy).
 
-Right after linking the skill, `instalar.sh` shows what it needs and what this machine is missing (Node, ffmpeg, the
+Right after linking the skill, the installer shows what it needs and what this machine is missing (Node, ffmpeg, the
 environment check and the two optional keys), with the command or the steps for each one. To see it again any time:
 `node ~/.claude/skills/primo-videos/scripts/requisitos.mjs --lang en` (without `--lang en`, in Portuguese).
 
@@ -213,13 +258,20 @@ Only the one for what you will use; neither depends on the other.
 | The line | `ELEVENLABS_API_KEY=` and the key | `OPENAI_API_KEY=` and the key |
 
 1. Create the key at the service (the table says where).
-2. In Terminal, create the folder and the file, closed to anyone but you, and open the file in TextEdit. For OpenAI:
+2. On a Mac, in Terminal, create the folder and the file, closed to anyone but you, and open the file in TextEdit. For
+   OpenAI:
    ```sh
    mkdir -p ~/.claude/secrets && chmod 700 ~/.claude/secrets
    touch ~/.claude/secrets/openai.env && chmod 600 ~/.claude/secrets/openai.env
    open -e ~/.claude/secrets/openai.env
    ```
-   For ElevenLabs, the same three commands with `elevenlabs.env` in place of `openai.env`.
+   On Windows, in PowerShell, create the folder and open the file in Notepad (it asks whether to create the file: say
+   yes). The file lives in `%USERPROFILE%\.claude\secrets\`:
+   ```powershell
+   New-Item -ItemType Directory -Force "$env:USERPROFILE\.claude\secrets" | Out-Null
+   notepad "$env:USERPROFILE\.claude\secrets\openai.env"
+   ```
+   For ElevenLabs, the same commands with `elevenlabs.env` in place of `openai.env`.
 3. In the file, write a single line, the one from the table, with the key right after the `=` (no spaces, no quotes),
    and save.
 4. Check it: `node ~/.claude/skills/primo-videos/scripts/requisitos.mjs --lang en`. The key's line turns into ✔,
@@ -232,12 +284,30 @@ file yourself, with your own editor. Instead of the file, the environment variab
 
 - Node.js 18 or newer, Python 3 and ffmpeg;
 - Playwright's Chromium (the environment command takes care of it);
-- macOS (Windows comes later);
+- macOS or Windows;
 - Claude Code, which the skill also uses to write the video's thesis and for the critique (`claude -p`);
 - optional: an ElevenLabs account and key (voiceover) and an OpenAI one (generated images), in
   [How to get and store each key](#how-to-get-and-store-each-key).
 
 The final render is heavy (a few minutes per video): on a laptop, keep it plugged in.
+
+### On Windows
+
+It ran on a real Windows on 12/10/2026: GitHub Actions' `windows-latest` (Windows Server 2025, no graphics card and no
+Claude account). The whole test suite passed there, along with the install from scratch (the steps `requisitos.mjs` gives and the
+environment check), videos end to end (with a
+soundtrack, with a voiceover from a fake API, in chapters), the legibility check, the review board in the browser and
+the recording of a program's window. What changes from the Mac:
+
+- **The video is drawn by the processor**, not the graphics card: the same image, slower, most of all in 3D scenes.
+- **The legibility check** reads the text with Windows' own text recognition, in your Windows' language. If it has no
+  language with that feature, the legibility check is skipped with a warning, and the other checks run.
+- **Recording the terminal** of a command-line program uses Git Bash (it comes with Git for Windows, which Claude Code
+  uses too). **Recording a program's window** asks for no permission: keep the window whole on the screen, with nothing
+  on top, while it records.
+- **Not proven on the runner,** check the first time: the thesis and the critique with your Claude account (run
+  `claude --version` in the same terminal), the voice and the images with your keys, a graphics card, screen scaling
+  other than 100% or two monitors when recording a window, and Windows 10 or 11.
 
 The full documentation is in [`SKILL.md`](SKILL.md) and [`references/`](references/).
 
