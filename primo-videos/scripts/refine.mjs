@@ -156,7 +156,7 @@ export async function refinar(alvo, o = {}) {
     falas = r.falas
     marca(['alinhamento', 'silencio-fim'], 'ok')
     marca(['voz-apagada'], r.medidas.referencia ? 'ok' : `no baseline: the product has no reference profile and the narration profile is not reels`)
-  } else marca(['alinhamento', 'voz-apagada'], !N ? 'video without voiceover' : projeto ? 'no narration.json in the project' : 'MP4 only: pass --project <folder> to measure the voice')
+  } else marca(['alinhamento', 'voz-apagada'], !N || projeto ? 'video without voiceover' : 'MP4 only: pass --project <folder> to measure the voice')
 
   // 2 · as cenas: cada em() na palavra exata que soa, e a cena que não sobra
   if (projeto && falas) {
@@ -166,7 +166,7 @@ export async function refinar(alvo, o = {}) {
     medidas.cenas = r.medidas
     marca(['palavra'], r.medidas.cenas.length ? 'ok' : 'no scenes with tempos.js')
     if (r.medidas.cenas.length) marca(['silencio-fim'], 'ok')
-  } else marca(['palavra'], N ? 'no voiceover or scenes' : 'video without voiceover')
+  } else marca(['palavra'], falas ? 'no scenes' : 'video without voiceover')
 
   // 3 · no Chromium: a fonte computada de cada texto contra o kit, e as caixas do DOM contra a interface da plataforma
   if (obra) marca(['fonte'], 'the drawn-explainer build is a canvas: its render.mjs already checked the text in each format')
