@@ -16,7 +16,8 @@
 // reference: a new picture close to it, not the same one, so it goes back to the person for approval.
 // Files go to <project>/media/generated/ (or --out), with images.json beside them: per image, the prompt, model,
 // quality, size, references and cost. The key: OPENAI_API_KEY, or a line OPENAI_API_KEY=… in
-// ~/.claude/secrets/openai.env. It is never printed. OPENAI_API_BASE swaps the API address (tests use a local one).
+// ~/.claude/secrets/openai.env (Windows: %USERPROFILE%\.claude\secrets\openai.env). It is never printed.
+// OPENAI_API_BASE swaps the API address (tests use a local one).
 // Exit codes: 2 usage, 3 OpenAI not usable now (no key, key refused, no credit: go on without generated images),
 // 5 over this video's image cap (ask the person), 1 anything else.
 import fs from 'node:fs'
@@ -24,6 +25,7 @@ import os from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { Usage, checkCap, noteCost, totals } from './costs.mjs'
+import { lerChaveDoArquivo as keyFromFile } from './where.cjs'
 
 export const DEFAULT_MODEL = 'gpt-image-2.5-sunburst'
 export const MANIFEST = 'images.json'
@@ -71,16 +73,21 @@ const pixels = (size) => String(size).split('x').map(Number)
 
 // ── key and API ──────────────────────────────────────────────────────────────────────────────────────────────────────
 const keyFile = () => path.join(os.homedir(), '.claude', 'secrets', 'openai.env')
-const shown = (file) => file.replace(os.homedir(), '~')
+const win = process.platform === 'win32'
+// on Windows, the home folder as Explorer and cmd take it; PowerShell wants $env:USERPROFILE (the command below)
+const shown = (file) => file.replace(os.homedir(), win ? '%USERPROFILE%' : '~')
+const writeIt = win
+  ? ': in PowerShell, New-Item -ItemType Directory -Force "$env:USERPROFILE\\.claude\\secrets" | Out-Null, then notepad "$env:USERPROFILE\\.claude\\secrets\\openai.env", and Notepad asks to create the file: yes'
+  : ''
 const apiBase = () => String(process.env.OPENAI_API_BASE || 'https://api.openai.com').replace(/\/+$/, '').replace(/\/v1$/, '')
 
 export function readKey() {
   const fromEnv = String(process.env.OPENAI_API_KEY ?? '').trim()
   if (fromEnv) return fromEnv
-  const m = /^\s*(?:export\s+)?OPENAI_API_KEY\s*=\s*(.+?)\s*$/m.exec(readText(keyFile()))
-  if (m) return m[1].replace(/^(['"])(.*)\1$/, '$2')
+  const fromFile = keyFromFile(keyFile(), 'OPENAI_API_KEY')
+  if (fromFile) return fromFile
   throw new NoKey(`no OpenAI key: set OPENAI_API_KEY, or put the line OPENAI_API_KEY=… in ${shown(keyFile())} `
-    + '(the person pastes it there, never in the chat). Without it the video goes on without generated images: '
+    + `(the person pastes it there, never in the chat${writeIt}). Without it the video goes on without generated images: `
     + 'ask the person for a photo, or pick a style that does not need one.')
 }
 

@@ -1,5 +1,6 @@
 // Onde está o ambiente desta máquina para as skills de vídeo: a pasta ~/.videostudio (VIDEOSTUDIO_HOME troca),
-// o environment.json que o `node scripts/environment.mjs --fix` grava lá, e o Python da trilha (com numpy e scipy).
+// o environment.json que o `node scripts/environment.mjs --fix` grava lá, o Python da trilha (com numpy e scipy) e a
+// leitura dos arquivos de chave (~/.claude/secrets/<serviço>.env).
 // CommonJS para servir aos .cjs e aos .mjs. As variáveis (VIDEOSTUDIO_PYTHON, PYTHON) só forçam outro
 // caminho: sem elas, vale o que o environment.json diz.
 const fs = require('fs'), path = require('path'), os = require('os')
@@ -41,4 +42,20 @@ function acharPython({ extras = [] } = {}) {
   return null
 }
 
-module.exports = { pastaVideostudio, lerAmbiente, acharPython }
+/** O valor de NOME=… num arquivo de chave (vale `export` e aspas; a última linha manda), ou '' se não há. No Windows o
+ *  arquivo sai do Bloco de Notas: pode vir com BOM (UTF-8, ou UTF-16 se a pessoa escolhe "Unicode") e com CRLF. */
+function lerChaveDoArquivo(arquivo, nome) {
+  let b
+  try { b = fs.readFileSync(arquivo) } catch { return '' }
+  const txt = b[0] === 0xff && b[1] === 0xfe ? b.toString('utf16le', 2)
+    : b[0] === 0xfe && b[1] === 0xff ? b.subarray(2, b.length - (b.length % 2)).swap16().toString('utf16le')
+      : b.toString('utf8').replace(/^\uFEFF/, '')
+  let valor = ''
+  for (const l of txt.split(/\r?\n|\r/)) {
+    const m = l.match(new RegExp(`^\\s*(?:export\\s+)?${nome}\\s*=\\s*(.*?)\\s*$`))
+    if (m) valor = m[1].replace(/^(['"])(.*)\1$/, '$2').trim()
+  }
+  return valor
+}
+
+module.exports = { pastaVideostudio, lerAmbiente, acharPython, lerChaveDoArquivo }

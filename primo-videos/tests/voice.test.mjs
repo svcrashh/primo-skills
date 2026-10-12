@@ -457,11 +457,18 @@ describe('voice.mjs against the fake API', () => {
     assert.ok(comoPorChave().includes('Never paste the key'))
   })
 
-  test('the key comes from ~/.claude/secrets/elevenlabs.env', async () => {
-    const casa = tmp('home')
-    escrever(path.join(casa, '.claude', 'secrets', 'elevenlabs.env'), `# comment\nELEVENLABS_API_KEY="${CHAVE}"\n`)
-    const r = await rodar(['account'], { env, semChave: true, home: casa })
-    assert.equal(r.code, 0, r.tudo)
+  test('the key comes from ~/.claude/secrets/elevenlabs.env, also as Notepad saves it (BOM, UTF-16, CRLF)', async () => {
+    const bom = (b, texto, cod) => Buffer.concat([Buffer.from(b), Buffer.from(texto, cod)])
+    for (const [jeito, conteudo] of Object.entries({
+      'UTF-8, LF': `# comment\nELEVENLABS_API_KEY="${CHAVE}"\n`,
+      'UTF-8 with BOM, CRLF': bom([0xef, 0xbb, 0xbf], `ELEVENLABS_API_KEY=${CHAVE}\r\n`, 'utf8'),
+      'UTF-16 LE ("Unicode"), CRLF': bom([0xff, 0xfe], `# comment\r\nELEVENLABS_API_KEY=${CHAVE}\r\n`, 'utf16le'),
+    })) {
+      const casa = tmp('home')
+      escrever(path.join(casa, '.claude', 'secrets', 'elevenlabs.env'), conteudo)
+      const r = await rodar(['account'], { env, semChave: true, home: casa })
+      assert.equal(r.code, 0, `${jeito}: ${r.tudo}`)
+    }
   })
 
   test('the key never shows up: not in stdout, stderr, the log, the notebook or any file written — not even when the API returns it', async () => {

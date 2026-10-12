@@ -36,6 +36,7 @@ import { spawnSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 import { checkCap, noteCost, OverCap, Usage } from './costs.mjs'
 import { revisarTexto, palavrasDe, segundosDe, PPM, REGRAS } from './writing.mjs'
+import { lerChaveDoArquivo } from './where.cjs'
 
 export const FORMATO = 'mp3_44100_128'
 export const MODELO = 'eleven_multilingual_v2'
@@ -76,18 +77,12 @@ export function comoPorChave() {
 Create the key at elevenlabs.io → Developers → API Keys and run, in your own terminal (not in the chat), the command for your system.
 It asks for the key without showing what you paste:
 ${process.platform === 'win32' ? `${win}\n${mac}` : `${mac}\n${win}`}
-Or export ELEVENLABS_API_KEY in the environment. Never paste the key into a conversation.`
+Or set the environment variable ELEVENLABS_API_KEY. Never paste the key into a conversation.`
 }
 let chaveLida = null
 export function lerChave() {
   if (chaveLida) return chaveLida
-  let k = (process.env.ELEVENLABS_API_KEY || '').trim()
-  if (!k && fs.existsSync(arquivoChave())) {
-    for (const l of fs.readFileSync(arquivoChave(), 'utf8').split(/\r?\n/)) {
-      const m = l.match(/^\s*(?:export\s+)?ELEVENLABS_API_KEY\s*=\s*(.*?)\s*$/)
-      if (m) k = m[1].replace(/^(['"])(.*)\1$/, '$2').trim()
-    }
-  }
+  const k = (process.env.ELEVENLABS_API_KEY || '').trim() || lerChaveDoArquivo(arquivoChave(), 'ELEVENLABS_API_KEY')
   if (!k) throw new Falha(comoPorChave())
   chaveLida = k
   return k
@@ -364,7 +359,7 @@ export function ritmo(x, taxa, pausas = pausasDaVoz(x, taxa)) {
 
 function ffmpeg(args) {
   const r = spawnSync('ffmpeg', ['-hide_banner', '-v', 'error', '-y', ...args], { encoding: 'utf8' })
-  if (r.error?.code === 'ENOENT') throw new Falha('ffmpeg is missing. macOS: brew install ffmpeg · Windows: winget install --id Gyan.FFmpeg -e · Linux: sudo apt install ffmpeg')
+  if (r.error?.code === 'ENOENT') throw new Falha('ffmpeg is missing. macOS: brew install ffmpeg · Windows: winget install ffmpeg (then close and reopen PowerShell and Claude Code) · Linux: sudo apt install ffmpeg')
   if (r.status !== 0) throw new Falha(`ffmpeg failed: ${(r.stderr || '').trim()}`)
 }
 export const mp3ParaWav = (mp3, wav) => ffmpeg(['-i', mp3, '-ar', String(TAXA), '-ac', '1', '-c:a', 'pcm_s16le', wav])

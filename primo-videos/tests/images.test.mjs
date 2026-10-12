@@ -255,20 +255,42 @@ describe('the key', () => {
     for (const args of [['generate', '--project', p, '--prompt', 'A desk'], ['models']]) {
       const r = await run(args, { key: null })
       assert.equal(r.status, 3, args[0])
-      assert.match(r.stderr, /no OpenAI key: set OPENAI_API_KEY, or put the line OPENAI_API_KEY=… in ~\/\.claude\/secrets\/openai\.env/)
+      // the file as each system shows it: on Windows, as Explorer and cmd take it, plus how to write it from PowerShell
+      if (process.platform === 'win32') {
+        assert.ok(r.stderr.includes('no OpenAI key: set OPENAI_API_KEY, or put the line OPENAI_API_KEY=… in %USERPROFILE%\\.claude\\secrets\\openai.env'), r.stderr)
+        assert.ok(r.stderr.includes('New-Item -ItemType Directory -Force "$env:USERPROFILE\\.claude\\secrets" | Out-Null, then notepad "$env:USERPROFILE\\.claude\\secrets\\openai.env"'), r.stderr)
+      } else assert.match(r.stderr, /no OpenAI key: set OPENAI_API_KEY, or put the line OPENAI_API_KEY=… in ~\/\.claude\/secrets\/openai\.env \(the person pastes it there, never in the chat\)\./)
       assert.match(r.stderr, /without generated images/)
     }
     assert.equal(calls.length, before)
     assert.deepEqual(readCosts(p), [])
   })
 
-  test('the key can come from ~/.claude/secrets/openai.env', async () => {
-    const h = tmp('home-with-key')
+  test('the key can come from ~/.claude/secrets/openai.env, also as Notepad saves it (BOM, UTF-16, CRLF)', async () => {
+    const bom = (b, text, enc) => Buffer.concat([Buffer.from(b), Buffer.from(text, enc)])
+    for (const [saved, content] of Object.entries({
+      'UTF-8, LF': `# OpenAI\nOPENAI_API_KEY="${KEY}"\n`,
+      'UTF-8 with BOM, CRLF': bom([0xef, 0xbb, 0xbf], `OPENAI_API_KEY=${KEY}\r\n`, 'utf8'),
+      'UTF-16 LE ("Unicode"), CRLF': bom([0xff, 0xfe], `# OpenAI\r\nOPENAI_API_KEY=${KEY}\r\n`, 'utf16le'),
+    })) {
+      const h = tmp('home-with-key')
+      fs.mkdirSync(path.join(h, '.claude', 'secrets'), { recursive: true })
+      fs.writeFileSync(path.join(h, '.claude', 'secrets', 'openai.env'), content)
+      const r = await run(['models'], { key: null, env: { HOME: h, USERPROFILE: h } })
+      assert.equal(r.status, 0, `${saved}: ${r.stderr}`)
+      assert.equal(calls.at(-1).auth, `Bearer ${KEY}`, saved)
+    }
+  })
+
+  test('an empty line in the key file is no key: code 3, no request', async () => {
+    const h = tmp('home-empty-key')
     fs.mkdirSync(path.join(h, '.claude', 'secrets'), { recursive: true })
-    fs.writeFileSync(path.join(h, '.claude', 'secrets', 'openai.env'), `# OpenAI\nOPENAI_API_KEY="${KEY}"\n`)
+    fs.writeFileSync(path.join(h, '.claude', 'secrets', 'openai.env'), 'OPENAI_API_KEY=""\r\n')
+    const before = calls.length
     const r = await run(['models'], { key: null, env: { HOME: h, USERPROFILE: h } })
-    assert.equal(r.status, 0, r.stderr)
-    assert.equal(calls.at(-1).auth, `Bearer ${KEY}`)
+    assert.equal(r.status, 3, r.stderr)
+    assert.match(r.stderr, /no OpenAI key/)
+    assert.equal(calls.length, before)
   })
 
   test('a refused key is code 3 too, and the message does not repeat it', async () => {
