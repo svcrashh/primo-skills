@@ -422,21 +422,24 @@ AVISOS = {
 
 
 def cmd_esperar(a):
-    """Segura até uma janela desta sessão parar, fazer uma pergunta, encerrar ou ser fechada, e diz qual.
+    """Segura até haver novidade nas janelas desta sessão: uma parar, fazer uma pergunta, encerrar ou
+    ser fechada. Diz qual.
 
     É como o Claude que abriu as janelas fica de olho nelas sem perguntar o estado a toda hora: roda
     isto em segundo plano, é avisado quando volta, colhe e fecha a janela que terminou e roda de
     novo para as restantes. Cada parada é avisada uma vez só: a janela que continua aberta depois do
-    aviso (esperando uma resposta, por exemplo) não faz o próximo esperar voltar na hora.
+    aviso não faz o próximo esperar voltar na hora.
+
+    Sem janela trabalhando ele segura do mesmo jeito: a trilha que pôs um comando em segundo plano
+    encerra o turno, fica "parada" e retoma sozinha quando o comando acaba.
     """
     fim = time.time() + a.minutos * 60
     antes = {}
     while True:
         janelas = situacao()
         fechadas = [f"{jid} ({titulo})" for jid, titulo in antes.items() if jid not in {j[0] for j in janelas}]
-        ocupadas = [j for j in janelas if ocupada(j)]
         novas = [j for j in janelas if not ocupada(j) and not avisada(j)]
-        if novas or fechadas or not ocupadas or time.time() >= fim:
+        if novas or fechadas or not janelas or time.time() >= fim:
             break
         antes = {j[0]: j[3] for j in janelas}
         time.sleep(3)
@@ -447,14 +450,17 @@ def cmd_esperar(a):
         arquivo.write_text(anotado, encoding="utf-8")
     for qual in fechadas:
         print(f"A janela {qual} foi fechada: não está mais no registro.")
+    ocupadas = sum(ocupada(j) for j in janelas)
     if not janelas:
         print("Nenhuma janela aberta por esta sessão.")
-    elif not ocupadas:
-        print("Nenhuma janela trabalhando: colhe com `ver <id>` e fecha as que terminaram.")
-    elif novas or fechadas:
-        print(f"Ainda há janela trabalhando ({len(ocupadas)}): trata o que voltou e roda o esperar de novo para as restantes.")
+    elif not (novas or fechadas):
+        print(f"Nada mudou em {a.minutos:g} min" + (f": ainda há janela trabalhando ({ocupadas}). Roda o esperar de novo." if ocupadas else
+              " e nenhuma janela está trabalhando: fecha as que terminaram, ou roda o esperar de novo se ainda espera por alguma."))
+    elif ocupadas:
+        print(f"Ainda há janela trabalhando ({ocupadas}): trata o que voltou e roda o esperar de novo para as restantes.")
     else:
-        print(f"Ainda há janela trabalhando depois de {a.minutos:g} min. Roda o esperar de novo.")
+        print("Nenhuma janela trabalhando: colhe com `ver <id>` e fecha as que terminaram. "
+              "Se alguma ainda não terminou, deixa aberta e roda o esperar de novo.")
 
 
 def ultima_resposta(meta):

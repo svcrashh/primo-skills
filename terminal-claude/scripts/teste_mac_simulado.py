@@ -120,8 +120,12 @@ marca(c, "encerrada")
 saida, voltas = espera()
 confere("a que parou entre duas chamadas é avisada na seguinte, na hora", voltas == 0 and "A janela 303 (C · api) encerrou" in saida, saida)
 confere("com tudo parado, diz que não há janela trabalhando", "Nenhuma janela trabalhando" in saida, saida)
-saida, voltas = espera()
-confere("sem nada novo e sem janela trabalhando, volta na hora sem repetir aviso", voltas == 0 and "Nenhuma janela trabalhando" in saida and "A janela" not in saida, saida)
+# A trilha que pôs um comando em segundo plano encerra o turno ("parada") e retoma sozinha quando ele acaba.
+saida, voltas = espera(lambda: None, lambda: marca(a, "trabalhando"), lambda: marca(a, "parada"))
+confere("sem janela trabalhando, segura pela parada que ainda não terminou e volta quando ela para de novo", voltas == 3 and "A janela 301 (A · schema) parou" in saida, saida)
+confere("sem repetir o aviso das outras", "302 (" not in saida and "303 (" not in saida, saida)
+saida, voltas = espera(minutos=0)
+confere("tempo esgotado sem novidade e sem janela trabalhando: diz que nada mudou", voltas == 0 and "Nada mudou em 0 min" in saida and "A janela" not in saida, saida)
 
 marca(b, "trabalhando"); marca(c, "trabalhando")
 saida, voltas = espera(lambda: marca(a, "parada"))
@@ -131,7 +135,7 @@ saida, voltas = espera(lambda: None, lambda: terminal.pop(303))
 confere("volta quando uma janela é fechada por fora, e diz qual", voltas == 2 and "A janela 303 (C · api) foi fechada" in saida, saida)
 
 saida, voltas = espera(minutos=0)
-confere("tempo esgotado sem novidade: volta e avisa que ainda há janela trabalhando", voltas == 0 and "Ainda há janela trabalhando depois de 0 min" in saida and "A janela" not in saida, saida)
+confere("tempo esgotado sem novidade: volta e avisa que ainda há janela trabalhando", voltas == 0 and "Nada mudou em 0 min: ainda há janela trabalhando (1)" in saida and "A janela" not in saida, saida)
 
 d = abre(304, "/dev/ttys004", "D · presa", estado="abrindo")
 os.utime(d + ".estado", (terminais.time.time() - 200,) * 2)
