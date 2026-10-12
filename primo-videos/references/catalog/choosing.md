@@ -37,7 +37,7 @@ the round-2 conversation and the catalog (`scripts/catalog.mjs open`) show it; e
 | `drawn-flow` | architecture, process, where the data comes from, where a request stops | an idea that calls for free drawing or a number; more than 8 pieces |
 | `isometric` | the layers of a system, a bundle or a platform | a path with branching (`drawn-flow`); more than 6 layers |
 | `kinetic-typography` | an opening, a short internal announcement, summing up 2 to 4 facts | there's no concrete fact (it turns into a slogan); a tutorial |
-| `photo-mosaic` | institutional, people, wellbeing, an event opening, with approved photos | there's no photo from the library, or it's to teach a tool |
+| `photo-mosaic` | institutional, people, an event opening, with the brand's own approved photos | the brand has no photos of its own, or it's to teach a tool |
 
 ## 2. Product kind and audience
 
