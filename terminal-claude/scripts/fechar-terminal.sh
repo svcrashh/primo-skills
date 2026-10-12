@@ -124,7 +124,9 @@ for f in $fechar; do
 done
 
 # Janela fechada continua na lista de ids como objeto fantasma (visible falso, zero abas), e
-# contá-la dizia 'não fechou' para janela que fechou. Por isso a conferência exige aba e visible.
+# contá-la dizia 'não fechou' para janela que fechou. Por isso a conferência exige aba. Só aba: o
+# visible também é falso na janela minimizada ou escondida, e com ele a que não fechou saía daqui
+# como 'fechada' (medido em 12/10/2026).
 # O close é assíncrono e o Terminal atende um de cada vez: conferir janela a janela, no meio do
 # caminho, dá resposta instável. Por isso a conferência é uma só, no fim, pela lista de ids vivos.
 fechadas=0
@@ -133,7 +135,7 @@ for _ in {1..40}; do
       set out to ""
       repeat with w in windows
         try
-          if (count of tabs of w) > 0 and (visible of w) then set out to out & (id of w) & linefeed
+          if (count of tabs of w) > 0 then set out to out & (id of w) & linefeed
         end try
       end repeat
       return out
