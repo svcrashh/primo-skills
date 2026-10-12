@@ -1,5 +1,5 @@
 // node --test tests/   (sem rede) o kit do produto: salvar a partir de um vídeo, mostrar, e o novo-video que cria a pasta
-// já com video.mjs, recording/, a série, a voz (nos pacotes com voz) e o cronômetro ligados.
+// já com video.mjs, recording/, a série e o cronômetro ligados (a voz, que só entra com --voice, está em kit-voice.test.mjs).
 import { test, describe, before, after } from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
@@ -10,7 +10,6 @@ import { fileURLToPath } from 'node:url'
 
 const AQUI = path.dirname(fileURLToPath(import.meta.url))
 const KIT = path.join(AQUI, '..', 'scripts', 'kit.mjs')
-const NARRACAO = fs.existsSync(path.join(AQUI, '..', 'scripts', 'tutorial', 'locucao.mjs'))
 let base, video, marcas
 const roda = (...a) => spawnSync(process.execPath, [KIT, ...a], { encoding: 'utf8', env: { ...process.env, VIDEOSTUDIO_BRANDS: marcas } })
 
@@ -105,14 +104,10 @@ describe('kit', () => {
     // o cronômetro começou com a meta do kit
     const pg = JSON.parse(fs.readFileSync(path.join(nova, 'progress.json'), 'utf8'))
     assert.equal(pg.meta_min, 10)
-    // as falas ainda dizem TODO: o video.mjs não carrega sem elas
-    const arqTextos = NARRACAO ? path.join(nova, 'voice', 'v1', 'script.json') : path.join(nova, 'texts.json')
-    await assert.rejects(import(path.join(nova, 'video.mjs')), /write the lines abertura, p1, fechamento/)
-    if (NARRACAO) {
-      const rot = JSON.parse(fs.readFileSync(arqTextos, 'utf8'))
-      assert.equal(rot.voz.id, 'VOZ1')
-      assert.ok(fs.existsSync(path.join(nova, 'voice', '_takes', 'abc123', 'take.json')), 'os takes do kit no cache do vídeo')
-    }
+    // as falas ainda dizem TODO: o video.mjs não carrega sem elas. Sem --voice o vídeo novo não tem voz, mesmo vindo de
+    // um kit que guardou uma (kit com e sem voz × vídeo com e sem voz: kit-voice.test.mjs)
+    await assert.rejects(import(path.join(nova, 'video.mjs')), /write the lines abertura, p1, fechamento in texts\.json/)
+    assert.ok(!fs.existsSync(path.join(nova, 'voice')), 'sem --voice, nada de voice/')
     // pasta que já tem coisa não é sobrescrita
     assert.match(roda('new-video', 'Produto Teste', nova, '--request', 'x').stderr, /already exists and is not empty/)
     assert.match(roda('new-video', 'Sem Kit', path.join(base, 'z'), '--request', 'x').stderr, /there is no kit for "Sem Kit"/)

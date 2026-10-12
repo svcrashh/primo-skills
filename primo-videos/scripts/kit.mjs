@@ -7,9 +7,12 @@
 //   node kit.mjs show <product>                            o que o kit guarda, e se cada arquivo está lá
 //   node kit.mjs save <product> --from <video folder> [--recipe <folder>] [--reading <arq>] [--series-id <id>] [--default]
 //                                                          guarda (ou atualiza) o kit a partir de um vídeo aprovado
-//   node kit.mjs new-video <product> <folder> --request "…" [--start <rota>] [--series <id>] [--seed N] [--device computer]
-//                                                          cria a pasta do vídeo já com video.mjs, recording/, a série,
-//                                                          a voz e o progresso ligados: falta só a jornada e o roteiro
+//   node kit.mjs new-video <product> <folder> --request "…" [--voice | --no-voice] [--start <rota>] [--series <id>] [--seed N] [--device computer]
+//                                                          cria a pasta do vídeo já com video.mjs, recording/, a série
+//                                                          e o progresso ligados: falta só a jornada e o roteiro.
+//                                                          Sem voz por padrão (os textos em texts.json); --voice liga a
+//                                                          voz em off (as falas em voice/v1/script.json, com a voz
+//                                                          aprovada do kit, ou ainda por escolher se ele não tem uma)
 //
 // O kit guarda: a leitura e a tese base; as séries por formato e idioma; a voz aprovada (id, modelo, ajustes, pronúncia,
 // e os takes, que são o cache: fala igual sai sem custo); a identidade da trilha e a semente; e a receita de gravação
@@ -23,8 +26,8 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 
 const AQUI = path.dirname(fileURLToPath(import.meta.url))
 const SKILL = path.resolve(AQUI, '..')
-// A narração só existe nos pacotes com voz: sem scripts/tutorial/locucao.mjs, o kit não leva voz para o vídeo novo. Com
-// ela, leva só quando o kit tem uma voz aprovada.
+// A narração só existe nos pacotes com voz: sem scripts/tutorial/locucao.mjs, o vídeo novo não tem como ter voz. Com
+// ela, tem só quando o vídeo pede (new-video --voice): a voz aprovada do kit não liga a voz sozinha.
 const NARRACAO = fs.existsSync(path.join(AQUI, 'tutorial', 'locucao.mjs'))
 
 export const raizMarcas = () => process.env.VIDEOSTUDIO_BRANDS || path.join(os.homedir(), 'Documents', 'VideoStudio', 'Brands')
@@ -195,12 +198,13 @@ export function mostrar(produto) {
 }
 
 // ── novo-video ───────────────────────────────────────────────────────────────────────────────────────────────────────
-/** Os blocos por nível de um modelo .md (no pacote o empacotador já resolveu; na fonte, resolve aqui). */
-function niveis(txt, comVoz = NARRACAO) {
+/** Os blocos condicionais de um modelo .md, que podem ficar um dentro do outro: <!-- se voz --> … <!-- fim -->, e
+ *  <!-- se !voz --> para o contrário. `cond` diz o que vale neste vídeo ({ voz, 'voz-do-kit' }). */
+function niveis(txt, cond) {
   const out = [], pilha = []
   for (const l of txt.split('\n')) {
-    const m = /^<!--\s*se\s+(!?)voz\s*-->$/.exec(l.trim())
-    if (m) { pilha.push(m[1] ? !comVoz : comVoz); continue }
+    const m = /^<!--\s*se\s+(!?)([\w-]+)\s*-->$/.exec(l.trim())
+    if (m) { pilha.push(m[1] ? !cond[m[2]] : !!cond[m[2]]); continue }
     if (/^<!--\s*fim\s*-->$/.test(l.trim())) { pilha.pop(); continue }
     if (pilha.every(Boolean)) out.push(l)
   }
@@ -219,7 +223,7 @@ const modeloVideo = ({ gravar, id, serie, semente, origem, inicio, versao, cinem
 })
 const modeloJornada = ({ pedido, produto }) => preencher('journey.template.txt', { produto, pedido160: pedido.replace(/\n/g, ' ').slice(0, 160) })
 
-export function novoVideo(produto, pastaVideo, { pedido, serie = null, semente = null, versao = null, inicio = null, progresso = true } = {}) {
+export function novoVideo(produto, pastaVideo, { pedido, voz = false, serie = null, semente = null, versao = null, inicio = null, progresso = true } = {}) {
   if (!pastaVideo) throw new Error('new-video needs the video folder: node kit.mjs new-video "<product>" <folder> --request "…"')
   if (!pedido) throw new Error('new-video needs --request "<what the owner asked for, in their words>"')
   const { kit, dir } = lerKit(produto)
@@ -232,6 +236,11 @@ export function novoVideo(produto, pastaVideo, { pedido, serie = null, semente =
   if (!S) throw new Error(`the ${kit.produto} kit has no series "${serie}"; it has: ${ids.join(', ')}`)
   const R = kit.receita || {}
   if (!(R.arquivos || []).some((a) => path.basename(a) === 'base.mjs')) throw new Error(`the ${kit.produto} kit has no recording recipe (recipe/base.mjs): save it with kit.mjs save … --recipe <folder with base.mjs>`)
+  // a voz é do vídeo, não do kit: só com --voice. Sem ele, é o vídeo sem voz de sempre, com os textos em texts.json,
+  // mesmo que o kit guarde uma voz aprovada
+  const comVoz = !!voz
+  if (comVoz && !NARRACAO) throw new Error('this copy of the skill has no voice module (scripts/tutorial/locucao.mjs is missing): reinstall the skill, or run new-video without --voice (on-screen text, soundtrack and effects)')
+  const V = NARRACAO ? kit.voz : null
   fs.mkdirSync(path.join(pasta, 'recording'), { recursive: true })
   for (const a of R.arquivos) fs.copyFileSync(path.join(dir, a), path.join(pasta, 'recording', path.basename(a)))
   fs.writeFileSync(path.join(pasta, 'recording', 'journey.mjs'), modeloJornada({ pedido, produto: kit.produto }))
@@ -242,14 +251,12 @@ export function novoVideo(produto, pastaVideo, { pedido, serie = null, semente =
     { id: 'fechamento', onde: 'fechamento', texto: 'TODO: the closing (it is the end text on screen)' },
   ]
   let takes = 0
-  const V = kit.voz
-  // a voz é opcional: o vídeo novo tem voz quando o kit guardou uma aprovada (salvo de um vídeo com voz); sem ela, é o
-  // vídeo sem voz de sempre, com os textos em texts.json
-  const comVoz = NARRACAO && !!V
-  if (comVoz) {
-    gravarJson(path.join(pasta, 'voice', 'v1', 'script.json'), { idioma: V.idioma, perfil: V.perfil, voz: { id: V.id, nome: V.nome, modelo: V.modelo }, ajustes: V.ajustes, pronuncia: V.pronuncia, falas })
-    takes = juntarTakes(path.join(dir, V.takes || 'voice/_takes'), path.join(pasta, 'voice', '_takes'))
-  } else gravarJson(path.join(pasta, 'texts.json'), { idioma: S.idioma, falas })
+  if (!comVoz) gravarJson(path.join(pasta, 'texts.json'), { idioma: S.idioma, falas })
+  else {
+    // kit sem voz aprovada: o roteiro sai sem `voz`, que a pessoa escolhe de ouvido (o generate recusa até lá, sem gastar)
+    gravarJson(path.join(pasta, 'voice', 'v1', 'script.json'), V ? { idioma: V.idioma, perfil: V.perfil, voz: { id: V.id, nome: V.nome, modelo: V.modelo }, ajustes: V.ajustes, pronuncia: V.pronuncia, falas } : { idioma: S.idioma, perfil: 'calmo', falas })
+    if (V) takes = juntarTakes(path.join(dir, V.takes || 'voice/_takes'), path.join(pasta, 'voice', '_takes'))
+  }
   const id = path.basename(pasta)
   const v = versao || S.versao
   fs.writeFileSync(path.join(pasta, 'video.mjs'), modeloVideo({
@@ -259,7 +266,7 @@ export function novoVideo(produto, pastaVideo, { pedido, serie = null, semente =
   }))
   const modelo = path.join(AQUI, 'kit', 'REQUEST.template.md')
   const sub = { '{{produto}}': kit.produto, '{{pedido}}': pedido, '{{pasta}}': pasta, '{{skill}}': SKILL, '{{serie}}': sid, '{{kit}}': casa(dir), '{{voz}}': V ? `${V.nome || V.id} (${V.id}, ${V.modelo})` : '', '{{takes}}': String(takes) }
-  let ped = niveis(fs.readFileSync(modelo, 'utf8'), comVoz)
+  let ped = niveis(fs.readFileSync(modelo, 'utf8'), { voz: comVoz, 'voz-do-kit': !!V })
   for (const [k, x] of Object.entries(sub)) ped = ped.replaceAll(k, x)
   fs.writeFileSync(path.join(pasta, 'REQUEST.md'), ped)
   const linhasProgresso = []
@@ -269,7 +276,7 @@ export function novoVideo(produto, pastaVideo, { pedido, serie = null, semente =
     pg('done', pasta, 'reading', '--note', `${kit.produto} kit applied`)
     pg('done', pasta, 'soundtrack', '--note', `series ${sid} and soundtrack from the kit`)
   }
-  return { pasta, serie: sid, takes, comVoz, progresso: linhasProgresso }
+  return { pasta, serie: sid, takes, comVoz, vozDoKit: V ? V.nome || V.id : null, progresso: linhasProgresso }
 }
 
 // ── linha de comando ─────────────────────────────────────────────────────────────────────────────────────────────────
@@ -291,13 +298,16 @@ async function principal(argv) {
     return 0
   }
   if (cmd === 'new-video' && produto) {
-    const r = novoVideo(produto, alvo, { pedido: opt('request'), serie: opt('series'), semente: opt('seed') != null ? Number(opt('seed')) : null, versao: opt('device'), inicio: opt('start') })
-    console.log(`✓ ${r.pasta} created with the kit (series ${r.serie}${r.comVoz ? `, ${r.takes} voice take(s) in the cache` : ''})`)
+    if (argv.includes('--voice') && argv.includes('--no-voice')) throw new Error('new-video takes --voice or --no-voice, not both')
+    const r = novoVideo(produto, alvo, { pedido: opt('request'), voz: argv.includes('--voice'), serie: opt('series'), semente: opt('seed') != null ? Number(opt('seed')) : null, versao: opt('device'), inicio: opt('start') })
+    const comoVoz = !r.comVoz ? 'without voice' : r.vozDoKit ? `with the kit's voice (${r.vozDoKit}), ${r.takes} voice take(s) in the cache` : 'with a voiceover, the voice still to be chosen'
+    console.log(`✓ ${r.pasta} created with the kit (series ${r.serie}, ${comoVoz})`)
     console.log(`  only missing: recording/journey.mjs and ${r.comVoz ? 'voice/v1/script.json' : 'texts.json'} — the path is in ${path.join(r.pasta, 'REQUEST.md')}`)
+    if (!r.comVoz && r.vozDoKit && !argv.includes('--no-voice')) console.log(`  the kit holds an approved voice (${r.vozDoKit}), left out: a video only has a voiceover when it asks for one (new-video … --voice)`)
     for (const l of r.progresso) console.log(l)
     return 0
   }
-  console.error('usage: node kit.mjs list | show <product> | save <product> --from <folder> [--recipe <folder>] [--series-id id] [--default] | new-video <product> <folder> --request "…" [--series id] [--seed N]')
+  console.error('usage: node kit.mjs list | show <product> | save <product> --from <folder> [--recipe <folder>] [--series-id id] [--default] | new-video <product> <folder> --request "…" [--voice | --no-voice] [--series id] [--seed N]')
   return 2
 }
 
