@@ -25,7 +25,7 @@ const win = process.platform === 'win32', mac = process.platform === 'darwin'
 const run = (cmd) => { try { return execSync(cmd, { stdio: ['ignore', 'pipe', 'pipe'], timeout: 20000 }).toString().trim() } catch { return null } }
 const CASA = pastaVideostudio()
 const ARQ = path.join(CASA, 'environment.json')
-const curto = (p) => (p && p.startsWith(os.homedir() + path.sep) ? '~' + p.slice(os.homedir().length) : p)
+export const curto = (p) => (p && p.startsWith(os.homedir() + path.sep) ? '~' + p.slice(os.homedir().length) : p)
 const EU = `node ${path.join(here, 'environment.mjs')}`
 // com --json, o stdout é só o JSON: o andamento do conserto vai para o stderr
 const diz = (m) => (comJson ? console.error(m) : console.log(m))
@@ -57,7 +57,7 @@ function deOndeChave(nome, arquivo) {
   }
   return tem ? 'arquivo' : null
 }
-const opcionais = () => Object.fromEntries(Object.entries(OPCIONAIS).map(([k, o]) => {
+export const opcionais = () => Object.fromEntries(Object.entries(OPCIONAIS).map(([k, o]) => {
   const de = deOndeChave(o.chave, o.arquivo)
   return [k, { chave: o.chave, ok: !!de, de, arquivo: o.arquivo, desliga: o.desliga, liga: o.liga }]
 }))
@@ -75,7 +75,7 @@ function faltaOpcional(op) {
 }
 
 /** O caminho absoluto de um executável no PATH, ou null. */
-function noPath(nome) {
+export function noPath(nome) {
   const exts = win ? (process.env.PATHEXT || '.EXE;.CMD;.BAT;.COM').split(';').filter(Boolean) : ['']
   for (const d of (process.env.PATH || '').split(path.delimiter).filter(Boolean)) {
     for (const e of exts) {
@@ -229,60 +229,69 @@ async function oConserto() {
   process.exit(falta.length ? 2 : 0)
 }
 
-if (consertar) await oConserto()
+// o environment.json falta, ou aponta para o que não existe mais: o conserto refaz
+export const ambienteVelho = (amb) => !amb || ['playwright', 'python'].some((k) => !amb[k] || !fs.existsSync(amb[k]))
 
 // ───────────────────────────── o diagnóstico ─────────────────────────────
-const r = { sistema, shell: win ? 'PowerShell' : (process.env.SHELL || 'sh'), cpus: os.cpus().length, node: process.version }
-r.ffmpeg = (run('ffmpeg -version') || '').split('\n')[0] || null
-r.ffprobe = !!run('ffprobe -version')
+function oDiagnostico() {
+  const r = { sistema, shell: win ? 'PowerShell' : (process.env.SHELL || 'sh'), cpus: os.cpus().length, node: process.version }
+  r.ffmpeg = (run('ffmpeg -version') || '').split('\n')[0] || null
+  r.ffprobe = !!run('ffprobe -version')
 
-const pyBom = acharPython()
-const base = pyBom ? null : pythonBase()
-r.python_cmd = pyBom || (base && base.join(' '))
-r.python = pyBom ? versaoPy(pyBom) : base ? versaoPy(base[0]) : null
-if (r.python_cmd) r.numpy_scipy = !!pyBom
+  const pyBom = acharPython()
+  const base = pyBom ? null : pythonBase()
+  r.python_cmd = pyBom || (base && base.join(' '))
+  r.python = pyBom ? versaoPy(pyBom) : base ? versaoPy(base[0]) : null
+  if (r.python_cmd) r.numpy_scipy = !!pyBom
 
-try {
-  const { candidatos } = require(path.join(here, 'playwright.cjs'))
-  const cs = candidatos(projeto)
-  r.playwright = cs[0] || null
-  if (cs[0]) r.chromium = chromiumDe(cs[0])
-} catch (e) { r.playwright_erro = e.message }
+  try {
+    const { candidatos } = require(path.join(here, 'playwright.cjs'))
+    const cs = candidatos(projeto)
+    r.playwright = cs[0] || null
+    if (cs[0]) r.chromium = chromiumDe(cs[0])
+  } catch (e) { r.playwright_erro = e.message }
 
-try { const st = fs.statfsSync(projeto); r.disco_livre_gb = +((st.bavail * st.bsize) / 1e9).toFixed(1) } catch {}
+  try { const st = fs.statfsSync(projeto); r.disco_livre_gb = +((st.bavail * st.bsize) / 1e9).toFixed(1) } catch {}
 
-r.arquivo_ambiente = ARQ
-r.ambiente = lerAmbiente()
+  r.arquivo_ambiente = ARQ
+  r.ambiente = lerAmbiente()
 
-const falta = []
-if (!r.ffmpeg) falta.push(['ffmpeg', comoFfmpeg])
-if (!r.python_cmd) falta.push(['Python 3', comoPython])
-else if (!r.numpy_scipy) falta.push(['numpy + scipy (only for the soundtrack)', `${EU} --fix (creates ${curto(path.join(CASA, 'venv'))} with both)`])
-if (!r.playwright) falta.push(['Playwright', `${EU} --fix (finds the one already installed; if there is none, --yes downloads ~150 MB)`])
-else if (!r.chromium) falta.push(['Playwright\'s Chromium', `${EU} --fix --yes (downloads ~150 MB)`])
-if (r.disco_livre_gb != null && r.disco_livre_gb < 3) falta.push(['disk space', `only ${r.disco_livre_gb} GB free — the render streams, but the encode and the previews need ~2 GB`])
-r.falta = falta.map(([o, c]) => ({ o, como: c }))
-r.workers_sugeridos = Math.max(2, Math.min(8, r.cpus - 2))
-// o environment.json falta, ou aponta para o que não existe mais: o conserto refaz
-const ambVelho = !r.ambiente || ['playwright', 'python'].some((k) => !r.ambiente[k] || !fs.existsSync(r.ambiente[k]))
-r.consertar = falta.length || ambVelho ? `${EU} --fix` : null
-r.opcional = opcionais()
+  const falta = []
+  if (!r.ffmpeg) falta.push(['ffmpeg', comoFfmpeg])
+  if (!r.python_cmd) falta.push(['Python 3', comoPython])
+  else if (!r.numpy_scipy) falta.push(['numpy + scipy (only for the soundtrack)', `${EU} --fix (creates ${curto(path.join(CASA, 'venv'))} with both)`])
+  if (!r.playwright) falta.push(['Playwright', `${EU} --fix (finds the one already installed; if there is none, --yes downloads ~150 MB)`])
+  else if (!r.chromium) falta.push(['Playwright\'s Chromium', `${EU} --fix --yes (downloads ~150 MB)`])
+  if (r.disco_livre_gb != null && r.disco_livre_gb < 3) falta.push(['disk space', `only ${r.disco_livre_gb} GB free — the render streams, but the encode and the previews need ~2 GB`])
+  r.falta = falta.map(([o, c]) => ({ o, como: c }))
+  r.workers_sugeridos = Math.max(2, Math.min(8, r.cpus - 2))
+  const ambVelho = ambienteVelho(r.ambiente)
+  r.consertar = falta.length || ambVelho ? `${EU} --fix` : null
+  r.opcional = opcionais()
 
-if (comJson) { console.log(JSON.stringify(r, null, 2)); process.exit(0) }
-console.log(`system    ${r.sistema} · ${r.cpus} CPUs · shell ${r.shell}`)
-console.log(`node      ${r.node}`)
-console.log(`ffmpeg    ${r.ffmpeg || 'NOT FOUND'}`)
-console.log(`python    ${r.python || 'NOT FOUND'}${r.python_cmd ? ` (${r.python_cmd})` : ''}${r.python_cmd ? ` · numpy/scipy ${r.numpy_scipy ? 'ok' : 'missing'}` : ''}`)
-console.log(`playwright ${r.playwright || 'NOT FOUND'}`)
-console.log(`chromium  ${r.chromium ? 'ok' : 'NOT FOUND'}`)
-if (r.disco_livre_gb != null) console.log(`disk      ${r.disco_livre_gb} GB free`)
-console.log(`workers   ${r.workers_sugeridos} (parallel render)`)
-console.log(r.ambiente
-  ? `env file  ${curto(ARQ)} (from ${String(r.ambiente.quando || '?').slice(0, 10)}) · playwright ${curto(r.ambiente.playwright) || '—'} · python ${curto(r.ambiente.python) || '—'}`
-  : `env file  ${curto(ARQ)} does not exist`)
-mostraOpcionais(r.opcional)
-if (falta.length) { console.log('\nMISSING:'); for (const f of r.falta) console.log(`  · ${f.o}: ${f.como}`) }
-else console.log('\nAll set to render.')
-if (r.consertar) console.log(`\nTo fix it all at once (and write ${curto(ARQ)}, which every script reads on its own): ${r.consertar}`)
-faltaOpcional(r.opcional)
-process.exit(falta.some(([o]) => /ffmpeg|Playwright|Chromium/.test(o)) ? 2 : 0)
+  if (comJson) { console.log(JSON.stringify(r, null, 2)); process.exit(0) }
+  console.log(`system    ${r.sistema} · ${r.cpus} CPUs · shell ${r.shell}`)
+  console.log(`node      ${r.node}`)
+  console.log(`ffmpeg    ${r.ffmpeg || 'NOT FOUND'}`)
+  console.log(`python    ${r.python || 'NOT FOUND'}${r.python_cmd ? ` (${r.python_cmd})` : ''}${r.python_cmd ? ` · numpy/scipy ${r.numpy_scipy ? 'ok' : 'missing'}` : ''}`)
+  console.log(`playwright ${r.playwright || 'NOT FOUND'}`)
+  console.log(`chromium  ${r.chromium ? 'ok' : 'NOT FOUND'}`)
+  if (r.disco_livre_gb != null) console.log(`disk      ${r.disco_livre_gb} GB free`)
+  console.log(`workers   ${r.workers_sugeridos} (parallel render)`)
+  console.log(r.ambiente
+    ? `env file  ${curto(ARQ)} (from ${String(r.ambiente.quando || '?').slice(0, 10)}) · playwright ${curto(r.ambiente.playwright) || '—'} · python ${curto(r.ambiente.python) || '—'}`
+    : `env file  ${curto(ARQ)} does not exist`)
+  mostraOpcionais(r.opcional)
+  if (falta.length) { console.log('\nMISSING:'); for (const f of r.falta) console.log(`  · ${f.o}: ${f.como}`) }
+  else console.log('\nAll set to render.')
+  if (r.consertar) console.log(`\nTo fix it all at once (and write ${curto(ARQ)}, which every script reads on its own): ${r.consertar}`)
+  faltaOpcional(r.opcional)
+  process.exit(falta.some(([o]) => /ffmpeg|Playwright|Chromium/.test(o)) ? 2 : 0)
+}
+
+// caminho real dos dois lados: a skill é instalada por link simbólico, e aí o argv[1] não bate com o import.meta.url.
+// Importado (o requisitos.mjs lê as chaves e o PATH daqui), não roda nada.
+if (process.argv[1] && (() => { try { return fs.realpathSync(process.argv[1]) === fs.realpathSync(fileURLToPath(import.meta.url)) } catch { return false } })()) {
+  if (consertar) await oConserto()
+  oDiagnostico()
+}
