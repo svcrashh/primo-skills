@@ -759,7 +759,8 @@ async function cmdAccount(a) {
   const ativa = contaAtiva(s)
   if (a.json) return console.log(JSON.stringify({ tier: s.tier, status: s.status, active: ativa, used: s.character_count, limit: s.character_limit, left: restam(s), renews_unix: s.next_character_count_reset_unix ?? null, free: gratis(s) }))
   console.log(saldo(s))
-  console.log(`status ${s.status ?? '?'}${ativa ? ' (active)' : ''}${s.next_character_count_reset_unix ? ` · renews on ${data(s.next_character_count_reset_unix)}` : ''}${s.voice_limit != null ? ` · voices in the account ${s.voice_slots_used ?? '?'} of ${s.voice_limit}` : ''}`)
+  const renova = s.next_character_count_reset_unix
+  console.log(`status ${s.status ?? '?'}${ativa ? ' (active)' : ''}${renova ? ` · ${renova * 1000 < Date.now() ? 'renewal was due on' : 'renews on'} ${data(renova)}` : ''}${s.voice_limit != null ? ` · voices in the account ${s.voice_slots_used ?? '?'} of ${s.voice_limit}` : ''}`)
   const aviso = avisoConta(s)
   if (aviso) console.log(aviso)
   if (gratis(s)) console.log(AVISO_GRATIS)
