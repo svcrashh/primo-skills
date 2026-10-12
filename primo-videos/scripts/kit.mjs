@@ -36,7 +36,7 @@ const lerJson = (a) => JSON.parse(fs.readFileSync(a, 'utf8'))
 const gravarJson = (a, o) => { fs.mkdirSync(path.dirname(a), { recursive: true }); fs.writeFileSync(a, JSON.stringify(o, null, 2) + '\n') }
 const agoraIso = () => new Date().toISOString()
 const casa = (p) => (p && p.startsWith(os.homedir()) ? '~' + p.slice(os.homedir().length) : p)
-const expandir = (p) => (p && p.startsWith('~/') ? path.join(os.homedir(), p.slice(2)) : p)
+const expandir = (p) => (p && /^~[\\/]/.test(p) ? path.join(os.homedir(), p.slice(2)) : p)
 
 /** Os kits desta máquina: [{ slug, produto, dir }]. */
 export function kits() {
@@ -58,7 +58,7 @@ export function lerKit(produto) {
 }
 
 // ── salvar ───────────────────────────────────────────────────────────────────────────────────────────────────────────
-const NAO_COPIA = /(^|\/)(\.venv|node_modules|_teste|saida|out|previas|__pycache__|\.DS_Store|PRONTO)(\/|$)/
+const NAO_COPIA = /(^|[\\/])(\.venv|node_modules|_teste|saida|out|previas|__pycache__|\.DS_Store|PRONTO)([\\/]|$)/
 function copiarPasta(de, para, { filtro = (rel) => !NAO_COPIA.test(rel) } = {}) {
   fs.mkdirSync(para, { recursive: true })
   for (const n of fs.readdirSync(de)) {
@@ -211,13 +211,15 @@ function niveis(txt, cond) {
   return out.join('\n')
 }
 
-// os modelos (texto puro: o empacotador não lê import dentro deles) com {{marcas}} trocadas
+// os modelos (texto puro: o empacotador não lê import dentro deles) com {{marcas}} trocadas. Caminho dentro do video.mjs
+// vai como literal JSON (o \ do Windows num '…' vira escape) e o import como URL de arquivo (o import de C:\… falha)
 const preencher = (arq, vals) => Object.entries(vals).reduce((t, [k, v]) => t.replaceAll(`{{${k}}}`, String(v)), fs.readFileSync(path.join(AQUI, 'kit', arq), 'utf8'))
 const modeloVideo = ({ gravar, id, serie, semente, origem, inicio, versao, cinema, perfil, antesPorta, produto, pedido, comVoz }) => preencher('video.template.txt', {
+  gravar: JSON.stringify(pathToFileURL(gravar).href), serie: JSON.stringify(serie),
   id, produto, data: agoraIso().slice(0, 10), pedido140: pedido.replace(/\n/g, ' ').slice(0, 140),
   arquivoTextos: comVoz ? 'voice/v1/script.json (the lines)' : 'texts.json (the texts)', arquivoFalas: comVoz ? 'voice/v1/script.json' : 'texts.json',
   checkVoz: comVoz ? ' (before the voice, from the script)' : '', gravaVoz: comVoz ? ' (with the generated voice: voice/v1/narration.json)' : '',
-  caminhoTextos: comVoz ? "'voice', 'v1', 'script.json'" : "'texts.json'", gravar, serie, cinema, semente: semente == null ? 'undefined' : semente,
+  caminhoTextos: comVoz ? "'voice', 'v1', 'script.json'" : "'texts.json'", cinema, semente: semente == null ? 'undefined' : semente,
   origem, inicio, versao, antesPorta,
   linhaVoz: comVoz ? `  ...(ANTES ? {} : { voz: { locucao: 'voice/v1/narration.json', roteiro: 'voice/v1/script.json', perfil: '${perfil}' } }),\n` : '',
 })
@@ -265,8 +267,14 @@ export function novoVideo(produto, pastaVideo, { pedido, voz = false, serie = nu
     cinema: S.cinema || 'moldura', perfil: V?.perfil || 'calmo', antesPorta: R.antes?.porta || 8191, produto: kit.produto, pedido, comVoz,
   }))
   const modelo = path.join(AQUI, 'kit', 'REQUEST.template.md')
-  const sub = { '{{produto}}': kit.produto, '{{pedido}}': pedido, '{{pasta}}': pasta, '{{skill}}': SKILL, '{{serie}}': sid, '{{kit}}': casa(dir), '{{voz}}': V ? `${V.nome || V.id} (${V.id}, ${V.modelo})` : '', '{{takes}}': String(takes) }
+  const sub = { '{{produto}}': kit.produto, '{{pedido}}': pedido, '{{serie}}': sid, '{{kit}}': casa(dir), '{{voz}}': V ? `${V.nome || V.id} (${V.id}, ${V.modelo})` : '', '{{takes}}': String(takes) }
   let ped = niveis(fs.readFileSync(modelo, 'utf8'), { voz: comVoz, 'voz-do-kit': !!V })
+  // os caminhos dos comandos ({{skill}}/scripts/voice.mjs, {{pasta}}/voice/v1) saem com o separador do sistema, e entre
+  // aspas quando têm espaço ou o que o shell lê (no Windows a pasta do usuário costuma ter espaço), para colar como estão
+  ped = ped.replace(/\{\{(skill|pasta)\}\}((?:\/[\w.-]+)*)/g, (_, k, resto) => {
+    const c = (k === 'skill' ? SKILL : pasta) + resto.replaceAll('/', path.sep)
+    return /[\s&;|<>()']/.test(c) ? `"${c}"` : c
+  })
   for (const [k, x] of Object.entries(sub)) ped = ped.replaceAll(k, x)
   fs.writeFileSync(path.join(pasta, 'REQUEST.md'), ped)
   const linhasProgresso = []

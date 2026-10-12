@@ -7,7 +7,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { rodar, principal } from '{{gravar}}'
+import { rodar, principal } from {{gravar}}
 import { base, fechar } from './recording/base.mjs'
 import { roteiro } from './recording/journey.mjs'
 
@@ -28,7 +28,7 @@ const video = {
   fimLinhas: [FALAS.fechamento],
   pasta: ANTES ? path.join(pasta, 'antes') : pasta,
   fotos: path.join(pasta, 'antes'),
-  serie: '{{serie}}',
+  serie: {{serie}},
   cinema: '{{cinema}}',
   semente: {{semente}},
   ...base({ origem: ANTES ? process.env.ANTES_ORIGEM || 'http://[::1]:{{antesPorta}}' : '{{origem}}', inicio: '{{inicio}}', pasta: ANTES ? path.join(pasta, 'antes') : pasta, versao: '{{versao}}' }),

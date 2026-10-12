@@ -75,6 +75,7 @@ async function confereSemVoz(v) {
   await assert.rejects(semFalas(v.pasta), /write the lines abertura, p1, fechamento in texts\.json/)
   escreverFalas(path.join(v.pasta, 'texts.json'))
   const video = await comFalas(v.pasta)
+  assert.ok(fs.existsSync(path.join(video.serie, 'series.json')), `the kit series, from video.mjs: ${video.serie}`)
   assert.equal(video.voz, undefined)
   assert.equal(video.titulo, FALAS.abertura)
   assert.equal(etapaVoz(v.pasta), 'pulada', 'the stopwatch has no voice stage')
@@ -97,6 +98,7 @@ async function confereComVoz(v) {
   await assert.rejects(semFalas(v.pasta), /write the lines abertura, p1, fechamento in voice\/v1\/script\.json/)
   escreverFalas(script)
   const video = await comFalas(v.pasta)
+  assert.ok(fs.existsSync(path.join(video.serie, 'series.json')), `the kit series, from video.mjs: ${video.serie}`)
   assert.deepEqual(video.voz, { locucao: 'voice/v1/narration.json', roteiro: 'voice/v1/script.json', perfil: 'calmo' })
   // antes de a voz existir, o --check do gravador lê as falas de onde o kit as pôs, e a abertura é o título
   const rot = lerRoteiroComoLocucao(video, 'computer')

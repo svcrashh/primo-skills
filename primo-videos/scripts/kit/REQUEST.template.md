@@ -29,7 +29,7 @@ The kit has no approved voice yet: the script has no `voz`, and `generate` refus
 
 ## The fast path (each step with the progress line)
 
-The commands below are ready to paste (zsh or bash), from inside the folder: `cd {{pasta}}`.
+The commands below are ready to paste (zsh, bash or PowerShell), from inside the folder: `cd {{pasta}}`.
 
 1. **The script.** The base thesis is in `thesis.md` (adjust the proof scene if the request changed). `node {{skill}}/scripts/progress.mjs now {{pasta}} script`.
 <!-- se !voz -->

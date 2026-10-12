@@ -6,7 +6,7 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { spawnSync } from 'node:child_process'
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 
 const AQUI = path.dirname(fileURLToPath(import.meta.url))
 const KIT = path.join(AQUI, '..', 'scripts', 'kit.mjs')
@@ -99,14 +99,15 @@ describe('kit', () => {
     const src = fs.readFileSync(path.join(nova, 'video.mjs'), 'utf8')
     assert.match(src, /^\/\/ novo — Produto Teste\. Created by kit new-video \(\d{4}-\d{2}-\d{2}\): Mostre o botão novo\n/)
     assert.match(src, /semente: 72/)
-    assert.match(src, /series\/computer-16x9-pt/)
+    // a série com o caminho inteiro e escrito como literal JSON: no Windows, num '…', o \ do caminho viraria escape
+    assert.ok(src.includes(`serie: ${JSON.stringify(path.join(marcas, 'produto-teste', 'kit', 'series', 'computer-16x9-pt'))},`), 'serie com o caminho da série do kit')
     assert.match(src, /inicio: '\/painel'/)
     // o cronômetro começou com a meta do kit
     const pg = JSON.parse(fs.readFileSync(path.join(nova, 'progress.json'), 'utf8'))
     assert.equal(pg.meta_min, 10)
     // as falas ainda dizem TODO: o video.mjs não carrega sem elas. Sem --voice o vídeo novo não tem voz, mesmo vindo de
     // um kit que guardou uma (kit com e sem voz × vídeo com e sem voz: kit-voice.test.mjs)
-    await assert.rejects(import(path.join(nova, 'video.mjs')), /write the lines abertura, p1, fechamento in texts\.json/)
+    await assert.rejects(import(pathToFileURL(path.join(nova, 'video.mjs')).href), /write the lines abertura, p1, fechamento in texts\.json/)
     assert.ok(!fs.existsSync(path.join(nova, 'voice')), 'sem --voice, nada de voice/')
     // pasta que já tem coisa não é sobrescrita
     assert.match(roda('new-video', 'Produto Teste', nova, '--request', 'x').stderr, /already exists and is not empty/)
