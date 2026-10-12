@@ -11,7 +11,8 @@
 //   node board.mjs say    <project> [--scene <id>] "<text>"         a message from the skill, in that scene's thread (or the general one)
 //   node board.mjs status <project> [--scene <id>] working|idle ["<text>"]   "working…" on the page while the skill works
 //   node board.mjs agent  <project> [--terminal] [--dry-run]        the prompt and the loop for whoever serves the board;
-//                                                                   --terminal opens Terminal.app with claude on it (macOS)
+//                                                                   --terminal opens a terminal with claude on it (Terminal.app
+//                                                                   on macOS, Windows Terminal on Windows)
 //   node board.mjs events <project> [--since <n>]                   list the events, one JSON line each
 //   node board.mjs stop   <project>
 // Everything lives in <project>/board/: board.json (the data), events.jsonl (what the person did and what the skill
@@ -21,12 +22,12 @@
 import fs from 'node:fs'
 import http from 'node:http'
 import path from 'node:path'
-import { spawn } from 'node:child_process'
+import { spawn, spawnSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 import {
   ActionError, appendEvent, boardDir, listeningFile, patchBoard, readBoard, readEvents, skillEvent, validateBoard, withLock, writeBoard,
 } from './board/data.mjs'
-import { acharClaude as findClaude } from './critic/call.mjs'
+import { acharClaude as findClaude, ambienteLimpo as cleanEnv, comoRodar as howToRun } from './critic/call.mjs'
 
 const USAGE = `usage: node board.mjs <command> <project folder>
   set    <project> <board.json | - | '{…}'>        replace the board
@@ -291,21 +292,59 @@ export function terminalCommand({ project, claude, promptFile }) {
   return { command: 'osascript', args: ['-e', 'tell application "Terminal"', '-e', 'activate', '-e', `do script "${quoted}"`, '-e', 'end tell'] }
 }
 
+const quoteWin = (v) => `"${String(v).replace(/(\\+)$/, '$1$1')}"`   // a path has no '"': only a trailing backslash needs doubling
+const quotePs = (v) => `'${String(v).replace(/['\u2018\u2019\u201A\u201B]/g, '$&$&')}'`   // PowerShell reads the curly ones as quotes too
+
+/**
+ * Windows: the call that opens Windows Terminal in the project folder running `board.mjs agent-window`, which starts
+ * claude with the prompt file, so no shell ever parses the prompt. Without wt.exe, a console window through PowerShell
+ * runs the same. Nothing runs here.
+ */
+export function windowsTerminalCommand({ project, claude, wt, node = process.execPath, script = fileURLToPath(import.meta.url) }) {
+  const inside = [node, script, 'agent-window', project, claude]
+  // wt splits its command line into tabs at each ";"
+  if (wt) return { command: wt, args: ['-w', 'new', 'nt', '--title', 'primo-videos board', '-d', project, ...inside].map((a) => a.replace(/;/g, '\\;')) }
+  return { command: 'powershell.exe', args: ['-NoProfile', '-NonInteractive', '-Command', `Start-Process -FilePath ${quotePs(node)} -ArgumentList ${quotePs(inside.slice(1).map(quoteWin).join(' '))}`] }
+}
+
+function findWt(env = process.env) {
+  const dirs = [...(env.PATH || '').split(';'), env.LOCALAPPDATA && path.join(env.LOCALAPPDATA, 'Microsoft', 'WindowsApps')].filter(Boolean)
+  // accessSync, not statSync: WindowsApps\wt.exe is an app execution alias, a link that stat cannot always follow
+  for (const file of dirs.map((d) => path.join(d, 'wt.exe'))) try { fs.accessSync(file); return file } catch { /* next */ }
+  return null
+}
+
+/** What the Windows window runs: claude in the project with the prompt as its first message, then a PowerShell there. */
+function agentWindow(project, args) {
+  process.on('SIGINT', () => {})   // Ctrl+C is for claude; this process only waits for it
+  try {
+    const { comando, antes } = howToRun(args._[2] || findClaude() || 'claude')
+    const prompt = fs.readFileSync(path.join(boardDir(project), 'agent-prompt.txt'), 'utf8').trimEnd()
+    const run = spawnSync(comando, [...antes, prompt], { cwd: project, stdio: 'inherit', env: cleanEnv() })
+    if (run.error) throw run.error
+  } catch (e) { console.error(`couldn't start claude: ${e.message}`) }
+  if (process.stdin.isTTY) spawnSync('powershell.exe', ['-NoLogo'], { cwd: project, stdio: 'inherit' })
+}
+
 function agent(project, args) {
   const prompt = agentPrompt(project)
   if (args.terminal) {
-    const claude = findClaude()
-    const missing = process.platform !== 'darwin' ? 'opening a terminal only works on macOS'
-      : !TERMINAL_APPS.some((app) => fs.existsSync(app)) ? 'Terminal.app is not on this machine'
-        : !claude ? 'the claude command (Claude Code) was not found in the PATH or in ~/.local/bin' : null
+    const claude = findClaude(), windows = process.platform === 'win32'
+    const missing = windows ? (!claude ? 'the claude command (Claude Code) was not found in the PATH, in %USERPROFILE%\\.local\\bin or in %APPDATA%\\npm' : null)
+      : process.platform !== 'darwin' ? 'opening a terminal only works on macOS and Windows'
+        : !TERMINAL_APPS.some((app) => fs.existsSync(app)) ? 'Terminal.app is not on this machine'
+          : !claude ? 'the claude command (Claude Code) was not found in the PATH or in ~/.local/bin' : null
     if (!missing) {
       const promptFile = path.join(boardDir(project), 'agent-prompt.txt')
-      const call = terminalCommand({ project, claude, promptFile })
+      const wt = windows ? findWt() : null
+      const call = windows ? windowsTerminalCommand({ project, claude, wt }) : terminalCommand({ project, claude, promptFile })
       if (args['dry-run']) return console.log(JSON.stringify(call, null, 2))
       fs.mkdirSync(boardDir(project), { recursive: true })
       fs.writeFileSync(promptFile, prompt + '\n')
-      spawn(call.command, call.args, { detached: true, stdio: 'ignore' }).on('error', () => console.error(`couldn't open the Terminal: paste this prompt into the assistant instead\n\n${prompt}`)).unref()
-      return console.log(`a Terminal window is opening with claude on this board (the prompt: ${promptFile})`)
+      const app = !windows ? 'Terminal' : wt ? 'Windows Terminal' : 'PowerShell'
+      spawn(call.command, call.args, { detached: true, stdio: 'ignore', ...(windows ? { env: cleanEnv() } : {}) })
+        .on('error', () => console.error(`couldn't open the ${app}: paste this prompt into the assistant instead\n\n${prompt}`)).unref()
+      return console.log(`a ${app} window is opening with claude on this board (the prompt: ${promptFile})${windows && !wt ? '. Claude Code looks better in Windows Terminal: winget install Microsoft.WindowsTerminal' : ''}`)
     }
     console.error(`not opening a terminal: ${missing}. Give this prompt to the assistant instead:\n`)
   }
@@ -322,6 +361,7 @@ async function main(argv) {
   const commands = {
     set: (p) => set(p, args._[2]), patch: (p) => patch(p, args._[2]), open: (p) => open(p, args), serve, stop,
     wait: (p) => wait(p, args), say: (p) => say(p, args), status: (p) => status(p, args), agent: (p) => agent(p, args), events: (p) => events(p, args),
+    'agent-window': (p) => agentWindow(p, args),
   }
   if (!Object.hasOwn(commands, command)) throw new Failure(`unknown command "${command}"\n${USAGE}`)
   await commands[command](projectOf(args))

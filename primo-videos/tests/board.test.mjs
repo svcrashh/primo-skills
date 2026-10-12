@@ -12,7 +12,7 @@ import { fileURLToPath } from 'node:url'
 import { applyAction, patchBoard, readBoard, readEvents, resolveInside, skillEvent, validateBoard, writeBoard } from '../scripts/board/data.mjs'
 import { listenerState, looksLike, sanitizeName, startBoardServer } from '../scripts/board/server.mjs'
 import { nextPhase, phaseOfHash, hashOfPhase, phasesOf, renderPage, resolvePhase, startPhase } from '../scripts/board/render.mjs'
-import { agentPrompt, terminalCommand } from '../scripts/board.mjs'
+import { agentPrompt, terminalCommand, windowsTerminalCommand } from '../scripts/board.mjs'
 
 const HERE = path.dirname(fileURLToPath(import.meta.url))
 const CLI = path.join(HERE, '..', 'scripts', 'board.mjs')
@@ -868,12 +868,36 @@ describe('the command line: set, patch, open, wait, say, agent, events, stop', (
     assert.equal(call.args[7], 'end tell')
     assert.doesNotMatch(call.args.join(' '), /skip-permissions|bypass/i)
 
+    // on Windows: Windows Terminal in the project folder, running board.mjs agent-window, which starts claude with the
+    // prompt file (no shell parses the prompt); wt reads ";" as "next tab", so it goes escaped
+    const win = { project: "C:\\Users\\me\\it's a project; v2", claude: 'C:\\Users\\me\\.local\\bin\\claude.exe', node: 'C:\\Program Files\\nodejs\\node.exe', script: 'C:\\skills\\primo-videos\\scripts\\board.mjs' }
+    const wt = windowsTerminalCommand({ ...win, wt: 'C:\\Users\\me\\AppData\\Local\\Microsoft\\WindowsApps\\wt.exe' })
+    assert.deepEqual(wt, {
+      command: 'C:\\Users\\me\\AppData\\Local\\Microsoft\\WindowsApps\\wt.exe',
+      args: ['-w', 'new', 'nt', '--title', 'primo-videos board', '-d', "C:\\Users\\me\\it's a project\\; v2",
+        'C:\\Program Files\\nodejs\\node.exe', 'C:\\skills\\primo-videos\\scripts\\board.mjs', 'agent-window', "C:\\Users\\me\\it's a project\\; v2", 'C:\\Users\\me\\.local\\bin\\claude.exe'],
+    })
+    // without wt.exe (Windows 10), a console window through PowerShell runs the same; '' is how PowerShell writes a '
+    const ps = windowsTerminalCommand({ ...win, wt: null })
+    assert.deepEqual(ps, {
+      command: 'powershell.exe',
+      args: ['-NoProfile', '-NonInteractive', '-Command', `Start-Process -FilePath 'C:\\Program Files\\nodejs\\node.exe' -ArgumentList '"C:\\skills\\primo-videos\\scripts\\board.mjs" "agent-window" "C:\\Users\\me\\it''s a project; v2" "C:\\Users\\me\\.local\\bin\\claude.exe"'`],
+    })
+    assert.ok(windowsTerminalCommand({ ...win, project: 'D:\\', wt: null }).args[3].includes(' "D:\\\\" '), 'a trailing backslash would escape the closing quote')
+    assert.ok(windowsTerminalCommand({ ...win, project: 'C:\\it’s', wt: null }).args[3].includes(' "C:\\it’’s" '), 'PowerShell reads a curly quote as a quote too')
+    for (const c of [wt, ps]) assert.doesNotMatch(c.args.join(' '), /skip-permissions|bypass/i)
+
     // on the command line, --dry-run prints that call; where a terminal cannot be opened, the prompt comes out instead
     const fake = path.join(project, 'claude')
     fs.writeFileSync(fake, '#!/bin/sh\n', { mode: 0o755 })
     const dry = cli(['agent', project, '--terminal', '--dry-run'], { env: { ...process.env, CRITIC_CLAUDE: fake } })
     assert.equal(dry.code, 0, dry.err)
-    if (process.platform === 'darwin' && ['/System/Applications/Utilities/Terminal.app', '/Applications/Utilities/Terminal.app'].some((app) => fs.existsSync(app))) {
+    if (process.platform === 'win32') {
+      // Windows Terminal where there is one (the runner, most of Windows 11), PowerShell where there is not
+      const printed = JSON.parse(dry.out)
+      if (printed.command !== 'powershell.exe') assert.match(printed.command, /\\wt\.exe$/i)
+      assert.deepEqual(printed, windowsTerminalCommand({ project, claude: fake, wt: printed.command === 'powershell.exe' ? null : printed.command }))
+    } else if (process.platform === 'darwin' && ['/System/Applications/Utilities/Terminal.app', '/Applications/Utilities/Terminal.app'].some((app) => fs.existsSync(app))) {
       const printed = JSON.parse(dry.out)
       assert.equal(printed.command, 'osascript')
       assert.ok(printed.args[5].includes(`cd '${project}' && '${fake}' \\"$(cat '${path.join(project, 'board', 'agent-prompt.txt')}')\\"`))
@@ -882,6 +906,19 @@ describe('the command line: set, patch, open, wait, say, agent, events, stop', (
       assert.match(dry.err, /not opening a terminal/)
     }
     assert.equal(fs.existsSync(path.join(project, 'board', 'agent-prompt.txt')), false, 'a dry run writes nothing')
+
+    // what the Windows window runs, for real with a stand-in claude: in the project, the prompt as one argument with its
+    // quotes and line breaks intact, and without the marks of the session that opened it
+    const saw = path.join(project, 'claude-saw.json'), standIn = path.join(project, 'stand-in-claude.js')
+    fs.writeFileSync(standIn, `#!/usr/bin/env node\nrequire('node:fs').writeFileSync(${JSON.stringify(saw)}, JSON.stringify({ args: process.argv.slice(2), cwd: process.cwd(), marks: Object.keys(process.env).filter((k) => /^(CLAUDECODE|CLAUDE_CODE_)/.test(k)) }))\n`, { mode: 0o755 })
+    fs.writeFileSync(path.join(project, 'board', 'agent-prompt.txt'), prompt + '\n')
+    const ran = cli(['agent-window', project, standIn], { env: { ...process.env, CLAUDECODE: '1', CLAUDE_CODE_ENTRYPOINT: 'cli' } })
+    assert.equal(ran.code, 0, ran.err)
+    const got = JSON.parse(fs.readFileSync(saw, 'utf8'))
+    assert.deepEqual(got.args, [prompt])
+    assert.equal(fs.realpathSync(got.cwd), fs.realpathSync(project))
+    assert.deepEqual(got.marks, [])
+    for (const f of [saw, standIn, path.join(project, 'board', 'agent-prompt.txt')]) fs.rmSync(f)
   })
 
   test('open starts one server per project and returns; wait hears the click and beats while it listens; stop ends it', async () => {
@@ -942,7 +979,9 @@ describe('the command line: set, patch, open, wait, say, agent, events, stop', (
     assert.deepEqual(cli(['events', project, '--since', '4']).out.split('\n').map((l) => JSON.parse(l).n), [5])
     assert.deepEqual(cli(['wait', project, '--since', '0', '--timeout', '1']).out.split('\n').map((l) => JSON.parse(l).n), [1, 4, 5], '--since replays what the person did')
 
-    // without --no-open, the platform's opener is called with the URL (a stand-in here: no real browser in a test)
+    // without --no-open, the platform's opener is called with the URL (a stand-in here: no real browser in a test).
+    // Not on Windows: there the opener is cmd.exe's `start`, and a stand-in would have to be an .exe named cmd.exe
+    // found before System32, which is no clean fake.
     if (process.platform !== 'win32') {
       const bin = fs.mkdtempSync(path.join(fs.realpathSync(os.tmpdir()), 'board-opener-')), asked = path.join(bin, 'asked.txt')
       for (const name of ['open', 'xdg-open']) fs.writeFileSync(path.join(bin, name), `#!/bin/sh\nprintf '%s' "$1" > "${asked}"\n`, { mode: 0o755 })
