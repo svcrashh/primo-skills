@@ -1,11 +1,14 @@
 // Uma OpenAI de mentira em 127.0.0.1, para os testes rodarem sem rede e sem gastar nada. Responde o
 // /v1/audio/transcriptions no formato de cada modelo e guarda cada pedido. Sem resposta combinada, ela "ouve" o áudio
 // que chegou: cada trecho com som vira um segmento "som N", com o início e o fim de verdade dentro daquela parte.
+// Sozinha, para o workflow do Windows rodar a play como a pessoa roda: node api-falsa.mjs <arquivo> sobe a API com a
+// chave que está em PLAY_CHAVE_FALSA, grava o endereço no arquivo e fica no ar até ser encerrada.
 import http from 'node:http'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { spawnSync } from 'node:child_process'
+import { fileURLToPath } from 'node:url'
 
 function lerMultipart(corpo, tipo) {
   const m = /boundary=(?:"([^"]+)"|([^;]+))/.exec(tipo ?? '')
@@ -102,4 +105,13 @@ export async function subirApiFalsa({ chave }) {
     zerar: () => { pedidos.length = 0; estado.resposta = null; estado.erro = null },
     fechar: () => new Promise((r) => servidor.close(r)),
   }
+}
+
+if (process.argv[1] && fs.realpathSync(process.argv[1]) === fs.realpathSync(fileURLToPath(import.meta.url))) {
+  if (!process.argv[2] || !process.env.PLAY_CHAVE_FALSA) {
+    console.error('uso: PLAY_CHAVE_FALSA=<chave de mentira> node api-falsa.mjs <arquivo onde gravar o endereço>')
+    process.exit(2)
+  }
+  const api = await subirApiFalsa({ chave: process.env.PLAY_CHAVE_FALSA })
+  fs.writeFileSync(process.argv[2], api.url)
 }
