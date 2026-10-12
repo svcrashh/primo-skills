@@ -41,7 +41,7 @@ and copy again (\`node <skill>/scripts/tutorial/copy.mjs ${destino}\`). The cont
 - Compose: \`node ${destino}/scripts/tutorial/compose.mjs <video-folder> [--mode final]\`
 - Needs: Node 18+, ffmpeg, Playwright with Chromium and Python 3 with numpy + scipy. Once per machine:
   \`node ${destino}/scripts/environment.mjs --fix\` finds Playwright and Chromium (with \`--yes\`, it downloads the
-  missing ones, ~150 MB), creates the soundtrack Python in \`~/.videostudio/venv\` and writes \`~/.videostudio/environment.json\`,
+  missing ones, ~300 MB), creates the soundtrack Python in \`~/.videostudio/venv\` and writes \`~/.videostudio/environment.json\`,
   which gravar and compor read on their own. \`PLAYWRIGHT_PATH\` and \`VIDEOSTUDIO_PYTHON\` only force another path.
 - Do not commit: \`*/output/\`, \`*.mp4\`, \`.venv/\` (add them to .gitignore).
 `)

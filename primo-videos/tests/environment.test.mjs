@@ -148,7 +148,7 @@ test('environment.mjs --fix sem Playwright e sem --yes diz o que baixaria e não
   const r = spawnSync(process.execPath, [AMB, '--fix'], { encoding: 'utf8', cwd: c, env })
   assert.equal(r.status, 2)
   // o Chromium e o Chromium headless que vem junto: no Windows, medido, 197 + 118 MiB
-  assert.match(r.stdout, win ? /~300 MB/ : /~150 MB/)
+  assert.match(r.stdout, /~300 MB/)
   assert.match(r.stdout, /npm i playwright --prefix/)
   assert.match(r.stdout, /--fix --yes/)
   assert.match(r.stdout, /environment incomplete/)

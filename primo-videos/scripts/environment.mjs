@@ -5,7 +5,7 @@
 //   node environment.mjs --fix          resolve de uma vez: acha o Playwright e o Chromium que já existem, cria o
 //                                          Python da trilha (~/.videostudio/venv com numpy e scipy, ~30 MB) e grava
 //                                          ~/.videostudio/environment.json, que todos os scripts da skill leem sozinhos
-//   node environment.mjs --fix --yes    e, se não houver Playwright ou Chromium, baixa (~150 MB; ~300 MB no Windows)
+//   node environment.mjs --fix --yes    e, se não houver Playwright ou Chromium, baixa (~300 MB)
 //   --json: a saída em JSON (no conserto, o andamento vai para o stderr). VIDEOSTUDIO_HOME troca a pasta ~/.videostudio.
 // O ffmpeg não se instala daqui: o conserto acha e diz o comando do sistema.
 import { execSync, spawnSync } from 'node:child_process'
@@ -92,8 +92,8 @@ const sistema = `${mac ? 'macOS' : win ? 'Windows' : 'Linux'} ${os.release()} ($
 const reabrir = ' (then close and reopen PowerShell, and reopen Claude Code: only new windows see it)'
 const comoFfmpeg = mac ? 'brew install ffmpeg' : win ? `winget install ffmpeg${reabrir}` : 'sudo apt install ffmpeg'
 const comoPython = mac ? 'brew install python' : win ? `winget install Python.Python.3.12${reabrir}` : 'sudo apt install python3 python3-venv'
-// o Chromium do Playwright e o Chromium headless que vem junto (no Windows, medido: 197 + 118 MiB)
-export const baixaChromium = win ? '~300 MB' : '~150 MB'
+// o Chromium do Playwright e o Chromium headless que vem junto (medido em 12/10/2026: 195 + 104 MB no Mac, 207 + 124 MB no Windows)
+export const baixaChromium = '~300 MB'
 const pyVenv = path.join(CASA, 'venv', win ? 'Scripts' : 'bin', win ? 'python.exe' : 'python')
 const versaoPy = (py) => { const r = spawnSync(py, ['--version'], { encoding: 'utf8', timeout: 20000 }); return r.status === 0 ? (r.stdout || r.stderr).trim() : null }
 const temNumpyScipy = (py) => spawnSync(py, ['-c', 'import numpy, scipy'], { stdio: 'ignore', timeout: 60000 }).status === 0

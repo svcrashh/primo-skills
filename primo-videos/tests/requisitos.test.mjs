@@ -132,7 +132,7 @@ test('primeira vez na máquina: falta o ffmpeg e a conferência (código 1), e c
     const amb = bloco(r.stdout, '✖ Conferência do ambiente: ainda não foi feita')
     assert.match(amb, /\n {6}node \S*environment\.mjs --fix\n/)
     assert.match(amb, /Playwright e o Chromium/)
-    assert.match(amb, /--yes[^\n]*~150 MB/)
+    assert.match(amb, /--yes[^\n]*~300 MB/)
 
     assert.match(voz, /\n {9}mkdir -p ~\/\.claude\/secrets && chmod 700 ~\/\.claude\/secrets\n/)
     assert.match(voz, /\n {9}touch ~\/\.claude\/secrets\/elevenlabs\.env && chmod 600 ~\/\.claude\/secrets\/elevenlabs\.env\n/)
