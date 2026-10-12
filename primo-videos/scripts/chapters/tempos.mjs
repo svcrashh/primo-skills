@@ -74,7 +74,8 @@ const ate = (busca, vez) => VOZ_EM + FALA.palavras[_palavra(busca, vez)].fim
 export function escreverTempos(projeto, { locucao, falaEm = 1.4, saida = 0.5, log = console.log } = {}) {
   const arq = acharLocucao(projeto, locucao)
   const loc = JSON.parse(fs.readFileSync(arq, 'utf8'))
-  const cenas = fs.readdirSync(path.join(projeto, 'scenes')).filter((c) => /^\d\d-/.test(c))
+  // a cena de exemplo do molde (01-example) nunca recebe a fala: o capítulo 1 é o 01-… de verdade
+  const cenas = fs.readdirSync(path.join(projeto, 'scenes')).filter((c) => /^\d\d-/.test(c) && !/-example$/.test(c))
   const feitas = []
   for (const f of loc.falas) {
     const nn = String(numeroDaCena(f)).padStart(2, '0')

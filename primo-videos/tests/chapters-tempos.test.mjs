@@ -120,15 +120,16 @@ describe('checarCenas: the animation lights up on the word the voice says', () =
 describe('escreverTempos', () => {
   test('finds the only narration, writes the tempos.js of each scene, loads it before scene.js, and refuses when there is more than one', () => {
     const p = tmp()
-    for (const c of ['00-opening', '02-vyrta']) fs.mkdirSync(path.join(p, 'scenes', c), { recursive: true })
+    for (const c of ['00-opening', '02-example', '02-vyrta']) fs.mkdirSync(path.join(p, 'scenes', c), { recursive: true })
     fs.writeFileSync(path.join(p, 'scenes', '02-vyrta', 'index.html'), '<script src="video.js"></script>\n<script src="scene.js"></script>\n')
     fs.mkdirSync(path.join(p, 'voice', 'v1'), { recursive: true })
     const loc = { versao: 1, idioma: 'pt-BR', falas: [C2, { ...C2, id: 'c9', onde: { capitulo: 9 } }] }
     fs.writeFileSync(path.join(p, 'voice', 'v1', 'narration.json'), JSON.stringify(loc))
     const log = []
     const feitas = escreverTempos(p, { falaEm: 0.3, log: (m) => log.push(m) })
-    assert.deepEqual(feitas.map((f) => f.cena), ['02-vyrta'])
+    assert.deepEqual(feitas.map((f) => f.cena), ['02-vyrta'], 'the template example scene, even sorted first, never gets the line')
     assert.ok(fs.existsSync(path.join(p, 'scenes', '02-vyrta', 'tempos.js')))
+    assert.ok(!fs.existsSync(path.join(p, 'scenes', '02-example', 'tempos.js')))
     const html = () => fs.readFileSync(path.join(p, 'scenes', '02-vyrta', 'index.html'), 'utf8')
     assert.match(html(), /<script src="tempos.js"><\/script>\n<script src="scene.js">/)
     escreverTempos(p, { falaEm: 0.3, log() {} })
