@@ -39,14 +39,14 @@ jobs:
         run: |
           [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
           node primo-videos/scripts/requisitos.mjs
-          if ($LASTEXITCODE -ne 1) { throw "esperava código 1 (falta o ffmpeg e a conferência), veio $LASTEXITCODE" }
+          if ($LASTEXITCODE -ne 1) { throw "esperava codigo 1 (falta o ffmpeg e a conferencia), veio $LASTEXITCODE" }
           exit 0
       - name: winget install ffmpeg e winget install Python.Python.3.12
         run: |
           winget install ffmpeg --accept-source-agreements --accept-package-agreements --disable-interactivity
           if ($LASTEXITCODE) { throw "winget install ffmpeg: $LASTEXITCODE" }
           winget install Python.Python.3.12 --accept-source-agreements --accept-package-agreements --disable-interactivity
-          "winget install Python.Python.3.12: código $LASTEXITCODE"
+          "winget install Python.Python.3.12: codigo $LASTEXITCODE"
           # o PATH novo só vale num PowerShell novo: os próximos passos são processos novos
           Join-Path $env:LOCALAPPDATA 'Microsoft\WinGet\Links' | Out-File -Append -Encoding utf8 $env:GITHUB_PATH
       - name: ffmpeg e Python com o nome que a skill procura
@@ -57,7 +57,7 @@ jobs:
         run: |
           [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
           node primo-videos/scripts/environment.mjs --fix
-          if ($LASTEXITCODE -ne 2) { throw "esperava código 2 (falta o Chromium), veio $LASTEXITCODE" }
+          if ($LASTEXITCODE -ne 2) { throw "esperava codigo 2 (falta o Chromium), veio $LASTEXITCODE" }
           exit 0
       - name: environment.mjs --fix --yes
         run: |
@@ -69,14 +69,14 @@ jobs:
           [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
           $d = "$env:USERPROFILE\.claude\secrets"
           New-Item -ItemType Directory -Force $d | Out-Null
-          # o Set-Content do PowerShell 5.1 grava UTF-8 com BOM e CRLF, como o Bloco de Notas pode gravar
+          # o Set-Content do PowerShell 5.1 grava UTF-8 com BOM e CRLF, como o Bloco de Notas pode gravar (sem acento aqui: o 5.1 le o passo como ANSI)
           Set-Content -Path "$d\elevenlabs.env" -Encoding UTF8 -Value 'ELEVENLABS_API_KEY=chave-falsa-do-runner'
           $saida = node primo-videos/scripts/requisitos.mjs | Out-String
           $codigo = $LASTEXITCODE
           $saida
-          if ($codigo -ne 0) { throw "esperava código 0 (nada obrigatório falta), veio $codigo" }
-          if ($saida -match 'chave-falsa') { throw 'o valor da chave apareceu na saída' }
-          if ($saida -notmatch '✔ Voz em off') { throw 'a chave do arquivo não foi achada' }
+          if ($codigo -ne 0) { throw "esperava codigo 0 (nada obrigatorio falta), veio $codigo" }
+          if ($saida -match 'chave-falsa') { throw 'o valor da chave apareceu na saida' }
+          if ($saida -notmatch 'Voz em off: chave da ElevenLabs \(ELEVENLABS_API_KEY\) encontrada') { throw 'a chave do arquivo nao foi achada' }
           Remove-Item -Recurse -Force $d
 
   testes:
@@ -104,7 +104,17 @@ jobs:
         run: node primo-videos/scripts/environment.mjs --fix --yes
       - name: A suíte
         working-directory: primo-videos
+        env:
+          JANELA_TESTE_SAIDA: ${{ runner.temp }}\janela
         run: node --test --test-reporter=spec "tests/*.test.mjs"
+      - name: Sobe a gravação de janela do teste (record-window)
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: janela-windows
+          path: ${{ runner.temp }}\janela
+          if-no-files-found: warn
+          retention-days: 7
 
   # O caminho de um vídeo, pelos comandos que o SKILL.md manda rodar, no Git Bash (onde o Claude Code do Windows roda
   # os comandos). Sobe o MP4 e as folhas como artefato.
@@ -167,38 +177,6 @@ jobs:
           set -euo pipefail
           node "$SK/scripts/refine/video.mjs" "$RUNNER_TEMP/e2e/entrega/demo-16x9.mp4" --json --checks legibilidade,area-segura > "$RUNNER_TEMP/e2e/entrega/refino.json" || true
           node -e "const j = require(process.argv[1]); console.log(JSON.stringify({ ocr: j.medidas.ocr, quadros: j.medidas.quadrosOcr, linhas: j.medidas.linhasOcr, achados: j.achados.map((a) => a.nivel + ' ' + a.msg) }, null, 1)); if (j.medidas.ocr !== 'windows' || !(j.medidas.linhasOcr > 0)) process.exit(1)" "$RUNNER_TEMP/e2e/entrega/refino.json"
-      - name: Medição do OCR do Windows contra o tamanho da letra (temporário)
-        run: |
-          set -euo pipefail
-          cat > "$RUNNER_TEMP/calib.mjs" <<'EOF'
-          import path from 'node:path'
-          import fs from 'node:fs'
-          import { createRequire } from 'node:module'
-          import { pathToFileURL } from 'node:url'
-          const SK = process.env.SK, OUT = process.argv[2]
-          const { abrirNavegador } = createRequire(import.meta.url)(path.join(SK, 'scripts', 'playwright.cjs'))
-          const { ocr } = await import(pathToFileURL(path.join(SK, 'scripts', 'refine', 'video.mjs')).href)
-          const TEXTOS = ['Pronto em um minuto', 'Abra o menu e toque em salvar', 'SIGA AGORA', 'seu app novo', 'Vídeo de fundo grátis', 'Instagram oficial']
-          const TAM = [14, 20, 28, 40, 56, 72, 96, 120]
-          fs.mkdirSync(OUT, { recursive: true })
-          const { browser } = await abrirNavegador()
-          const imgs = []
-          for (const px of TAM) {
-            const pg = await browser.newPage({ viewport: { width: 1920, height: 1080 } })
-            const linhas = TEXTOS.map((t, i) => `<div style="position:absolute;left:80px;top:${40 + i * Math.max(px * 1.6, 60)}px;font-size:${px}px;line-height:1.2;font-family:Helvetica,Arial,sans-serif">${t}</div>`).join('')
-            await pg.setContent(`<html><body style="margin:0;width:1920px;height:1080px;background:#0d1117;color:#fff">${linhas}</body></html>`)
-            const arq = path.join(OUT, `px${px}.png`)
-            await pg.screenshot({ path: arq })
-            await pg.close()
-            imgs.push(arq)
-          }
-          await browser.close()
-          for (const r of await ocr(imgs)) {
-            const px = +path.basename(r.arquivo).match(/\d+/)[0]
-            for (const l of r.linhas) console.log(px, l.h, (l.h / px).toFixed(3), l.contraste, l.texto)
-          }
-          EOF
-          node "$RUNNER_TEMP/calib.mjs" "$RUNNER_TEMP/calib" | sort -n -k1 -k4
       - name: Os moldes counting-number e light-trail-teaser, do exemplo ao MP4 (render.mjs)
         run: |
           set -euo pipefail
@@ -211,6 +189,53 @@ jobs:
           MODO=draft node "$SK/templates/light-trail-teaser/render.mjs" "$SK/templates/light-trail-teaser/example.json" "$O/teaser" 16x9
           ffprobe -v error -show_entries stream=codec_type,codec_name,width,height:format=duration -of compact "$O/teaser/example-16x9.mp4"
           cp "$O/teaser/example-16x9.mp4" "$O/teaser/sheet-example-16x9.png" "$O/entrega/"
+      - name: Um vídeo em capítulos com voz, pela ElevenLabs de mentira dos testes
+        run: |
+          set -euo pipefail
+          cat > "$RUNNER_TEMP/capitulos.mjs" <<'EOF'
+          // Um vídeo em capítulos com voz, de ponta a ponta, contra a ElevenLabs de mentira dos testes (nada pago, nada de rede).
+          //   node capitulos.mjs <skill> <pasta de trabalho>
+          import path from 'node:path'
+          import fs from 'node:fs'
+          import { spawn } from 'node:child_process'
+          import { pathToFileURL } from 'node:url'
+          const [SK, O] = process.argv.slice(2)
+          const { subirApiFalsa } = await import(pathToFileURL(path.join(SK, 'tests', 'fake-api.mjs')).href)
+          const CHAVE = 'chave-falsa-do-teste'
+          const api = await subirApiFalsa({ chave: CHAVE })
+          api.estado.vozes.v1 = { voice_id: 'v1', name: 'Invented Voice', category: 'professional', is_owner: false, sharing: { disable_at_unix: null, notice_period: 365 } }
+          const env = { ...process.env, ELEVENLABS_API_BASE: api.url, ELEVENLABS_API_KEY: CHAVE }
+          const P = path.join(O, 'capitulos'), ENTREGA = path.join(O, 'entrega')
+          // assíncrono: a API falsa mora neste processo e precisa do laço de eventos livre para responder
+          const roda = (rotulo, args) => new Promise((resolve, reject) => {
+            console.log(`\n$ ${rotulo}`)
+            spawn(process.execPath, args, { env, stdio: 'inherit' }).on('close', (c) => (c === 0 ? resolve() : reject(new Error(`${rotulo}: código ${c}`))))
+          })
+          try {
+            await roda('chapters/new.mjs', [path.join(SK, 'scripts', 'chapters', 'new.mjs'), P, '--formats', '16x9'])
+            // o capítulo de verdade é uma cópia do exemplo (o 01-example fica fora da montagem, como manda o molde)
+            fs.cpSync(path.join(P, 'scenes', '01-example'), path.join(P, 'scenes', '01-painel'), { recursive: true })
+            fs.rmSync(path.join(P, 'scenes', '01-example'), { recursive: true, force: true })
+            // a identidade da trilha (que a skill escreve a partir da leitura do produto): a do exemplo de série, cedendo à voz
+            const ident = JSON.parse(fs.readFileSync(path.join(SK, 'assets', 'example', 'computer-tutorial-series', 'identity.json'), 'utf8'))
+            fs.writeFileSync(path.join(P, 'audio', 'identity.json'), JSON.stringify({ ...ident, papel: 'fundo' }, null, 2))
+            const rot = { idioma: 'en-US', perfil: 'calmo', voz: { id: 'v1', nome: 'Invented Voice' }, falas: [
+              { id: 'abertura', onde: 'abertura', texto: 'A tour of the new board.' },
+              { id: 'c1', onde: { capitulo: 1 }, texto: 'Pick a scene and approve its still.' },
+              { id: 'fechamento', onde: 'fechamento', texto: 'That is all it takes.' }] }
+            fs.mkdirSync(path.join(P, 'voice', 'v1'), { recursive: true })
+            fs.writeFileSync(path.join(P, 'voice', 'v1', 'script.json'), JSON.stringify(rot, null, 1))
+            await roda('voice.mjs review', [path.join(SK, 'scripts', 'voice.mjs'), 'review', path.join(P, 'voice', 'v1', 'script.json')])
+            await roda('voice.mjs generate', [path.join(SK, 'scripts', 'voice.mjs'), 'generate', path.join(P, 'voice', 'v1', 'script.json'), '--out', path.join(P, 'voice', 'v1')])
+            await roda('chapters/tempos.mjs', [path.join(SK, 'scripts', 'chapters', 'tempos.mjs'), P, '--narration', 'voice/v1/narration.json'])
+            await roda('chapters/render.mjs all', [path.join(SK, 'scripts', 'chapters', 'render.mjs'), P, 'all', '--mode', 'draft'])
+            await roda('chapters/assemble.mjs', [path.join(SK, 'scripts', 'chapters', 'assemble.mjs'), P, '--narration', 'voice/v1/narration.json', '--profile', 'calmo', '--soundtrack', '--deliver', ENTREGA])
+            console.log(`\npedidos à API falsa: ${api.pedidos.length} (${api.tts().length} de voz)`)
+          } catch (e) { console.error(e.message); process.exitCode = 1 } finally { await api.fechar() }
+          EOF
+          node "$RUNNER_TEMP/capitulos.mjs" "$SK" "$RUNNER_TEMP/e2e"
+          ffprobe -v error -show_entries stream=codec_type,codec_name,width,height:format=duration -of compact "$RUNNER_TEMP/e2e/entrega/capitulos-16x9.mp4"
+          ffmpeg -v error -y -i "$RUNNER_TEMP/e2e/entrega/capitulos-16x9.mp4" -vf "fps=1,scale=480:-1,tile=5x5" -frames:v 1 "$RUNNER_TEMP/e2e/entrega/folha-capitulos-16x9.png"
       - name: O painel de revisão sobe, responde e ouve o clique (pelo Playwright)
         run: |
           set -euo pipefail
