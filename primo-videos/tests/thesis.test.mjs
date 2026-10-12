@@ -300,7 +300,10 @@ describe('CLI (claude falso)', () => {
     assert.equal(a[a.indexOf('--allowedTools') + 1], 'Read,Glob,Grep')
     assert.equal(a[a.indexOf('--setting-sources') + 1], '')
     for (const flag of ['-p', '--no-session-persistence', '--strict-mcp-config', '--disable-slash-commands']) assert.ok(a.includes(flag), flag)
-    assert.doesNotMatch(a.slice(0, -1).join(' '), /Bash|Write|Edit|--dangerously|--resume|--continue/)
+    assert.equal(a[a.indexOf('--system-prompt') + 1], PAPEL_TESE)
+    // o papel e o prompt são prosa (o papel diz "Write the thesis…"); o que não pode ter escrita são as flags e os valores delas
+    const semProsa = a.slice(0, -1).filter((_, i) => a[i - 1] !== '--system-prompt')
+    assert.doesNotMatch(semProsa.join(' '), /Bash|Write|Edit|--dangerously|--resume|--continue/)
     assert.match(a[a.length - 1], /The thesis has five parts/)
   })
 
