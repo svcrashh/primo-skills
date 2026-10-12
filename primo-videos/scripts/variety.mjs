@@ -46,7 +46,7 @@ export class Falha extends Error {
 }
 
 const casa = (p) => (p && p.startsWith(os.homedir()) ? '~' + p.slice(os.homedir().length) : p)
-const expandir = (p) => (p && p.startsWith('~/') ? path.join(os.homedir(), p.slice(2)) : p)
+const expandir = (p) => (p && /^~[\\/]/.test(p) ? path.join(os.homedir(), p.slice(2)) : p)   // ~/ e ~\ (Windows)
 const doisDig = (n) => String(n).padStart(2, '0')
 const hoje = (d = new Date()) => `${d.getFullYear()}-${doisDig(d.getMonth() + 1)}-${doisDig(d.getDate())}`
 const dataValida = (s) => /^\d{4}-\d{2}-\d{2}$/.test(s) && !Number.isNaN(Date.parse(s)) && new Date(s).toISOString().slice(0, 10) === s

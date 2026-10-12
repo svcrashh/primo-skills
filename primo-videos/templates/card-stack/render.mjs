@@ -40,7 +40,7 @@ if (fora.length) { console.error(`unknown format for this template: ${fora.join(
 
 // imagens: todo caminho do JSON é relativo ao arquivo; a que falta para tudo antes de montar
 const base = path.dirname(path.resolve(arq))
-const cam = (p) => path.resolve(base, String(p).replace(/^~(?=$|\/)/, os.homedir()))
+const cam = (p) => path.resolve(base, String(p).replace(/^~(?=$|[\\/])/, os.homedir()))
 const imagens = []   // [{ onde, get, set }]
 const ref = (onde, obj, k) => imagens.push({ onde, src: obj[k], set: (v) => { obj[k] = v } })
 if (P.fecho && P.fecho.logo) ref('fecho.logo', P.fecho, 'logo')
@@ -51,7 +51,7 @@ const faltam = imagens.filter((x) => !fs.existsSync(cam(x.src)))
 if (faltam.length) { console.error(`missing image:\n${faltam.map((x) => `  - ${x.onde}: ${x.src} (looked in ${cam(x.src)})`).join('\n')}`); process.exit(1) }
 
 const nome = P.nome || path.basename(arq, '.json')
-const saida = path.resolve(arg('out').replace(/^~(?=$|\/)/, os.homedir()))
+const saida = path.resolve(arg('out').replace(/^~(?=$|[\\/])/, os.homedir()))
 const obra = path.join(saida, `.work-${nome}`)
 fs.mkdirSync(path.join(obra, 'media'), { recursive: true })
 for (const f of ['index.html', 'plan.js', 'video.js', 'scene.js']) fs.copyFileSync(path.join(AQUI, f), path.join(obra, f))

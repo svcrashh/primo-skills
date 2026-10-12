@@ -59,7 +59,7 @@ fs.copyFileSync(path.join(SKILL, 'assets', 'template', 'engine.js'), path.join(o
 const copia = (src, onde) => {
   const abs = path.resolve(base, exp(src))
   if (!fs.existsSync(abs)) { console.error(`MISSING IMAGE (${onde}): ${src} (looked in ${abs})`); process.exit(1) }
-  const dst = path.join('media', path.basename(abs))
+  const dst = `media/${path.basename(abs)}`   // o caminho que a página lê: com /, também no Windows
   fs.copyFileSync(abs, path.join(obra, dst))
   return dst
 }

@@ -27,9 +27,9 @@ const a = process.argv.slice(2), arg = (k, d) => { const i = a.indexOf('--' + k)
 const arq = a.find((x) => x.endsWith('.json'))
 if (!arq || !arg('out')) { console.error('usage: node render.mjs <parametros.json> --out <folder> [--mode draft|final] [--formats 16x9,9x16] [--no-sound] [--no-check] [--assemble-only]'); process.exit(1) }
 const base = path.dirname(path.resolve(arq))
-const cam = (p) => path.resolve(base, String(p).replace(/^~(?=$|\/)/, os.homedir()))
+const cam = (p) => path.resolve(base, String(p).replace(/^~(?=$|[\\/])/, os.homedir()))
 const P = JSON.parse(fs.readFileSync(arq, 'utf8'))
-const modo = arg('mode', 'draft'), saida = path.resolve(arg('out').replace(/^~(?=$|\/)/, os.homedir()))
+const modo = arg('mode', 'draft'), saida = path.resolve(arg('out').replace(/^~(?=$|[\\/])/, os.homedir()))
 if (!['draft', 'final'].includes(modo)) { console.error(`--mode ${modo}: use draft or final`); process.exit(1) }
 const formatos = arg('formats', (P.formatos || ['16x9']).join(',')).split(',')
 const FOLHA = { '16x9': ['480:-1', '6x4'], '19x9': ['570:-1', '6x4'], '21x9': ['630:-1', '6x4'], '9x16': ['270:-1', '8x3'], '1x1': ['360:-1', '6x4'], '4x5': ['324:-1', '6x4'] }
@@ -49,7 +49,7 @@ fs.mkdirSync(path.join(obra, 'media'), { recursive: true })
 for (const f of ['index.html', 'plan.js', 'video.js', 'line.js']) fs.copyFileSync(path.join(aqui, 'template', f), path.join(obra, f))
 fs.copyFileSync(path.join(skill, 'assets', 'template', 'engine.js'), path.join(obra, 'engine.js'))
 const copia = (src) => {
-  const abs = cam(src), dst = path.join('media', path.basename(abs))
+  const abs = cam(src), dst = `media/${path.basename(abs)}`   // o caminho que a página lê: com /, também no Windows
   fs.copyFileSync(abs, path.join(obra, dst))
   return dst
 }

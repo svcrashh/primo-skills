@@ -69,7 +69,7 @@ fs.copyFileSync(path.join(SKILL, 'assets', '3d', 'three.bundle.js'), path.join(o
 const copia = (src) => {
   const abs = origem(src)
   // a pasta de cima entra no nome: o mesmo desenho em duas cores (uma pasta por cor) não se sobrescreve
-  const dst = path.join('media', `${path.basename(path.dirname(abs))}-${path.basename(abs)}`)
+  const dst = `media/${path.basename(path.dirname(abs))}-${path.basename(abs)}`   // o caminho que a página lê: com /, também no Windows
   fs.copyFileSync(abs, path.join(obra, dst))
   return dst
 }
