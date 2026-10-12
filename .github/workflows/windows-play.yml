@@ -326,18 +326,3 @@ jobs:
           Confere ((Get-Command python).Source -like "$env:LOCALAPPDATA\Programs\Python\Python312\python.exe") 'o python do winget vem antes do atalho da loja'
           $r = Rodar powershell @('-ExecutionPolicy', 'Bypass', '-File', "$falso\instalar.ps1", "$env:RUNNER_TEMP\skills de mentira")
           Confere ($r.Saida.Contains('falsa-python — testa o python') -and -not $r.Saida.Contains('Falta o Python')) 'o instalador passa a rodar o requisito em Python'
-
-  python-redirecionado:
-    runs-on: windows-latest
-    timeout-minutes: 15
-    steps:
-      - name: um requisitos.py que imprime os sinais, com a saida indo para outro programa
-        shell: pwsh
-        run: |
-          python --version
-          Set-Content "$env:RUNNER_TEMP\r.py" "print('x — ✔ ação')"
-          $p = Start-Process python -ArgumentList "`"$env:RUNNER_TEMP\r.py`"" -NoNewWindow -Wait -PassThru -RedirectStandardOutput "$env:RUNNER_TEMP\o.txt" -RedirectStandardError "$env:RUNNER_TEMP\e.txt"
-          "sem nada: saiu com $($p.ExitCode)"; Get-Content "$env:RUNNER_TEMP\e.txt" | Select-Object -Last 1
-          $env:PYTHONIOENCODING = 'utf-8'
-          $p = Start-Process python -ArgumentList "`"$env:RUNNER_TEMP\r.py`"" -NoNewWindow -Wait -PassThru -RedirectStandardOutput "$env:RUNNER_TEMP\o2.txt"
-          "com PYTHONIOENCODING: saiu com $($p.ExitCode): " + [IO.File]::ReadAllText("$env:RUNNER_TEMP\o2.txt", [Text.Encoding]::UTF8)
