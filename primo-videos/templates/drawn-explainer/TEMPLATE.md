@@ -32,12 +32,20 @@ draws the whole frame as a function of the time `s.t`, and each element enters a
 
 - **seconds** (`at: 1.2`), **a word of the line** (`at: 'Instagram'`; `s.cue('fila', 2)` for the second time) or
   **a marker** (`at: '#cola'`, with `"marcas": { "cola": "Cole" }` in the scene in `video.json`).
-- **Without voice** (silent video, `--no-voice`, or this skill without narration): the scene lasts `min` (3 s) or the time it takes to read its
+- **Without voice** (the default: no `voz` in `video.json`, or `--no-voice`): the scene lasts `min` (3 s) or the time it takes to read its
   `texto`, at 2.6 words per second. A scene that has `fala` also carries the `texto` (the same words), so it runs
   without the voice-over. The `at` words still apply: the same `scenes.js` serves both.
+- **With voice** (optional and paid: "With voice (optional)", below): the scene uses a line of the `narration.json`,
+  whole or an excerpt (`"fala": "c04", "de": 3.52, "ate": 6.4`, in seconds of the line, cut between words). It lasts
+  `lead` (0.35 s before the voice) + the excerpt + `hold` (0.7 s; the last scene gets 1.4 s more), and each word enters
+  at its time in `narration.json`. The excerpt cut, the voice on the video's clock and the caption come from
+  `voice/narracao.mjs`.
 - Whatever enters plays the texture's sound (below), and each sound becomes a **marker in the sync sheet**. The soundtrack and the effects
   are the skill's: `assets/audio/arrange_series.py` composes the bed in the identity's genre, the markers play the sounds of
   `assets/audio/sounds.py` at the exact sample. `verify.py` measures, `scripts/finalize.mjs` checks the delivery already in AAC.
+- With voice, `mix_voz.py` makes the soundtrack give way before each line (`references/voice-mix.md`), and the caption is
+  the line, the word lighting up on the voice's time, inside the safe area (`references/catalog/rules.md`,
+  rule 4).
 - A scene without voice has no caption; `"legenda": "texto"` shows the scenes' text, for the whole video without voice.
 
 ### The scene API (`s`)
@@ -101,8 +109,9 @@ player; if it does not fit, the camera dives into the field (zoom ~2) in 16:9.
   optional `push`, below);
   `boil` (redraws per second of the hand-drawn stroke; 0 = still).
 - `roteiro` — the scenes in order: `{ id, fala, de, ate, texto, min, lead, hold, transicao, marcas }`.
-- `voz` — left out in this skill (no narration): if the JSON has it, the video runs on the reading time of each scene's `texto`
-  and the soundtrack is the lead.
+- `voz` — optional, off by default: `{ "locucao": "<folder>/narration.json", "perfil": "calmo" | "reels" }` (the path
+  relative to `video.json`; `perfil` is the mix profile, default `calmo`). Without `voz`, the video runs on the reading
+  time of each scene's `texto` and the soundtrack is the lead.
 - `trilha` — `{ "semente": N, "identidade": { … } }` (the audience's genre: `assets/audio/API.md`); without an identity, one
   per texture; `"trilha": false` leaves the video without the bed. `sons`: `true`, `"minimo"` (only the explicit sounds and the transitions) or
   `false`.
@@ -136,6 +145,50 @@ node templates/drawn-explainer/render.mjs <video.json> \
   `scripts/frames.cjs --project <build> --format 9x16 --check` also works on it. `audio/sheet.json`,
   `audio/verifica.log` and `marcos.json` show each sound and where it landed.
 
+## With voice (optional)
+Only when the person asks for a voiceover and the ElevenLabs key is set up (`references/voice-choice.md` §12): it is
+paid, up to about 900 credits per minute of narration, checked against the video's cap before any call. Without `voz`
+in `video.json`, nothing below runs and the video is the one above.
+
+```json
+"legenda": "auto",
+"voz": { "locucao": "voice/v1/narration.json", "perfil": "calmo" },
+"roteiro": [
+  { "id": "pergunta", "texto": "What happens when you pay?" },
+  { "id": "fluxo", "fala": "c1", "de": 0, "ate": 2.1, "texto": "The order goes to the kitchen." },
+  { "id": "total", "fala": "c1", "de": 2.1, "texto": "The total adds up on its own." },
+  { "id": "fecho", "min": 3 }
+]
+```
+
+- **The voice comes before the render** (the template doesn't generate voice). Write
+  `<video folder>/voice/v1/script.json` (`references/voice-script.md` §6) with one line per stretch of speech, `onde`
+  `{ "capitulo": n }` in the video's order: the render reads only the `id`, through each scene's `fala`. Show the
+  approval table (§5) and choose the voice (`references/voice-choice.md`) before spending, then
+  `node $SKILL/scripts/voice.mjs generate <video folder>/voice/v1/script.json --out <video folder>/voice/v1` and
+  `node $SKILL/scripts/voice.mjs listen <video folder>/voice/v1/narration.json --words "<risk words>"`. `voz.locucao`
+  points to that `narration.json`.
+- **One line can feed several scenes:** `de` and `ate` (seconds of the line) cut an excerpt between two words; without
+  `ate`, the excerpt runs to the line's last word. A scene without `fala` is silent and runs on its `texto` or its
+  `min`. The voice speaks about half the time, not the whole video (`references/catalog/rules.md`, rule 8): silent
+  scenes between the spoken ones.
+- **The voice sets the clock:** each spoken scene lasts `lead` + the excerpt + `hold` (per scene, or for the whole
+  video in `ritmo`), and the `at` words and the `marcas` land when the voice says them. The render cuts each excerpt
+  and measures its first sound, so the scene starts where the voice actually sounds.
+- **The caption is the speech:** with `"legenda": "auto"` (the default) each spoken scene gets the caption, the word
+  lighting up on the voice. The format examples set `"legenda": false`: change it when starting from one. A
+  `<name>-<format>[-draft].srt` comes out next to each MP4 (not with `--from/--to`).
+- **Sound:** `audio/voz.wav` and the `voz` block of `audio/sheet.json` (with `voz.perfil`) come out in the build; the
+  soundtrack ducks under the voice (`mix_voz.py`) and the effects that are not gestures go down 6 dB under it
+  (`references/voice-mix.md`). It aims at −14 LUFS and, if `verify.py` fails, recomposes at −16. `finalize.mjs` also
+  checks each line on time and the voice standing out from what plays under it. Without the Python, or with
+  `"trilha": false`, the video comes out with the voice only, at −16 LUFS.
+- **No narration yet:** with `voz` and no `narration.json`, the render stops and says what to do; `--no-voice` renders
+  the same video without voice, at reading pace.
+- With the final MP4 (paid, a few credits):
+  `node $SKILL/scripts/voice.mjs listen --mix <mp4> --script <output>/.work-<name>/voice/obra/narration.json --project <video folder>`
+  (`references/voice-mix.md` §6). The build's narration has exactly the excerpts that play in the video.
+
 ## Variations that come out with parameters alone
 - **Hand-drawn whiteboard** (`textura: papel`, `nenhuma` for the clean one), **blackboard** (`giz`), **technical blueprint** (`planta`),
   **night** (`noite`): the same scene, five textures, always in the brand's colors.
@@ -144,7 +197,8 @@ node templates/drawn-explainer/render.mjs <video.json> \
 - **The number explained:** the number counts, the bars or the pie show where it comes from.
 - **Code or terminal that types itself** for a technical product (API, CLI), in the brand's colors.
 - **Explanation + demo:** the drawn scenes explain, one `s.ui` scene shows the product doing it.
-- **Without voice:** the same video timed by duration (`--no-voice`, no `voz` in the JSON, or simply this skill, which has no narration).
+- **Without voice** (the default): the same video timed by duration (no `voz` in the JSON, or `--no-voice`).
+  **With voice:** the same `scenes.js`, timed by the lines ("With voice (optional)", above).
 
 ### Optional (off by default)
 - **Clean push** (`"transicao": "push"`, in the scene or in the whole JSON): the two scenes move together to the left,

@@ -8,6 +8,9 @@ to explain. Variant: zoom-out, where the detail changes meaning when the whole t
 transforms something visible in one step: organize, filter, clean up, turn into a chart, fill in.
 **When not to use:** invisible feature (security, performance, integration: use `counting-number`); when the
 "before" is already good and the difference is subtle; a process with many steps (it becomes a tutorial); comparison with a named competitor.
+**Voice:** optional (opt-in, paid; `references/voice-script.md`). The "before" and "after" lines, read by the voice, set
+the time up to the click and the caption follows the words; the MP4 then carries the voice only, without the
+soundtrack. How: `templates/before-after/TEMPLATE.md`, "With voice (optional)".
 
 ## Structure (8–30 s)
 - **0–2 s:** the written promise and the "before" already on screen (ugly and true).

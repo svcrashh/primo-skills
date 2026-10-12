@@ -27,7 +27,8 @@ It merges the style cards *before and after on screen*, *with and without side b
 | curtain + 2.6 s | **closing**: scrim + blur over the screen, catchphrase, logo and address (3.2 s); with `fecho: "logo"`, the brand's logo alone on a flat background |
 
 Duration = lines + breathing room, minimum 12 s; the script warns above 20 s. Without voice-over, the timing of each line comes
-from the text (0.38 s per word), and the line appears only as a caption.
+from the text (0.38 s per word), and the line appears only as a caption. With voice-over (`--narration`, optional:
+"With voice (optional)", below), each line lasts what the voice lasts and the caption follows the spoken words.
 
 ## Variations
 - `"variacao": "corte"` (default) — the one described above.
@@ -55,7 +56,8 @@ from the text (0.38 s per word), and the line appears only as a caption.
 - `textos`: `promessa` (the promise) and `bordao` (the catchphrase), as lines of `{t, k}` parts (`k: true` = accent color), `antes`, `depois`
   (the labels), `virada` (the switch word, one word).
 - `gatilho`: `titulo`, `opcoes` (the product's **exact** labels), `escolha` (index of the clicked option).
-- `falas`: `antes` and `depois` (the caption text).
+- `falas`: `antes` and `depois` (the caption text). With voice, the voice of these two lines comes from the skill,
+  before the render, and the timings come from the voice ("With voice (optional)", below).
 - `trilha` (no voice): `semente` and `identidade` (the audience's genre, schema v2 of `assets/audio/API.md`); without
   `identidade`, a neutral one comes out.
 - `captura`: `url` (or the path of a local HTML), `bloquear` (aborted routes: analytics, device registration),
@@ -135,10 +137,35 @@ node $M/render.mjs $M/example.json --screens $M/example --out <folder> --formats
 node $M/capture.mjs $M/example.json --out $M/example        # only to capture the two screens again
 ```
 
+## With voice (optional)
+Only when the person asks for a voiceover and the ElevenLabs key is set up (`references/voice-choice.md` §12): it is
+paid, up to about 900 credits per minute of narration, checked against the video's cap before any call. Without
+`--narration`, nothing below runs and the video is the one above.
+
+```sh
+# 2. the voice, before the render: <folder>/voice/v1/script.json with the lines "antes" and "depois"
+node $SKILL/scripts/voice.mjs generate <folder>/voice/v1/script.json --out <folder>/voice/v1
+node $SKILL/scripts/voice.mjs listen <folder>/voice/v1/narration.json --words "Brand,Term"
+# 3. the video with the voice
+node $M/render.mjs meu.json --screens <folder>/telas --narration <folder>/voice/v1/narration.json \
+     --out <folder> --formats 16x9,9x16,1x1 --mode draft
+```
+- **The script** (`references/voice-script.md` §6): two lines, `"id": "antes"` with `"onde": { "passo": 1 }` and
+  `"id": "depois"` with `"onde": { "passo": 2 }`, the same words as the JSON's `falas`. Show the approval table (§5)
+  and choose the voice (`references/voice-choice.md`) before spending. The render reads the lines by `id`; one missing
+  from the narration runs on its text, without voice.
+- **The voice sets the clock:** the "before" line at 0.5 s, the trigger 0.6 s before it ends (not before 1.6 s), the
+  click 1.1 s after it, the "after" line 0.25 s after the click, then the curtain and the closing (the gaps 30% longer
+  with `"ritmo": "calmo"`). The caption is the speech, in chunks of up to 6 words, each one on the time of its first
+  word.
+- **Sound:** the two lines only. No soundtrack and no effects under them (no click, whoosh or closing accent), and
+  `finalize.mjs` does not run on it.
+
 ## Limits
 - Title and catchphrase **adjust** to the width (the type size shrinks); below 70% of the planned size the console asks for shorter
   text. A wide font (Unbounded) needs 2–3 words per line.
 - Only **two** states. Three (background → transparent → new background) not yet.
+- With voice, no soundtrack: the MP4 comes out with the voice only.
 - The trigger is **drawn** by the template (with the product's labels), not recorded: the real click happens in the
   capture (`depois.clicar`) when the screen has the button visible. With `gatilho.alvo`, nothing is drawn and the cursor
   clicks the capture's own button; the `gatilho.campo` field is drawn (the term does not appear typed on the "before"

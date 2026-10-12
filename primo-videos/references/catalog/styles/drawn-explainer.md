@@ -13,6 +13,9 @@ that way; conceptual onboarding; "what happens when you click pay". In the scrip
 **When not to use:** a where-to-click tutorial (that's `real-screen-camera`); a list of new features (`rolling-list`,
 `chapters-with-index`); a product whose appeal is visual, like games and fashion (`before-after`, `light-trail-teaser`);
 a launch that looks like an event (`light-trail-teaser`).
+**Voice:** optional (opt-in, paid; `references/voice-script.md`). Each spoken scene lasts its line, each piece comes in
+on the word that names it and the caption is the speech. How: `templates/drawn-explainer/TEMPLATE.md`, "With voice
+(optional)".
 **Catalog rules here:** arrows and circles are the drawing of the idea, linking one piece to another; in the demo stretch, the
 highlight is still the darkened background (rule 3). The hand-drawn stroke is the shapes' stroke (Rough.js); hand-drawn
 illustration and characters remain out of reach (`../rules.md`).
@@ -20,7 +23,7 @@ illustration and characters remain out of reach (`../rules.md`).
 ## Structure (20–90 s)
 - **Frame 0 (0–2 s):** the question or the problem already written in the frame ("What happens when you click
   pay?"). No empty frame waiting for the voice.
-- **The diagram, one beat per sentence:** each piece comes in on the word in the line, by the timings in `narration.json`: the box on the
+- **The diagram, one beat per sentence:** each piece comes in on the word in the line, by the timings in `narration.json` (without voice, at reading pace): the box on the
   name, the arrow (with a curve and a label) on the verb that connects, the icon, the hand annotation (underline, circle, box,
   highlighter, strike-through, bracket) on what matters. Something changes every 2–4 s; up to 5–6 elements on screen; one idea per
   scene; the camera follows when the drawing grows.
@@ -28,8 +31,8 @@ illustration and characters remain out of reach (`../rules.md`).
   the terminal that types itself, or the interface demo with a cursor and typed text, with the product's real media
   (rule 15).
 - **Closing (3–4 s):** the summary sentence, written, and the logo held ≥ 1.5 s.
-Without voice, the scenes advance by duration, with the same script and the text in the frame. This skill makes videos
-without narration.
+Without voice (the default), the scenes advance by duration, with the same script and the text in the frame; with
+voice, by the lines.
 
 ## Formats (recomposed, not cropped)
 - **16:9:** the diagram runs from left to right (input → steps → output); caption at the bottom.

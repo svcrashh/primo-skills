@@ -7,6 +7,9 @@ The person recognizes the real button and can read everything.
 any channel except the big screen; product `layperson`, `b2b`, `finance`. A flow of 3 to 8 steps on a phone or a computer.
 **When not to use:** announcing or selling to people who don't know the product (there's no hook); a flow with 15+ steps (break it into videos);
 feed without a hook; a screen that can't be recorded.
+**Voice:** optional (opt-in, paid; `references/voice-script.md`). The voice says the opening, the closing and, if wanted,
+a step here and there, with a karaoke caption; the MP4 then carries the voice only, without the soundtrack. How:
+`templates/real-screen-camera/TEMPLATE.md`, "With voice (optional)".
 
 ## Structure (30–60 s; a tutorial the person follows along with can run longer)
 - **0–2 s:** the written promise ("How to sign in with the invite") with the screen already behind it. Wide shot of the screen for 1–2 s.

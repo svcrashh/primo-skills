@@ -9,6 +9,9 @@ Before launching, with a set date.
 **When not to use:** tutorial; a product that's already live (it frustrates whoever wants to see it); a light interface full of text
 with nothing pretty up close; a conservative or lay audience (banking, school, price-driven retail: it looks like a party); whoever needs to
 understand what it is before getting interested.
+**Voice:** optional (opt-in, paid; `references/voice-script.md`). A line on the promise and one on the closing, each
+from its `em`, with the music giving way 10 dB under them. How: `templates/light-trail-teaser/TEMPLATE.md`, "With voice
+(optional)".
 
 ## Structure (15–45 s)
 - **0–3 s:** dark, with the promise or the date already written small; the line rises and draws the edge of the first panel,

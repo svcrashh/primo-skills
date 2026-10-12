@@ -59,7 +59,7 @@ folder of the same name.
 | · `cartao` | `titulo`, `texto` |
 | `revelacao` | `{ imagem: { arquivo, largura, altura, rolar: [de, até] } }` (phone screenshot, real screen) **or** `{ fundo, blocos: [...] }` drawn: `cabecalho`, `numero`, `lista`, `chips`, `botao` |
 | `fecho` | `frase` (1–2 lines; `*assim*` comes out in the light color), `data`, `botao` (the address) · **or** `soLogo: true` (off by default): the light runs down the phone's edge, becomes a blade and sweeps the frame from right to left, opening the closing `fundo`; the `logo` comes in at the center and stays still (height `logoAltura`, or the `logo`'s); no line, date or button. With `tempos.fecho: 3`, the logo stays still ~1.9 s |
-| `falas[]` | `{ id, texto, em, ate }`: the caption shows the `texto` between `em` and `ate` (with or without voice) |
+| `falas[]` | `{ id, texto, em, ate }`: the caption shows the `texto` between `em` and `ate` (with or without voice); with voice, the narration's line with the same `id` plays from `em` ("With voice (optional)", below) |
 | `tempos` | optional: `{ revelacao: 3.8, fecho: 3.6 }` · `zoomFragmento` (1.35) · `grade` (true) · `grao` |
 | `liso` | optional, off by default: flat brand, without the glow drifting in the background, the vignette, the shadows and the border of the cards and the phone, and the overline without fading (the light and the outline it draws remain) |
 | `fundoSimbolo` | optional, off by default: `{ arquivo, altura, x, y, gira }` puts the brand symbol, giant, behind everything, cropped by the edge and rotating `gira` degrees per second (`x`/`y` = the center as a fraction of the frame; `altura` in px). The PNG goes in as it is, not recolored: put it in a corner where the fragment name does not pass over it (`example-steps.json` uses the bottom right corner) |
@@ -75,13 +75,42 @@ node scripts/frames.cjs --project ~/Desktop/teaser/project --times 0,1.5,4,7,10,
 node scripts/frames.cjs --project ~/Desktop/teaser/project --check --qps 10 [--format 9x16]
 ```
 ```zsh
-# 3. everything: soundtrack (no voice), 60 fps render of each format, sound muxed in, contact sheet
+# 2. voice (optional and paid), before the render: "With voice (optional)", below
+```
+```zsh
+# 3. everything: soundtrack (with the voice, if the narration exists), 60 fps render of each format, sound muxed in, contact sheet
 templates/light-trail-teaser/render.sh meu.json ~/Desktop/teaser 16x9 9x16 [19x9 21x9]
 ```
 The soundtrack (`soundtrack.py`) follows the template's timing: a dark bed that opens up until the reveal, a breath on each
-sweep, a low impact on the reveal, a shimmer when the light becomes the button. This skill makes videos without
-narration, so the soundtrack is the protagonist, alone, at −14 LUFS; without a Python with numpy
-and scipy, the video comes out silent (and the script warns).
+sweep, a low impact on the reveal, a shimmer when the light becomes the button. Without a narration in
+`project/voice/pt` (the default), the soundtrack is the protagonist, alone, at −14 LUFS; without a Python with numpy
+and scipy, the video comes out silent (and the script warns). With a narration, the voice goes on top and the music
+gives way under it (below).
+
+## With voice (optional)
+Only when the person asks for a voiceover and the ElevenLabs key is set up (`references/voice-choice.md` §12): it is
+paid, up to about 900 credits per minute of narration, checked against the video's cap before any call. Without a
+`narration.json` in `<folder>/project/voice/pt/`, nothing below runs and the video is the one above.
+
+- **The voice comes before the render** (the template doesn't generate voice). Write
+  `<folder>/project/voice/pt/script.json` by hand (`references/voice-script.md` §6), one line per item of `falas`, with
+  the same `id`: the promise line with `"onde": "abertura"`, the closing one with `"onde": "fechamento"`. The folder is
+  `voice/pt` whatever the language: it is the path `render.sh` reads. Show the approval table (§5) and choose the voice
+  (`references/voice-choice.md`) before spending, then:
+  ```zsh
+  node $SKILL/scripts/voice.mjs generate ~/Desktop/teaser/project/voice/pt/script.json --out ~/Desktop/teaser/project/voice/pt
+  node $SKILL/scripts/voice.mjs listen ~/Desktop/teaser/project/voice/pt/narration.json --words "Brand,Term"
+  ```
+  Then set the `ate` of each item of `falas` in the JSON to its `em` + the line's `duracao` in `narration.json`.
+- **Where it plays:** each line from its `em`, at the same level for all; the caption still shows the whole `texto`
+  between `em` and `ate` (no word lighting up). An item of `falas` without a line of the same `id` in the narration
+  stops the render.
+- **Sound:** the music gives way 10 dB under each line (going down 0.15 s before it, back 0.4 s after it) and the mix
+  goes to −16 LUFS. The mix is the template's own, in `soundtrack.py`: `mix_voz.py` and `verify.py` don't run here.
+  Without the Python with numpy and scipy, the video comes out silent, voice included.
+- With the final MP4 (paid, a few credits):
+  `node $SKILL/scripts/voice.mjs listen --mix <mp4> --script ~/Desktop/teaser/project/voice/pt/narration.json`
+  (`references/voice-mix.md` §6).
 
 ## Variations
 - **Real or drawn screen:** `imagem` fragment (close-up of a screenshot recorded with Playwright) or drawn
@@ -92,10 +121,12 @@ and scipy, the video comes out silent (and the script warns).
 
 ## Limits
 - No 3D glass, particles or wall of screens (outside the engine).
+- With voice, it speaks ~30% of the time, only on the promise and on the closing: the middle is light and music (on
+  purpose).
 - Fragment text does not wrap: long labels (> ~22 characters in field/list) overflow the box in 9:16.
   The button shrinks itself to fit; so does the fragment name.
 - The reveal screenshot is the whole page shrunk into a phone: it works as an impact image, not for reading.
-  Whatever the captions (`falas`) mention has to be in a fragment (close-up), not only in the reveal.
+  Whatever the captions (`falas`) or the voice mention has to be in a fragment (close-up), not only in the reveal.
   In the refinement check, the phone with the whole page is a "wide shot": up to 2.6 s is a warning, above that it is a
   legibility error. With `fecho.soLogo`, `tempos.revelacao` of 2.4 s stays at ~2 s (as in `example.json`); with the other
   closing, the phone stays in frame during the closing and counts too.
