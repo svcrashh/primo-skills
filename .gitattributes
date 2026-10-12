@@ -1,0 +1,3 @@
+# No Windows o git costuma trocar a quebra de linha na cópia de trabalho. Aqui ela fica igual nos dois sistemas:
+# os testes comparam texto, e os scripts de zsh não rodam com CRLF.
+* text=auto eol=lf
