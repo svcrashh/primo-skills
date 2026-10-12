@@ -367,7 +367,7 @@ def ler_estado(arquivo):
 
 
 def situacao(todas=False):
-    """(id, estado, quando mudou, título, pasta) de cada janela aberta por esta sessão."""
+    """(id, estado, quando mudou, título, pasta, base dos arquivos) de cada janela aberta por esta sessão."""
     janelas = []
     # Lê os arquivos com a trava: outra chamada pode estar limpando o cache de uma janela que fechou.
     with trava():
@@ -375,12 +375,12 @@ def situacao(todas=False):
             if todas or c[3] == SESSAO:
                 estado = Path(c[5] + ".estado")
                 titulo = json.loads(Path(c[5] + ".json").read_text(encoding="utf-8"))["titulo"]
-                janelas.append((c[0], ler_estado(estado), estado.stat().st_mtime, titulo, c[2]))
+                janelas.append((c[0], ler_estado(estado), estado.stat().st_mtime, titulo, c[2], c[5]))
     return janelas
 
 
 def mostrar(janelas):
-    for jid, estado, desde, titulo, pasta in janelas:
+    for jid, estado, desde, titulo, pasta, _ in janelas:
         print(f"{jid}  {MARCAS[estado]} {estado} há {ha(desde)}  ·  {titulo}  ·  {pasta}")
 
 
@@ -399,34 +399,62 @@ def presa(estado, desde):
     return estado == "abrindo" and time.time() - desde >= ABRINDO_DEMAIS
 
 
-def cmd_esperar(a):
-    """Segura até as janelas desta sessão pararem de trabalhar ou uma delas fazer uma pergunta.
+def ocupada(j):
+    return j[1] == "trabalhando" or (j[1] == "abrindo" and not presa(j[1], j[2]))
 
-    É como o Claude que abriu as janelas fica de olho nelas sem perguntar o estado a toda hora:
-    roda isto em segundo plano e é avisado quando volta.
+
+def aviso(j):
+    """Onde o esperar anota a parada que já contou, e o que anota: o estado e a hora dele."""
+    return Path(j[5] + ".avisado"), f"{j[1]} {j[2]!r}"
+
+
+def avisada(j):
+    arquivo, anotado = aviso(j)
+    return arquivo.exists() and arquivo.read_text(encoding="utf-8") == anotado
+
+
+AVISOS = {
+    "parada": "parou: colhe com `ver {0}` e, se a trilha terminou, fecha com `fechar {0}`.",
+    "pergunta": "fez uma pergunta e espera a resposta nela.",
+    "encerrada": "encerrou (o claude saiu, sobrou o shell): colhe com `ver {0}` e fecha com `fechar {0}`.",
+    "abrindo": "não saiu de \"abrindo\": deve estar na tela de confiar na pasta.",
+}
+
+
+def cmd_esperar(a):
+    """Segura até uma janela desta sessão parar, fazer uma pergunta, encerrar ou ser fechada, e diz qual.
+
+    É como o Claude que abriu as janelas fica de olho nelas sem perguntar o estado a toda hora: roda
+    isto em segundo plano, é avisado quando volta, colhe e fecha a janela que terminou e roda de
+    novo para as restantes. Cada parada é avisada uma vez só: a janela que continua aberta depois do
+    aviso (esperando uma resposta, por exemplo) não faz o próximo esperar voltar na hora.
     """
-    ja_perguntavam = {j[0] for j in situacao() if j[1] == "pergunta"}
     fim = time.time() + a.minutos * 60
+    antes = {}
     while True:
         janelas = situacao()
-        perguntas = [j for j in janelas if j[1] == "pergunta" and j[0] not in ja_perguntavam]
-        ocupadas = [j for j in janelas if j[1] == "trabalhando" or (j[1] == "abrindo" and not presa(j[1], j[2]))]
-        if perguntas or not ocupadas or time.time() >= fim:
+        fechadas = [f"{jid} ({titulo})" for jid, titulo in antes.items() if jid not in {j[0] for j in janelas}]
+        ocupadas = [j for j in janelas if ocupada(j)]
+        novas = [j for j in janelas if not ocupada(j) and not avisada(j)]
+        if novas or fechadas or not ocupadas or time.time() >= fim:
             break
+        antes = {j[0]: j[3] for j in janelas}
         time.sleep(3)
+    mostrar(janelas)
+    for j in novas:
+        print(f"A janela {j[0]} ({j[3]}) " + AVISOS[j[1]].format(j[0]))
+        arquivo, anotado = aviso(j)
+        arquivo.write_text(anotado, encoding="utf-8")
+    for qual in fechadas:
+        print(f"A janela {qual} foi fechada: não está mais no registro.")
     if not janelas:
         print("Nenhuma janela aberta por esta sessão.")
-        return
-    mostrar(janelas)
-    for j in perguntas:
-        print(f"A janela {j[0]} ({j[3]}) fez uma pergunta e espera a resposta nela.")
-    for j in janelas:
-        if presa(j[1], j[2]):
-            print(f"A janela {j[0]} ({j[3]}) não saiu de \"abrindo\": deve estar na tela de confiar na pasta.")
-    if ocupadas:
-        print("Ainda há janela trabalhando" + ("." if perguntas else f" depois de {a.minutos:g} min.") + " Roda o esperar de novo.")
-    else:
+    elif not ocupadas:
         print("Nenhuma janela trabalhando: colhe com `ver <id>` e fecha as que terminaram.")
+    elif novas or fechadas:
+        print(f"Ainda há janela trabalhando ({len(ocupadas)}): trata o que voltou e roda o esperar de novo para as restantes.")
+    else:
+        print(f"Ainda há janela trabalhando depois de {a.minutos:g} min. Roda o esperar de novo.")
 
 
 def ultima_resposta(meta):

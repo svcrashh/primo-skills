@@ -23,7 +23,8 @@ STORAGES = [
 ]
 # id da janela (hwnd), pid do processo que ela roda, pasta, sessão que abriu, data, base dos arquivos.
 REGISTRO = Path(tempfile.gettempdir()) / "claude-terminais-abertos.tsv"
-# Por janela: <base>.json (o que ela roda), <base>.pid e <base>.estado (gravado pelos hooks).
+# Por janela: <base>.json (o que ela roda), <base>.pid, <base>.estado (gravado pelos hooks) e
+# <base>.avisado (a parada que o esperar já contou).
 CACHE = Path(os.environ["LOCALAPPDATA"]) / "terminal-claude"
 
 

@@ -12,7 +12,8 @@ STORAGES = [
 ]
 # id, tty, pasta, sessão que abriu, data, base dos arquivos da janela. O fechar-terminal.sh lê daqui.
 REGISTRO = Path("/private/tmp/claude-terminais-abertos.tsv")
-# Por janela: <base>.sh (o que ela roda), <base>.estado (gravado pelos hooks) e <base>.json.
+# Por janela: <base>.sh (o que ela roda), <base>.estado (gravado pelos hooks), <base>.json e
+# <base>.avisado (a parada que o esperar já contou).
 CACHE = Path.home() / "Library/Caches/terminal-claude"
 
 # O osascript passa o ambiente pro Terminal.app quando é ele que abre o app. Só vai o que o

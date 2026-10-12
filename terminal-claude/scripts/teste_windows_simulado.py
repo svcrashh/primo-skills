@@ -184,11 +184,13 @@ confere("--nunca desliga a pergunta", "não pergunto mais" in roda("limpeza", "-
 confere("a listagem mostra a conta e que a pergunta está desligada", "desligada" in roda("limpeza") and "lote(s) desde" in roda("limpeza"))
 confere("--perguntar liga de novo", "volto a perguntar" in roda("limpeza", "--perguntar") and "Aviso:" in conta())
 confere("--feita zera a conta da pasta", "zerada" in roda("limpeza", pasta, "--feita") and pasta not in uso()["pastas"])
+espera = roda("esperar")
+confere("esperar volta com as janelas que pararam, mesmo com outra trabalhando, e diz quais", f"A janela {reg[1][0]} (B · difícil) parou" in espera and f"A janela {reg[2][0]} (C · sem prompt) encerrou" in espera and "Ainda há janela trabalhando (1)" in espera, espera)
 espera = roda("esperar", "--minutos", "0")
-confere("esperar com tempo esgotado volta e avisa que ainda há janela trabalhando", "Ainda há janela trabalhando" in espera, espera)
+confere("parada já avisada não faz o esperar voltar: só o tempo esgotado", "A janela" not in espera and "Ainda há janela trabalhando depois de 0 min" in espera, espera)
 Path(reg[0][5] + ".estado").write_text("parada", encoding="utf-8")
 espera = roda("esperar")
-confere("esperar volta na hora quando nenhuma janela trabalha", "Nenhuma janela trabalhando" in espera and espera.count("\n") == 4, espera)
+confere("esperar volta na hora quando nenhuma janela trabalha, avisando só a que parou agora", "Nenhuma janela trabalhando" in espera and espera.count("A janela") == 1 and f"A janela {reg[0][0]} (A · simples) parou" in espera, espera)
 
 # --- fechar ------------------------------------------------------------------------------
 eu = os.getpid(); mortos = []
