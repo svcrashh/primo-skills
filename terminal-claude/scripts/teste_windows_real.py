@@ -309,7 +309,9 @@ def de_onde_vem_o_claude(raiz, claude):
         return r.returncode, (r.stdout + r.stderr).decode("utf-8", "replace").strip()
 
     def busca(path, casa_):
+        # Como no terminais.py, que põe a saída em UTF-8 antes de procurar o claude.
         return roda([sys.executable, "-c", f"import sys; sys.path[:0] = [{str(AQUI)!r}, {str(ORGANIZAR.parent)!r}]; "
+                     "sys.stdout.reconfigure(encoding='utf-8'); sys.stderr.reconfigure(encoding='utf-8'); "
                      "import so_windows; print(so_windows.achar_claude())"], path, casa_)
 
     def requisitos(path, casa_):
