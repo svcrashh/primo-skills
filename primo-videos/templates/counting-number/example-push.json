@@ -1,0 +1,45 @@
+{
+  "_sobre": "Format example of Counting number, with no brand: dark background, one number per screen, each pushed to the left by the next ('passagem') while the camera moves in slowly ('camera.zoom'). The numbers are sample values: replace them with true numbers that have a source. Greys, placeholder texts and the placeholder logo stand for the person's brand and content: swap them. Render: node scripts/example-fonts.mjs <folder> && templates/counting-number/render.sh templates/counting-number/example-push.json <folder> 16x9 final",
+  "aberturaLogo": { "logo": "../../assets/example/logo-placeholder.png", "fundo": "#F5F5F5", "dur": 1 },
+  "titulo": "Your product in numbers",
+  "idioma": "en-US",
+  "formatos": ["16x9"],
+  "chamada": "Your product in numbers",
+  "lista_numerada": false,
+  "milhar": ",",
+  "passagem": { "tipo": "push", "dur": 0.6, "dir": "esquerda" },
+  "camera": { "zoom": 0.07 },
+  "marca": {
+    "nome": "Your brand",
+    "logo": "../../assets/example/logo-placeholder.png",
+    "logoProporcao": 5.129,
+    "cores": {
+      "fundo": "#1D1D1D",
+      "texto": "#F5F5F5",
+      "acento": "#F5F5F5",
+      "legendaFundo": "#1D1D1D",
+      "cartoes": ["#F5F5F5"]
+    },
+    "fontes": {
+      "numero": { "familia": "Inter", "peso": 700, "caixaAlta": false },
+      "texto": { "familia": "Inter", "peso": 500 },
+      "etiqueta": { "familia": "Inter", "peso": 600, "caixaAlta": false }
+    },
+    "grade": false,
+    "brilho": 0,
+    "grao": 0
+  },
+  "trilha": {
+    "semente": 3090,
+    "identidade": {
+      "genero": "acustico", "bpm": [88, 92], "modos": ["maior", "mixolidio"], "tons": ["C", "F", "G"],
+      "instrumentos": { "harmonia": ["piano", "corda"], "baixo": ["bass_note"], "percussao": ["kick", "shaker", "aro"], "melodia": ["pluck"], "textura": ["pad_note"] }
+    }
+  },
+  "blocos": [
+    { "tipo": "contador", "de": 0, "ate": 3, "rotulo": "steps in the product", "sozinho": 1.7, "dur": 3.7 },
+    { "tipo": "contador", "de": 0, "ate": 128, "rotulo": "items in the sample list", "sozinho": 1.7, "dur": 3.7 },
+    { "tipo": "contador", "de": 0, "ate": 24, "rotulo": "minutes saved a week", "sozinho": 1.7, "dur": 3.7 },
+    { "tipo": "fecho", "fundo": "#F5F5F5", "dur": 2.8 }
+  ]
+}

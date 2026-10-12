@@ -1,0 +1,167 @@
+{
+ "_sobre": "Format example of the drawn explainer, with no brand: a cover in the mid-grey \"brand color\" with the giant symbol, a content scene with a pill, a title and three flat cards (icon, symbol, label) and a closing with only the logo; hard cuts, 16:9 and 9:16 (Reels safe area); logo opening (\"aberturaLogo\"). Greys, placeholder texts and the placeholder logo, symbol and icon stand for the person's brand and content: swap them. Render: node scripts/example-fonts.mjs <output>/.work-drawn-explainer-example && node templates/drawn-explainer/render.mjs templates/drawn-explainer/example.json --out <output> --mode final.",
+ "nome": "drawn-explainer-example",
+ "aberturaLogo": { "logo": "../../assets/example/logo-placeholder.png", "fundo": "#F5F5F5", "dur": 1 },
+ "idioma": "en-US",
+ "formatos": [
+  "16x9",
+  "9x16"
+ ],
+ "plataforma": {
+  "9x16": "reels"
+ },
+ "cenas": "example-scenes.js",
+ "textura": "nenhuma",
+ "legenda": false,
+ "semente": 11,
+ "marca": {
+  "nome": "Your brand",
+  "cores": {
+   "fundo": "#F5F5F5",
+   "superficie": "#EBEBEB",
+   "texto": "#1D1D1D",
+   "apoio": "#505050",
+   "destaque": "#848484",
+   "ok": "#666666"
+  },
+  "paleta": {
+   "pink": "#848484",
+   "purple": "#979797",
+   "green": "#666666",
+   "blue": "#505050",
+   "yellow": "#D6D6D6",
+   "red": "#2C2C2C"
+  },
+  "fontes": {
+   "titulo": "Inter",
+   "texto": "Inter",
+   "ui": "Inter"
+  },
+  "pesoTitulo": 700,
+  "pesoTexto": 500,
+  "caixaAlta": false,
+  "forma": {
+   "raio": 36,
+   "sombra": false
+  },
+  "logo": "../../assets/example/logo-placeholder.png",
+  "ui": {
+   "escuro": false,
+   "surface": "#EBEBEB",
+   "text": "#1D1D1D"
+  }
+ },
+ "trilha": {
+  "semente": 1204,
+  "identidade": {
+   "genero": "house",
+   "bpm": [
+    120,
+    124
+   ],
+   "modos": [
+    "maior",
+    "mixolidio"
+   ],
+   "tons": [
+    "C",
+    "D",
+    "F",
+    "G",
+    "A"
+   ],
+   "instrumentos": {
+    "harmonia": [
+     "epiano",
+     "piano"
+    ],
+    "baixo": [
+     "bass_note"
+    ],
+    "percussao": [
+     "kick",
+     "clap",
+     "hat",
+     "hat_aberto",
+     "shaker"
+    ],
+    "melodia": [
+     "pluck"
+    ],
+    "textura": [
+     "pad_note"
+    ]
+   }
+  }
+ },
+ "midia": [
+  "../../assets/example/symbol-placeholder.png",
+  "../../assets/example/symbol-placeholder-light.png",
+  "../../assets/example/logo-placeholder-light.png",
+  "../../assets/example/icon-placeholder.png"
+ ],
+ "roteiro": [
+  {
+   "id": "capa",
+   "min": 3.6,
+   "texto": "Your product",
+   "transicao": "cut"
+  },
+  {
+   "id": "pecas",
+   "min": 6.0,
+   "texto": "Your three features. What each feature does, in one line.",
+   "transicao": "cut"
+  },
+  {
+   "id": "fecho",
+   "min": 1.6,
+   "transicao": "cut"
+  }
+ ],
+ "dados": {
+  "capa": {
+   "fundo": "#848484",
+   "texto": "#F5F5F5",
+   "titulo": "Your\nproduct",
+   "simbolo": "media/symbol-placeholder.png",
+   "wordmark": "media/logo-placeholder-light.png"
+  },
+  "pecas": {
+   "fundo": "#F5F5F5",
+   "texto": "#1D1D1D",
+   "pilula": "Your product",
+   "pilulaFundo": "#D6D6D6",
+   "pilulaTexto": "#383838",
+   "titulo": "Your three *features*.",
+   "apoio": "What each feature does, in one line.",
+   "itens": [
+    {
+     "rotulo": "One",
+     "cor": "#848484",
+     "texto": "#F5F5F5",
+     "icone": "media/icon-placeholder.png",
+     "simbolo": "media/symbol-placeholder-light.png"
+    },
+    {
+     "rotulo": "Two",
+     "cor": "#979797",
+     "texto": "#1B1B1B",
+     "icone": "media/icon-placeholder.png",
+     "simbolo": "media/symbol-placeholder.png"
+    },
+    {
+     "rotulo": "Three",
+     "cor": "#D6D6D6",
+     "texto": "#383838",
+     "icone": "media/icon-placeholder.png",
+     "simbolo": "media/symbol-placeholder.png"
+    }
+   ]
+  },
+  "fecho": {
+   "fundo": "#F5F5F5",
+   "logo": "media/logo-placeholder.png"
+  }
+ }
+}

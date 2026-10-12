@@ -1,0 +1,71 @@
+{
+  "_sobre": "Format example of Rolling list, with no brand: burst speed ('rajada'), four items, the item name as the big text on a flat color that changes per item, four kinds of proof (palette, bar, list, choice), closing with the logo alone. Sample numbers: replace them with true ones. Greys, placeholder texts and the placeholder logo stand for the person's brand and content: swap them. Render: node scripts/example-fonts.mjs <output>/rolling-list-example && node templates/rolling-list/render.mjs templates/rolling-list/example.json --out <output> --name rolling-list-example --formats 16x9 --mode draft",
+  "aberturaLogo": { "logo": "../../assets/example/logo-placeholder.png", "fundo": "#F5F5F5", "dur": 1 },
+  "velocidade": "rajada",
+  "semente": 5,
+  "respira": true,
+  "marca": {
+    "nome": "Your brand",
+    "tema": "claro",
+    "logo": "../../assets/example/logo-placeholder.png",
+    "cores": {
+      "fundo": "#E6E6E6", "superficie": "#F5F5F5", "campo": "#E6E6E6",
+      "texto": "#505050", "apoio": "#505050", "apagado": "#505050",
+      "destaque": "#505050", "tinta": "#F5F5F5", "ok": "#505050",
+      "pino": "#F5F5F5", "trilho": "#D4D4D4"
+    },
+    "paleta": [
+      { "fundo": "#1B1B1B", "texto": "#979797", "destaque": "#979797", "tinta": "#1B1B1B" },
+      { "fundo": "#505050", "texto": "#F5F5F5", "destaque": "#F5F5F5", "tinta": "#505050" },
+      { "fundo": "#979797", "texto": "#1B1B1B", "destaque": "#1B1B1B", "tinta": "#979797" }
+    ],
+    "fontes": { "titulo": "Inter", "texto": "Inter", "mono": "Inter" },
+    "pesoTitulo": 700,
+    "caixaAlta": false,
+    "inclina": 0,
+    "plano": true,
+    "gradeFundo": false,
+    "luz": 0,
+    "grao": 0
+  },
+  "abertura": { "numero": 4, "linhas": ["new", "features"] },
+  "itens": [
+    {
+      "etiqueta": "Feature one",
+      "frase": "What feature one does",
+      "prova": {
+        "tipo": "paleta", "semTopo": true,
+        "paletas": [
+          { "nome": "Theme one", "cores": ["#2C2C2C", "#848484", "#A8A8A8", "#C7C7C7", "#EFEFEF"], "previa": ["#EFEFEF", "#848484", "#2C2C2C", "#848484"] },
+          { "nome": "Theme two", "cores": ["#1B1B1B", "#505050", "#979797", "#D4D4D4"], "previa": ["#E6E6E6", "#979797", "#1B1B1B", "#505050"] },
+          { "nome": "Theme three", "cores": ["#383838", "#666666", "#D6D6D6", "#E8E8E8"], "previa": ["#E8E8E8", "#D6D6D6", "#383838", "#666666"] },
+          { "nome": "Theme four", "cores": ["#1D1D1D", "#DEDEDE", "#EBEBEB", "#F5F5F5"], "previa": ["#F5F5F5", "#DEDEDE", "#1D1D1D", "#1D1D1D"] }
+        ],
+        "ordem": [0, 1, 2, 3]
+      }
+    },
+    {
+      "etiqueta": "Feature number two",
+      "frase": "What feature two does",
+      "prova": { "tipo": "barra", "semTopo": true, "rotulo": "What the bar counts", "de": 0, "para": 96, "max": 128, "unidade": "of 128 items", "nota": "A short note" }
+    },
+    {
+      "etiqueta": "Feature three",
+      "frase": "What feature three does",
+      "prova": { "tipo": "lista", "semTopo": true, "linhas": ["First line", "Line two", "Third line here", "A fourth, longer line"] }
+    },
+    {
+      "etiqueta": "Feature four",
+      "frase": "What feature four does",
+      "prova": { "tipo": "escolha", "semTopo": true, "pergunta": "Choice", "opcoes": ["One", "Two", "Three", "Four", "Five", "Six"], "ativa": 0, "colunas": 3 }
+    }
+  ],
+  "fecho": { "fundo": "#F5F5F5" },
+  "trilha": {
+    "semente": 2124,
+    "identidade": {
+      "genero": "house", "bpm": [122, 124], "modos": ["maior", "mixolidio"], "tons": ["C", "D", "F", "G", "A"],
+      "instrumentos": { "harmonia": ["epiano", "piano"], "baixo": ["bass_note"], "percussao": ["kick", "clap", "hat", "hat_aberto", "shaker"], "melodia": ["pluck"], "textura": ["pad_note"] }
+    }
+  }
+}

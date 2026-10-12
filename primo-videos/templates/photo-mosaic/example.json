@@ -1,0 +1,69 @@
+{
+  "_sobre": "Format example of the photo mosaic, with no brand: seven photos in a 5×2 grid with one large photo, the highlight of one photo and a new mosaic in another order; label strip below the photos, tag pill, static camera, calm pace, 96 BPM, 16:9; logo opening (\"aberturaLogo\") and logo-only closing. Greys, placeholder texts, photos and logo stand for the person's brand and content: swap them. Render: node scripts/example-fonts.mjs <output>/.work-photo-mosaic-example && node templates/photo-mosaic/render.mjs templates/photo-mosaic/example.json --out <output> --mode final.",
+  "nome": "photo-mosaic-example",
+  "aberturaLogo": { "logo": "../../assets/example/logo-placeholder.png", "fundo": "#F5F5F5", "dur": 1 },
+  "titulo": "Title of the video",
+  "formatos": ["16x9"],
+  "bpm": 96,
+  "ritmo": "calmo",
+  "leiaute": "mosaico",
+  "camera": "estatica",
+  "fonte": { "familia": "Inter" },
+  "raio": 40,
+  "vao": 18,
+  "pares": [
+    ["#F5F5F5", "#1D1D1D", "AAA"], ["#EBEBEB", "#1D1D1D", "AAA"], ["#DEDEDE", "#1D1D1D", "AAA"], ["#1D1D1D", "#F5F5F5", "AAA"],
+    ["#505050", "#F5F5F5", "AAA"], ["#383838", "#D6D6D6", "AAA"], ["#D6D6D6", "#383838", "AAA"], ["#1B1B1B", "#979797", "AA"],
+    ["#979797", "#1B1B1B", "AA"], ["#E6E6E6", "#505050", "AA"], ["#F5F5F5", "#505050", "AA"], ["#2C2C2C", "#A8A8A8", "AA"],
+    ["#A8A8A8", "#2C2C2C", "AA"], ["#666666", "#F5F5F5", "AA"], ["#E8E8E8", "#666666", "AA"], ["#F5F5F5", "#666666", "AA"],
+    ["#848484", "#F5F5F5", "AA18"], ["#F5F5F5", "#848484", "AA18"], ["#EFEFEF", "#848484", "AA18"]
+  ],
+  "cores": { "fundo": "#F5F5F5", "rotulo": "#1D1D1D", "etiqueta": {"fundo": "#D6D6D6", "texto": "#383838"} },
+  "etiqueta": "Your brand",
+  "fotos": [
+    { "arquivo": "../../assets/example/photos/photo-placeholder-01.jpg", "foco": [50, 45] },
+    { "arquivo": "../../assets/example/photos/photo-placeholder-02.jpg", "foco": [45, 40] },
+    { "arquivo": "../../assets/example/photos/photo-placeholder-03.jpg", "foco": [50, 45] },
+    { "arquivo": "../../assets/example/photos/photo-placeholder-04.jpg", "foco": [50, 35] },
+    { "arquivo": "../../assets/example/photos/photo-placeholder-05.jpg", "foco": [40, 35] },
+    { "arquivo": "../../assets/example/photos/photo-placeholder-06.jpg", "foco": [45, 35] },
+    { "arquivo": "../../assets/example/photos/photo-placeholder-07.jpg", "foco": [50, 40] }
+  ],
+  "etapas": [
+    {
+      "tipo": "mosaico",
+      "grade": [5, 2],
+      "grandes": [1],
+      "ordem": [1, 0, 2, 3, 4, 5, 6],
+      "rotulo": "128 photos of your brand"
+    },
+    { "tipo": "destaque", "foto": 0, "rotulo": "What this photo shows, in short" },
+    {
+      "tipo": "mosaico",
+      "grade": [5, 2],
+      "grandes": [3],
+      "ordem": [4, 5, 3, 0, 1, 6, 2],
+      "rotulo": "A fact: 24 places"
+    }
+  ],
+  "fecho": {
+    "logo": "../../assets/example/logo-placeholder.png",
+    "fundo": "#F5F5F5",
+    "largura": 620
+  },
+  "trilha": {
+    "semente": 6101,
+    "identidade": {
+      "genero": "acustico",
+      "modos": ["maior", "mixolidio"],
+      "tons": ["C", "D", "F", "G", "A"],
+      "instrumentos": {
+        "harmonia": ["piano", "epiano"],
+        "baixo": ["bass_note"],
+        "percussao": ["kick", "clap", "hat", "shaker"],
+        "melodia": ["pluck"],
+        "textura": ["pad_note"]
+      }
+    }
+  }
+}

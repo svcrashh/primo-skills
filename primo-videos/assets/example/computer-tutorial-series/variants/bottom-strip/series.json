@@ -1,0 +1,100 @@
+{
+  "versao": 2,
+  "leitura": "reading.md",
+  "formato": "19x9",
+  "aparelhos": {
+    "computer": {
+      "dsf": 3
+    },
+    "computer-hd": {
+      "dsf": 3
+    }
+  },
+  "texto": "fora-da-imagem",
+  "cinema": "moldura",
+  "rotulo": "Step by step",
+  "passo": "Step {n} of {N}",
+  "fontes": [
+    "Inter"
+  ],
+  "fonteTitulo": "Inter",
+  "fonteTexto": "Inter",
+  "abertura": 2.8,
+  "fechamento": 3.0,
+  "bpm": 122,
+  "loudness_lufs": -14,
+  "fps": 60,
+  "sub": 4,
+  "plataforma": null,
+  "visual": {
+    "fundo": {
+      "tipo": "grade",
+      "cor": "claro",
+      "tinta": "apoioMedio",
+      "forca": 0.12
+    },
+    "moldura": {
+      "tipo": "navegador",
+      "cor": "superficie2",
+      "tinta": "escuro",
+      "raio": 22,
+      "sombra": "longa"
+    },
+    "legenda": {
+      "tipo": "faixa",
+      "lado": "baixo",
+      "arranjo": "linha",
+      "fundo": "apoioEscuro",
+      "tinta": "apoio",
+      "rotulo": "pilula",
+      "troca": "corte",
+      "peso": 700,
+      "fonte": "titulo"
+    },
+    "selo": {
+      "tipo": "pilula",
+      "cor": "apoioEscuro",
+      "fundo": "apoio"
+    },
+    "titulo": {
+      "caixa": "normal",
+      "peso": 700,
+      "espaco": -0.02,
+      "entrada": "corte",
+      "tinta": "apoioMedio",
+      "alinhar": "esquerda"
+    },
+    "abertura": {
+      "saida": "mergulho",
+      "previa": "resultado",
+      "painel": "apoioEscuro",
+      "indice": true
+    },
+    "fechamento": {
+      "entrada": "cortina",
+      "fundo": "apoioClaro",
+      "tinta": "apoioEscuro",
+      "logo": "png",
+      "ordem": "so-logo"
+    },
+    "realce": {
+      "tipo": "sublinhado",
+      "cor": "apoioMedio",
+      "espessura": 6,
+      "raio": 3
+    },
+    "indicador": {
+      "tinta": "escuro",
+      "contorno": "claro"
+    },
+    "secao": {
+      "entrada": "whip",
+      "cor": "apoio",
+      "tinta": "apoioEscuro",
+      "letreiro": "titulo"
+    },
+    "painel": {
+      "movimento": "travelling"
+    }
+  }
+}

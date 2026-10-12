@@ -1,0 +1,59 @@
+{
+  "versao": 2,
+  "nome": "Your brand · web tool tutorial · right column",
+  "papel": "protagonista",
+  "estilo": "calm acoustic pop: piano and pluck in open chords, light shaker and rim, soft acoustic kick, no climax; lead, but held back (the video has no voice)",
+  "bpm": [
+    100,
+    106
+  ],
+  "modos": [
+    "maior",
+    "lidio"
+  ],
+  "tons": [
+    "C",
+    "D",
+    "F",
+    "G",
+    "A"
+  ],
+  "instrumentos": {
+    "harmonia": [
+      "piano",
+      "pluck"
+    ],
+    "baixo": [
+      "bass_note"
+    ],
+    "percussao": [
+      "kick",
+      "shaker",
+      "aro"
+    ],
+    "melodia": [
+      "bell",
+      "pling"
+    ],
+    "textura": [
+      "shimmer_pad"
+    ]
+  },
+  "groove": [
+    "leve",
+    "contratempo"
+  ],
+  "bumbo": "acustico",
+  "padrao_baixo": [
+    "semibreve",
+    "raiz_quinta",
+    "ancora"
+  ],
+  "padrao_harmonia": [
+    "arpejo",
+    "respiro"
+  ],
+  "cede_db": 0,
+  "densidade": "baixa",
+  "loudness_lufs": -14.0
+}

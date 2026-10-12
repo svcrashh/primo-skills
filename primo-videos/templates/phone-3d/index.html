@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>3D phone</title>
+<link rel="stylesheet" href="fonts/fonts.css">
+<style>
+html, body { margin: 0; padding: 0; background: #111; }
+#stage { position: relative; overflow: hidden; -webkit-font-smoothing: antialiased; }
+.scene, .layer { position: absolute; left: 0; top: 0; width: var(--W); height: var(--H); }
+.scene { overflow: hidden; display: none; }
+.abs { position: absolute; left: 0; top: 0; }
+.line { position: absolute; white-space: nowrap; line-height: 1.1; }
+.mask { display: inline-block; overflow: hidden; vertical-align: bottom; padding: .06em .14em .2em; margin: -.06em -.14em -.2em; }
+.inner { display: inline-block; }
+.ch { display: inline-block; white-space: pre; }
+</style>
+</head>
+<body>
+<div id="stage"></div>
+<script src="params.js"></script>
+<script src="video.js"></script>
+<script src="engine.js"></script>
+<script src="scene.js"></script>
+<script>iniciar()</script>
+</body>
+</html>

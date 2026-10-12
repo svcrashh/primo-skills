@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Your product</title>
+<!-- Neutral sample page, with no brand: grey skeleton and placeholder text. The screen-recording examples of the
+     templates capture it (before-after, infinite-zoom, phone-3d, light-trail-teaser, real-screen-camera, the computer
+     tutorial series) so each one runs end to end. In a real video, the screen is the person's own product. -->
+<style>
+:root { --bg: #f5f5f5; --surface: #ebebeb; --surface-2: #dedede; --text: #1d1d1d; --muted: #666666; --strong: #505050; --on-strong: #f5f5f5; --line: #c7c7c7; --mark: #d6d6d6; }
+:root[data-theme="dark"] { --bg: #1d1d1d; --surface: #2c2c2c; --surface-2: #383838; --text: #f5f5f5; --muted: #a8a8a8; --strong: #d4d4d4; --on-strong: #1d1d1d; --line: #505050; --mark: #505050; }
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: 76px; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+button, input { font: inherit; color: inherit; }
+.bar { position: sticky; top: 0; z-index: 5; display: flex; align-items: center; gap: 12px; padding: 12px 20px; background: var(--bg); border-bottom: 1px solid var(--line); }
+.button { display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border: 0; border-radius: 20px; background: var(--surface); cursor: pointer; font-weight: 600; }
+.button:hover { background: var(--surface-2); }
+.bar-contents { display: none; }
+.search { flex: 1 1 0; min-width: 0; display: flex; align-items: center; gap: 8px; height: 40px; max-width: 520px; margin-left: auto; padding: 0 14px; border-radius: 20px; background: var(--surface); }
+.search:focus-within { outline: 2px solid var(--strong); }
+.search input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; }
+.search input::-webkit-search-cancel-button { display: none; }
+.search-count { color: var(--muted); font-size: 14px; white-space: nowrap; }
+.search-clear { border: 0; background: transparent; cursor: pointer; color: var(--muted); font-size: 18px; line-height: 1; }
+.layout { display: grid; grid-template-columns: 240px minmax(0, 760px); gap: 48px; max-width: 1120px; margin: 0 auto; padding: 32px 20px 96px; }
+.contents { position: sticky; top: 84px; align-self: start; font-size: 15px; }
+.contents p { margin: 0 0 8px; font-weight: 700; }
+.contents a { display: block; padding: 6px 12px; border-radius: 10px; color: var(--muted); text-decoration: none; }
+.contents a:hover { background: var(--surface); color: var(--text); }
+.contents a.current { background: var(--mark); color: var(--text); font-weight: 600; }
+.cover { margin-bottom: 40px; }
+.pills { display: flex; gap: 8px; margin: 0 0 16px; padding: 0; list-style: none; }
+.pill { padding: 4px 12px; border-radius: 999px; background: var(--mark); font-size: 13px; font-weight: 600; }
+h1 { margin: 0 0 12px; font-size: 48px; line-height: 1.05; letter-spacing: -0.02em; }
+h2 { margin: 56px 0 16px; font-size: 28px; line-height: 1.15; letter-spacing: -0.01em; }
+.lead { margin: 0 0 8px; font-size: 19px; color: var(--muted); }
+.date { margin: 0; font-size: 14px; color: var(--muted); }
+.summary { margin: 28px 0 0; padding: 20px 24px; border-radius: 20px; background: var(--strong); color: var(--on-strong); font-weight: 600; }
+.summary small { display: inline-block; margin-bottom: 8px; padding: 2px 10px; border-radius: 999px; background: var(--on-strong); color: var(--strong); font-size: 12px; }
+.summary p { margin: 0; }
+.cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.card { padding: 20px; border-radius: 20px; background: var(--surface); }
+.card-icon { display: block; width: 40px; height: 40px; margin-bottom: 14px; border-radius: 12px; background: var(--surface-2); border: 3px solid var(--strong); }
+.card h3 { margin: 0 0 6px; font-size: 17px; }
+.card p { margin: 0; color: var(--muted); font-size: 15px; }
+.steps { margin: 0; padding: 0; list-style: none; counter-reset: step; }
+.steps li { position: relative; margin: 0 0 18px; padding-left: 48px; counter-increment: step; }
+.steps li::before { content: counter(step); position: absolute; left: 0; top: 0; width: 32px; height: 32px; border-radius: 50%; background: var(--mark); font-weight: 700; display: grid; place-items: center; }
+.steps strong { display: block; }
+.steps span { color: var(--muted); }
+.code { position: relative; margin: 0 0 16px; padding: 18px 20px; border-radius: 16px; background: var(--surface); font: 15px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; overflow-x: auto; }
+.code-label { display: block; margin-bottom: 6px; color: var(--muted); font: 600 12px/1.4 system-ui, sans-serif; text-transform: uppercase; letter-spacing: .06em; }
+.copy { position: absolute; top: 12px; right: 12px; height: 32px; padding: 0 14px; border: 0; border-radius: 16px; background: var(--surface-2); cursor: pointer; font: 600 13px/1 system-ui, sans-serif; }
+.copy.done { background: var(--strong); color: var(--on-strong); }
+table { width: 100%; border-collapse: collapse; font-size: 15px; }
+th, td { padding: 12px 14px; text-align: left; border-bottom: 1px solid var(--line); vertical-align: top; }
+thead th { font-size: 13px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+tr.highlight td, tr.highlight th { background: var(--mark); }
+dl { margin: 0; }
+dt { margin-top: 14px; font-weight: 700; }
+dd { margin: 2px 0 0; color: var(--muted); }
+details { margin: 0 0 10px; padding: 14px 18px; border-radius: 16px; background: var(--surface); }
+summary { cursor: pointer; font-weight: 600; }
+details p { margin: 10px 0 0; color: var(--muted); }
+.empty { margin: 40px 0; padding: 20px 24px; border-radius: 16px; background: var(--surface); }
+.footer { margin-top: 64px; }
+.footer a, .link { color: inherit; }
+.link { border: 0; background: none; padding: 0; text-decoration: underline; cursor: pointer; }
+mark { background: var(--mark); color: inherit; padding: 0 2px; border-radius: 4px; }
+[hidden] { display: none !important; }
+@media (max-width: 900px) {
+  .bar { gap: 8px; padding: 12px; }
+  .bar .button { padding: 0 12px; flex: none; }
+  .bar-contents { display: inline-flex; }
+  .layout { grid-template-columns: minmax(0, 1fr); gap: 0; padding-top: 20px; }
+  .contents { display: none; position: static; margin: 0 0 24px; padding: 16px; border-radius: 20px; background: var(--surface); }
+  .contents.open { display: block; }
+  h1 { font-size: 36px; }
+  .cards { grid-template-columns: minmax(0, 1fr); }
+}
+</style>
+</head>
+<body id="top">
+
+<header class="bar">
+  <button class="button bar-contents" id="contents-button" type="button" aria-expanded="false" aria-controls="contents">Contents</button>
+  <label class="search">
+    <input id="search" type="search" placeholder="Search this page" aria-label="Search this page" autocomplete="off" spellcheck="false">
+    <span class="search-count" id="search-count" hidden></span>
+    <button class="search-clear" id="search-clear" type="button" aria-label="Clear the search" hidden>×</button>
+  </label>
+  <button class="button" id="theme" type="button" aria-label="Switch between light and dark theme">Theme</button>
+</header>
+
+<div class="layout">
+  <nav class="contents" id="contents" aria-label="Contents">
+    <p>On this page</p>
+    <a href="#overview">Overview</a>
+    <a href="#how-it-works">How it works</a>
+    <a href="#install">Install</a>
+    <a href="#plans">Plans</a>
+    <a href="#details">Details</a>
+    <a href="#glossary">Glossary</a>
+    <a href="#questions">Questions</a>
+  </nav>
+
+  <main id="content">
+    <header class="cover" data-part>
+      <ul class="pills"><li class="pill">guide</li><li class="pill">sample</li><li class="pill">placeholder</li></ul>
+      <h1>Your product</h1>
+      <p class="lead">One line that says what the product does and who it is for.</p>
+      <p class="date">Updated on a sample date</p>
+      <div class="summary"><small>In one sentence</small><p>This is a neutral sample page. Its text and its greys are placeholders: in a real video, the screen is your own product.</p></div>
+    </header>
+
+    <section data-part>
+      <h2 id="overview">Overview</h2>
+      <div class="cards">
+        <article class="card" id="card-one"><span class="card-icon"></span><h3>Feature one</h3><p>What the first feature does, in one short line.</p></article>
+        <article class="card" id="card-two"><span class="card-icon"></span><h3>Feature two</h3><p>What the second feature does, in one short line.</p></article>
+        <article class="card" id="card-three"><span class="card-icon"></span><h3>Feature three</h3><p>What the third feature does, in one short line.</p></article>
+        <article class="card" id="card-four"><span class="card-icon"></span><h3>Feature four</h3><p>What the fourth feature does, in one short line.</p></article>
+      </div>
+    </section>
+
+    <section data-part>
+      <h2 id="how-it-works">How it works</h2>
+      <ol class="steps">
+        <li><strong>First step</strong><span>What the person does first.</span></li>
+        <li><strong>Second step</strong><span>What the product asks or shows next.</span></li>
+        <li><strong>Third step</strong><span>What gets checked before the result.</span></li>
+        <li><strong>Fourth step</strong><span>The result, where the person can see it.</span></li>
+      </ol>
+    </section>
+
+    <section data-part>
+      <h2 id="install">Install</h2>
+      <div class="code"><span class="code-label">Terminal</span><code id="command">your-product install --yes</code><button class="copy" id="copy" type="button">Copy</button></div>
+      <p>The command above is a placeholder. Copy it to see the button change.</p>
+    </section>
+
+    <section data-part>
+      <h2 id="plans">Plans</h2>
+      <table id="plans-table">
+        <thead><tr><th>Plan</th><th>For whom</th><th>Includes</th></tr></thead>
+        <tbody>
+          <tr><th scope="row">Starter</th><td>one person</td><td>the basic features</td></tr>
+          <tr class="highlight" id="plan-team"><th scope="row">Team</th><td>a small team</td><td>everything in Starter, plus sharing</td></tr>
+          <tr><th scope="row">Company</th><td>several teams</td><td>everything in Team, plus access control</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section data-part>
+      <h2 id="details">Details</h2>
+      <table id="details-table">
+        <thead><tr><th>Item</th><th>Where it is</th></tr></thead>
+        <tbody>
+          <tr><th scope="row">Settings</th><td><code>settings/general</code></td></tr>
+          <tr><th scope="row">Reports</th><td><code>reports/monthly</code></td></tr>
+          <tr id="detail-items"><th scope="row">Items</th><td><code>items/all</code>, 128 items</td></tr>
+          <tr><th scope="row">Help</th><td><code>help/start</code></td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section data-part>
+      <h2 id="glossary">Glossary</h2>
+      <dl>
+        <dt>Item</dt><dd>The basic thing the product keeps.</dd>
+        <dt>Report</dt><dd>A summary of the items in a period.</dd>
+        <dt>Workspace</dt><dd>The place where a team keeps its items.</dd>
+      </dl>
+    </section>
+
+    <section data-part>
+      <h2 id="questions">Questions</h2>
+      <details><summary>Where is my work saved?</summary><p>In the workspace of your team, under Items.</p></details>
+      <details><summary>Can I undo a change?</summary><p>Yes, each change can be undone from the history.</p></details>
+      <details><summary>Who can see a report?</summary><p>The people of the workspace it belongs to.</p></details>
+      <details><summary>How do I get help?</summary><p>Open Help and write what you were trying to do.</p></details>
+    </section>
+
+    <p class="empty" id="empty" hidden>Nothing found for <strong></strong>. <button class="link" id="empty-clear" type="button">Clear the search</button></p>
+    <footer class="footer"><a href="#top">Back to top</a></footer>
+  </main>
+</div>
+
+<script>
+(function () {
+  var root = document.documentElement, $ = function (id) { return document.getElementById(id) }
+  $('theme').addEventListener('click', function () { root.dataset.theme = root.dataset.theme === 'dark' ? 'light' : 'dark' })
+  var nav = $('contents'), navButton = $('contents-button')
+  navButton.addEventListener('click', function () { var open = nav.classList.toggle('open'); navButton.setAttribute('aria-expanded', String(open)) })
+  nav.addEventListener('click', function (e) { if (e.target.tagName === 'A') { nav.classList.remove('open'); navButton.setAttribute('aria-expanded', 'false') } })
+  var links = [].slice.call(nav.querySelectorAll('a')), heads = links.map(function (a) { return $(a.getAttribute('href').slice(1)) })
+  function current() {
+    var i = 0
+    heads.forEach(function (h, k) { if (h.getBoundingClientRect().top < 120) i = k })
+    links.forEach(function (a, k) { a.classList.toggle('current', k === i) })
+  }
+  addEventListener('scroll', current, { passive: true }); current()
+  var input = $('search'), count = $('search-count'), clear = $('search-clear'), empty = $('empty'), parts = [].slice.call(document.querySelectorAll('[data-part]'))
+  function search() {
+    var q = input.value.trim().toLowerCase(), shown = 0
+    parts.forEach(function (p) { var hit = !q || p.textContent.toLowerCase().indexOf(q) >= 0; p.hidden = !hit; if (hit) shown++ })
+    links.forEach(function (a) { var h = $(a.getAttribute('href').slice(1)); a.hidden = !!q && h.closest('[data-part]').hidden })
+    count.hidden = clear.hidden = !q
+    count.textContent = shown + ' of ' + parts.length
+    empty.hidden = !q || shown > 0
+    empty.querySelector('strong').textContent = input.value.trim()
+  }
+  function reset() { input.value = ''; search(); input.focus() }
+  input.addEventListener('input', search); clear.addEventListener('click', reset); $('empty-clear').addEventListener('click', reset)
+  var copy = $('copy')
+  copy.addEventListener('click', function () {
+    try { navigator.clipboard.writeText($('command').textContent).catch(function () {}) } catch (e) {}
+    copy.textContent = 'Copied'; copy.classList.add('done')
+    setTimeout(function () { copy.textContent = 'Copy'; copy.classList.remove('done') }, 2400)
+  })
+})()
+</script>
+</body>
+</html>

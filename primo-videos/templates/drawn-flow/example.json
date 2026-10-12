@@ -1,0 +1,45 @@
+{
+ "_sobre": "Format example of the drawn flow, with no brand: five nodes in a row, horizontal, full screen, travelling camera (it follows the packet), zoom-through transition, medium pace, 16:9; logo opening (\"aberturaLogo\") and logo-only closing. Greys, placeholder texts, the placeholder icon and logo stand for the person's brand and content: swap them. Render: node scripts/example-fonts.mjs <output>/.work-drawn-flow-example && node templates/drawn-flow/render.mjs templates/drawn-flow/example.json --out <output> --mode final.",
+ "nome": "drawn-flow-example",
+ "aberturaLogo": { "logo": "../../assets/example/logo-placeholder.png", "fundo": "#F5F5F5", "dur": 1 },
+ "titulo": "How your product works",
+ "formatos": ["16x9"],
+ "chamada": "How your product works",
+ "leiaute": "full-screen",
+ "direcao": "horizontal",
+ "camera": "travelling",
+ "transicao": "zoom-through",
+ "ritmo": "medio",
+ "marca": {
+  "nome": "Your brand",
+  "fonte": "Inter",
+  "pesos": { "titulo": 700, "rotulo": 700, "detalhe": 500, "chamada": 600 },
+  "cores": {
+   "fundo": "#505050", "texto": "#F5F5F5", "apoio": "#F5F5F5",
+   "ladrilho": "#E6E6E6", "linha": "#D4D4D4", "aceso": "#D6D6D6", "pacote": "#D6D6D6",
+   "chamadaFundo": "#D6D6D6", "chamadaTexto": "#383838"
+  },
+  "apagado": 0.5
+ },
+ "nos": [
+  { "id": "first", "rotulo": "First step", "detalhe": "what starts the path", "icone": "../../assets/example/icon-placeholder.png" },
+  { "id": "second", "rotulo": "Second step", "detalhe": "what happens at this step", "icone": "../../assets/example/icon-placeholder.png" },
+  { "id": "third", "rotulo": "Third step", "detalhe": "what this step takes or uses", "icone": "../../assets/example/icon-placeholder.png" },
+  { "id": "fourth", "rotulo": "Fourth step", "detalhe": "what comes out of it", "icone": "../../assets/example/icon-placeholder.png" },
+  { "id": "result", "rotulo": "The result", "detalhe": "what the person gets", "icone": "../../assets/example/icon-placeholder.png" }
+ ],
+ "setas": [
+  { "de": "first", "para": "second" },
+  { "de": "second", "para": "third" },
+  { "de": "third", "para": "fourth" },
+  { "de": "fourth", "para": "result" }
+ ],
+ "fecho": { "logo": "../../assets/example/logo-placeholder.png", "fundo": "#F5F5F5", "dur": 2.4 },
+ "trilha": {
+  "semente": 4122,
+  "identidade": {
+   "nome": "Your brand · drawn flow", "genero": "house", "bpm": [122, 122], "modos": ["maior", "mixolidio"], "tons": ["C", "D", "F", "G", "A"],
+   "instrumentos": { "harmonia": ["epiano", "piano"], "baixo": ["bass_note"], "percussao": ["kick", "clap", "hat", "hat_aberto", "shaker"], "melodia": ["pluck"], "textura": ["pad_note"] }
+  }
+ }
+}

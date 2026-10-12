@@ -1,0 +1,12 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>typing-terminal</title>
+<style>html,body{margin:0;background:#000}#stage{position:relative;overflow:hidden}
+#win{position:absolute;border-radius:22px;overflow:hidden;box-shadow:0 40px 90px rgba(0,0,0,.45)}
+#bar{display:flex;align-items:center;gap:10px}#bar i{display:block;border-radius:50%}
+#bar span{position:absolute;left:0;right:0;text-align:center;font-family:-apple-system,"SF Pro Text",Helvetica,sans-serif;opacity:.6}
+#corpo{position:absolute;left:0;right:0;overflow:hidden}
+#txt{position:absolute;left:0;top:0;white-space:pre-wrap;word-break:break-all;font-family:"SF Mono",Menlo,Monaco,monospace}
+#leg{position:absolute;text-align:center;font-family:-apple-system,"SF Pro Display",Helvetica,sans-serif;font-weight:700}
+.cur{display:inline-block;vertical-align:text-bottom}</style></head>
+<body><div id="stage"><div id="win"><div id="bar"><span id="tit"></span></div><div id="corpo"><div id="txt"></div></div></div><div id="leg"></div></div>
+<script src="params.js"></script><script src="template.js"></script></body></html>

@@ -1,0 +1,105 @@
+{
+  "versao": 2,
+  "leitura": "reading.md",
+  "formato": "19x9",
+  "aparelhos": {
+    "computer": {
+      "dsf": 3
+    },
+    "computer-hd": {
+      "dsf": 3
+    }
+  },
+  "texto": "fora-da-imagem",
+  "cinema": "moldura",
+  "rotulo": "Step by step",
+  "passo": "Step {n} of {N}",
+  "fontes": [
+    "Inter"
+  ],
+  "fonteTitulo": "Inter",
+  "fonteTexto": "Inter",
+  "abertura": 2.8,
+  "fechamento": 3.0,
+  "bpm": 96,
+  "loudness_lufs": -14,
+  "fps": 60,
+  "sub": 4,
+  "plataforma": null,
+  "visual": {
+    "fundo": {
+      "tipo": "simbolo",
+      "cor": "escuro",
+      "png": "simbolo"
+    },
+    "moldura": {
+      "tipo": "navegador",
+      "cor": "escuro",
+      "tinta": "claro",
+      "raio": 24,
+      "sombra": "nenhuma"
+    },
+    "legenda": {
+      "tipo": "solta",
+      "lado": {
+        "9x16": "cima",
+        "4x5": "cima",
+        "1x1": "cima",
+        "padrao": "esquerda"
+      },
+      "largura": 0.28,
+      "tinta": "claro",
+      "rotulo": "pilula",
+      "troca": "subir",
+      "peso": 700,
+      "fonte": "titulo",
+      "recuo": 24
+    },
+    "selo": {
+      "tipo": "pilula",
+      "cor": "escuro",
+      "fundo": "claro"
+    },
+    "titulo": {
+      "caixa": "normal",
+      "peso": 700,
+      "espaco": -0.02,
+      "entrada": "palavras",
+      "tinta": "claro",
+      "alinhar": "esquerda"
+    },
+    "abertura": {
+      "saida": "cortina",
+      "cor": "marca",
+      "previa": "resultado",
+      "painel": "marcaEscura",
+      "indice": true
+    },
+    "fechamento": {
+      "entrada": "dissolver",
+      "fundo": "escuro",
+      "tinta": "claro",
+      "logo": "png",
+      "ordem": "so-logo"
+    },
+    "realce": {
+      "tipo": "contorno",
+      "cor": "marca",
+      "espessura": 4,
+      "raio": 10
+    },
+    "indicador": {
+      "tinta": "escuro",
+      "contorno": "claro"
+    },
+    "secao": {
+      "entrada": "mascara",
+      "cor": "claro",
+      "tinta": "escuro",
+      "letreiro": "digitado"
+    },
+    "painel": {
+      "movimento": "orbita"
+    }
+  }
+}

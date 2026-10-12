@@ -1,0 +1,18 @@
+{
+ "titulo": "your-product",
+ "prompt": "$",
+ "comandos": [
+  {
+   "cmd": "echo \"128 items\"",
+   "legenda": "What the first command counts"
+  },
+  {
+   "cmd": "echo \"24 new items\"",
+   "legenda": "What the second one counts"
+  },
+  {
+   "cmd": "printf '%s\\n' one two three",
+   "legenda": "What the third one lists"
+  }
+ ]
+}

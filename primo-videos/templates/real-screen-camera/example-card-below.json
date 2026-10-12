@@ -1,0 +1,130 @@
+{
+  "_sobre": "Format example of real screen with camera, with no brand: the sample page in the dark theme, recorded in two steps (type items in the search; in the contents that remain, open Details), strip at the bottom, intertitle in a circle (mascara), a single zoom with the camera moving sideways (travelling), symbol in the background. Greys, placeholder texts and the placeholder logo stand for the person's brand and content: swap them. Render (from $SKILL): (1) node templates/real-screen-camera/example-card-below-journey.mjs records the page; (2) node scripts/example-fonts.mjs ~/Documents/VideoStudio/examples/real-screen-camera-card-below; (3) node templates/real-screen-camera/assemble.mjs templates/real-screen-camera/example-card-below.json --mode draft.",
+  "aberturaLogo": { "logo": "../../assets/example/logo-placeholder.png", "fundo": "#F5F5F5", "dur": 1 },
+  "id": "real-screen-camera-example-card-below",
+  "gravacao": "~/Documents/VideoStudio/examples/real-screen-camera-card-below/recording/output/computer",
+  "saida": "~/Documents/VideoStudio/examples/real-screen-camera-card-below/videos",
+  "formatos": [
+    "16x9"
+  ],
+  "titulo": [
+    "Search",
+    "the page"
+  ],
+  "rotulo": "Your product · guide",
+  "textoPasso": "Step {n} of {N}",
+  "moldura": "nenhuma",
+  "textoFora": true,
+  "cartao": "embaixo",
+  "transicao": "mascara",
+  "camera": "travelling",
+  "fundo": {
+    "tipo": "simbolo",
+    "arquivo": "../../assets/example/symbol-placeholder.png"
+  },
+  "etapas": [
+    {
+      "passos": [
+        1
+      ]
+    },
+    {
+      "intertitulo": "Where it is",
+      "passos": [
+        2
+      ]
+    }
+  ],
+  "fim": {
+    "soLogo": true
+  },
+  "velocidade": 1.4,
+  "abertura": 1.3,
+  "planoGeral": 0.7,
+  "fimDur": 2.8,
+  "intertituloDur": 1.4,
+  "segurarSucesso": 1.2,
+  "segurarFim": 0.6,
+  "trilha": {
+    "semente": 122,
+    "identidade": {
+      "genero": "house",
+      "bpm": [
+        122,
+        123
+      ],
+      "modos": [
+        "maior",
+        "mixolidio"
+      ],
+      "tons": [
+        "C",
+        "D",
+        "F",
+        "G",
+        "A"
+      ],
+      "instrumentos": {
+        "harmonia": [
+          "epiano",
+          "piano"
+        ],
+        "baixo": [
+          "bass_note"
+        ],
+        "percussao": [
+          "kick",
+          "clap",
+          "hat",
+          "hat_aberto",
+          "shaker"
+        ],
+        "melodia": [
+          "pluck"
+        ],
+        "textura": [
+          "pad_note"
+        ]
+      }
+    }
+  },
+  "marca": {
+    "plano": true,
+    "cores": {
+      "fundo": "#D6D6D6",
+      "superficie": "#D6D6D6",
+      "texto": "#383838",
+      "destaque": "#D6D6D6",
+      "sobreDestaque": "#383838",
+      "rotulo": "#383838",
+      "traco": "#383838",
+      "veu": "#383838",
+      "fimFundo": "#D6D6D6",
+      "fimTexto": "#383838"
+    },
+    "veu": 0.6,
+    "textura": "liso",
+    "fontesPasta": "~/Documents/VideoStudio/examples/real-screen-camera-card-below/fonts",
+    "fontes": {
+      "titulo": {
+        "familia": "Inter",
+        "peso": 700,
+        "caixa": "normal"
+      },
+      "texto": {
+        "familia": "Inter",
+        "peso": 500,
+        "pesoForte": 700
+      },
+      "mono": {
+        "familia": "Inter",
+        "peso": 600
+      }
+    },
+    "logo": {
+      "arquivo": "../../assets/example/logo-placeholder.png",
+      "w": 640,
+      "h": 124.78
+    }
+  }
+}

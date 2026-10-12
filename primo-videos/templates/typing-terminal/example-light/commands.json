@@ -1,0 +1,8 @@
+{
+ "titulo": "your-product",
+ "prompt": "$",
+ "comandos": [
+  { "cmd": "printf 'Item %s\\n' 1 2 3 4", "legenda": "What the first command lists" },
+  { "cmd": "printf 'Item %s\\n' 1 2 3 4 | grep -c Item", "legenda": "What the second command counts" }
+ ]
+}

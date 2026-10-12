@@ -1,0 +1,28 @@
+{
+  "_sobre": "Format example of the light-trail teaser, with no brand: 16:9, four fast fragments, one per step and one of each drawn kind (field, card, list, button), the brand symbol giant and turning in the bottom corner (fundoSimbolo), the phone reveal, and the closing with the logo alone. The screenshot in example-steps/ comes from the sample page, captured by example-steps/capture-guide.cjs. Greys, placeholder texts, screen and symbol and the placeholder logo stand for the person's brand and content: swap them. Render: node scripts/example-fonts.mjs <output>/project && templates/light-trail-teaser/render.sh templates/light-trail-teaser/example-steps.json <output> 16x9",
+  "aberturaLogo": { "logo": "../../assets/example/logo-placeholder.png", "fundo": "#F5F5F5", "dur": 1 },
+  "marca": "Your brand",
+  "titulo": "Light teaser · Four steps",
+  "duracao": 14,
+  "formatos": ["16x9"],
+  "cores": { "fundo": "#1B1B1B", "luz": "#979797", "noLuz": "#1B1B1B", "texto": "#979797", "etiqueta": "#979797" },
+  "ui": { "superficie": "#F5F5F5", "superficie2": "#E6E6E6", "borda": "#E6E6E6", "texto": "#505050", "texto2": "#505050", "destaque": "#505050", "noDestaque": "#F5F5F5", "raio": 40 },
+  "fontes": { "titulo": "Inter", "texto": "Inter", "mono": "Inter" },
+  "tituloCaixaAlta": false,
+  "liso": true,
+  "grade": false,
+  "grao": 0,
+  "logo": { "arquivo": "../../assets/example/logo-placeholder.png", "altura": 124 },
+  "fundoSimbolo": { "arquivo": "../../assets/example/symbol-placeholder.png", "altura": 1000, "x": 0.97, "y": 1.04, "gira": 5 },
+  "promessa": "Your product in four steps",
+  "etiqueta": "Step",
+  "fragmentos": [
+    { "tipo": "campo", "nome": "One", "rotulo": "What the person types", "texto": "your request here", "ajuda": "A short hint under the field" },
+    { "tipo": "cartao", "nome": "Two", "titulo": "Second step", "texto": "What the product asks or shows next, in one line." },
+    { "tipo": "lista", "nome": "Three", "titulo": "What gets checked", "itens": ["First check", "Second check", "Third check"] },
+    { "tipo": "botao", "nome": "Four", "acima": "The result is ready", "texto": "Open the result", "depois": "Where the person finds it" }
+  ],
+  "revelacao": { "imagem": { "arquivo": "example-steps/page-phone-how-it-works.jpg", "largura": 780, "altura": 3600, "rolar": [0, 0.42] } },
+  "fecho": { "soLogo": true, "fundo": "#F5F5F5", "logoAltura": 124 },
+  "tempos": { "revelacao": 2.4, "fecho": 3.0 }
+}

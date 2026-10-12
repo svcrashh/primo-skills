@@ -1,0 +1,39 @@
+{
+ "titulo": "your-product",
+ "prompt": "$",
+ "comandos": [
+  {
+   "cmd": "printf 'Output line %s\\n' 1 2 3 4 5 6",
+   "legenda": "What this command does",
+   "saida": [
+    {
+     "t": 0.011,
+     "texto": "Output line 1"
+    },
+    {
+     "t": 0.011,
+     "texto": "Output line 2"
+    },
+    {
+     "t": 0.011,
+     "texto": "Output line 3"
+    },
+    {
+     "t": 0.011,
+     "texto": "Output line 4"
+    },
+    {
+     "t": 0.011,
+     "texto": "Output line 5"
+    },
+    {
+     "t": 0.011,
+     "texto": "Output line 6"
+    }
+   ],
+   "codigo": 0,
+   "ms": 12,
+   "cortado": false
+  }
+ ]
+}

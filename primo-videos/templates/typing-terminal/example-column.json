@@ -1,0 +1,27 @@
+{
+ "_sobre": "Format example of the typing terminal, with no brand: 16:9 in the 'coluna' layout (each command's caption in a large column on the left, the window on the right), three short commands at a fast pace, the window slowly coming closer (camera), the closing with the logo alone. The recording (example-column/terminal.json) is the real output of the placeholder commands in example-column/commands.json. Greys, placeholder commands and captions and the placeholder logo stand for the person's brand and content: swap them. Render: node scripts/example-fonts.mjs <output>/.work-typing-terminal-example-column && node templates/typing-terminal/render.mjs templates/typing-terminal/example-column.json --out <output> --mode final",
+ "nome": "typing-terminal-example-column",
+ "aberturaLogo": { "logo": "../../assets/example/logo-placeholder.png", "fundo": "#F5F5F5", "dur": 1 },
+ "formatos": ["16x9"],
+ "gravacao": "example-column/terminal.json",
+ "titulo": "",
+ "moldura": false,
+ "coluna": "esquerda",
+ "camera": { "de": 0.9, "origem": [0.06, 0.06] },
+ "mono": "Menlo",
+ "fonte": "Inter",
+ "cps": 16,
+ "inicio": 0.2,
+ "linhaMin": 0.2,
+ "pausa": 0.7,
+ "cores": { "fundo": "#383838", "janela": "#666666", "barra": "#666666", "texto": "#F5F5F5", "comando": "#F5F5F5", "prompt": "#F5F5F5", "cursor": "#D6D6D6", "legenda": "#D6D6D6" },
+ "fecho": { "logo": "../../assets/example/logo-placeholder.png", "fundo": "#F5F5F5", "dur": 2.4, "largura": 640 },
+ "teclado": "mecanico",
+ "trilha": {
+  "semente": 120,
+  "identidade": {
+   "nome": "Your brand", "genero": "house", "bpm": [120, 120], "modos": ["maior", "mixolidio"], "tons": ["C", "F", "G"],
+   "instrumentos": { "harmonia": ["epiano", "piano"], "baixo": ["bass_note"], "percussao": ["kick", "clap", "hat", "shaker"], "melodia": ["pluck"], "textura": ["pad_note"] }
+  }
+ }
+}

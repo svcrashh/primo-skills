@@ -1,0 +1,57 @@
+{
+ "_sobre": "Format example of 3D phone, with no brand: the sample page on a 390 px phone; it starts at How it works, scrolls to the plans table and lands on the highlighted row (dolly camera, split layout, calm pace, push to the closing with the logo only). Greys, placeholder texts and the placeholder logo stand for the person's brand and content: swap them. Render (from $SKILL): node scripts/example-fonts.mjs <output>/.work-phone-3d-example && node templates/phone-3d/render.mjs templates/phone-3d/example.json --out <output> --mode final.",
+ "nome": "phone-3d-example",
+ "aberturaLogo": { "logo": "../../assets/example/logo-placeholder.png", "fundo": "#F5F5F5", "dur": 1 },
+ "formatos": ["16x9"],
+ "camera": "dolly",
+ "leiaute": "dividido",
+ "transicao": "push",
+ "ritmo": "calmo",
+ "zoomLeitura": 2.0,
+ "captura": {
+  "pagina": "../../assets/example/page.html",
+  "tema": "claro",
+  "idioma": "en-US",
+  "aparelho": "phone",
+  "inicio": "#how-it-works",
+  "jornada": [
+   { "passo": "Scroll to the plans" },
+   { "pausa": 400 },
+   { "rola": "#plans-table", "bloco": "start" },
+   { "pausa": 500 },
+   { "passo": "Team is the highlighted plan" },
+   { "sucesso": "#plan-team" }
+  ]
+ },
+ "textos": {
+  "rotulo": "Your product · guide",
+  "titulo": "The plans, on a phone"
+ },
+ "fundo": { "tipo": "liso" },
+ "marca": {
+  "fonte": "Inter",
+  "cores": {
+   "fundo": "#F5F5F5",
+   "painel": "#DEDEDE",
+   "texto": "#1D1D1D",
+   "rotuloFundo": "#D6D6D6",
+   "rotuloTexto": "#383838",
+   "toque": "#1D1D1D"
+  },
+  "corpo": { "titulo": 84, "texto": 64, "rotulo": 30 }
+ },
+ "aparelho": { "corpo": "#1D1D1D", "borda": "#555555", "vidro": "#000000" },
+ "fecho": {
+  "logo": "../../assets/example/logo-placeholder.png",
+  "fundo": "#F5F5F5",
+  "largura": 640,
+  "dur": 2.4
+ },
+ "trilha": {
+  "semente": 920,
+  "identidade": {
+   "nome": "Your brand · calm", "genero": "acustico", "bpm": [92, 93], "modos": ["maior", "mixolidio"], "tons": ["C", "D", "F", "G", "A"],
+   "instrumentos": { "harmonia": ["corda", "piano"], "baixo": ["bass_note"], "percussao": ["kick", "shaker", "aro"], "melodia": ["pluck"], "textura": ["pad_note"] }
+  }
+ }
+}

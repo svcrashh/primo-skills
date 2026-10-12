@@ -1,0 +1,7 @@
+{
+ "titulo": "your-product",
+ "prompt": "$",
+ "comandos": [
+  { "cmd": "printf 'Output line %s\\n' 1 2 3 4 5 6", "legenda": "What this command does" }
+ ]
+}

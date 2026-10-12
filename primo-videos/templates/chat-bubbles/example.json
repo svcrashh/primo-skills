@@ -1,0 +1,56 @@
+{
+ "_sobre": "Format example of chat bubbles, with no brand: coluna layout in a chat window with a title, segue camera (the conversation moves up, the last bubble stays on the reading line), a 4-message back and forth that ends in an arquivo card with 8 thumbnails, push to the logo. Greys, placeholder texts and the placeholder logo stand for the person's brand and content: swap them. Render: node scripts/example-fonts.mjs <output>/.work-chat-bubbles-example && node templates/chat-bubbles/render.mjs templates/chat-bubbles/example.json --out <output> --mode final.",
+ "nome": "chat-bubbles-example",
+ "aberturaLogo": { "logo": "../../assets/example/logo-placeholder.png", "fundo": "#F5F5F5", "dur": 1 },
+ "formatos": ["16x9"],
+ "leiaute": "coluna",
+ "camera": "segue",
+ "transicao": "push",
+ "janela": { "titulo": "Title of the chat window" },
+ "pessoa": { "nome": "You" },
+ "produto": { "nome": "Your product" },
+ "marca": {
+  "nome": "Your brand",
+  "logo": "../../assets/example/logo-placeholder.png",
+  "cores": {
+   "fundo": "#F5F5F5", "texto": "#1D1D1D",
+   "janela": "#EBEBEB", "janelaTopo": "#DEDEDE", "janelaTexto": "#1D1D1D",
+   "pessoa": "#1D1D1D", "sobrePessoa": "#F5F5F5",
+   "produto": "#DEDEDE", "sobreProduto": "#1D1D1D", "pontos": "#848484",
+   "cartao": "#DEDEDE", "sobreCartao": "#1D1D1D",
+   "etiqueta": "#D6D6D6", "sobreEtiqueta": "#383838",
+   "rotulo": "#1D1D1D"
+  },
+  "fontes": { "texto": "Inter" },
+  "grao": 0
+ },
+ "mensagens": [
+  { "de": "pessoa", "texto": "this is my request, written in plain words" },
+  { "de": "produto", "texto": "One question back before I start: this or that?" },
+  { "de": "pessoa", "texto": "This one, with about 8 slides." },
+  {
+   "de": "produto", "texto": "Done, here is your file:",
+   "cartao": {
+    "tipo": "arquivo", "nome": "Name of the file", "etiqueta": "slides", "detalhe": "File details · 8 slides · PDF",
+    "miniaturas": [
+     { "modelo": "capa", "fundo": "#848484", "tinta": "#F5F5F5", "tinta2": "#C7C7C7" },
+     { "modelo": "lista", "fundo": "#F5F5F5", "tinta": "#1D1D1D", "tinta2": "#DEDEDE" },
+     { "modelo": "capa", "fundo": "#979797", "tinta": "#1B1B1B", "tinta2": "#D4D4D4" },
+     { "modelo": "numero", "fundo": "#D6D6D6", "tinta": "#383838", "tinta2": "#666666" },
+     { "modelo": "colunas", "fundo": "#F5F5F5", "tinta": "#1D1D1D", "tinta2": "#EBEBEB" },
+     { "modelo": "grafico", "fundo": "#F5F5F5", "tinta": "#848484", "tinta2": "#C7C7C7" },
+     { "modelo": "lista", "fundo": "#1D1D1D", "tinta": "#F5F5F5", "tinta2": "#DEDEDE" },
+     { "modelo": "fecho", "fundo": "#848484", "tinta": "#F5F5F5" }
+    ]
+   }
+  }
+ ],
+ "fecho": { "fundo": "#F5F5F5" },
+ "trilha": {
+  "semente": 3122,
+  "identidade": {
+   "genero": "house", "bpm": [122, 122], "modos": ["maior", "mixolidio"], "tons": ["C", "D", "F", "G", "A"],
+   "instrumentos": { "harmonia": ["epiano", "piano"], "baixo": ["bass_note"], "percussao": ["kick", "clap", "hat", "hat_aberto", "shaker"], "melodia": ["pluck"], "textura": ["pad_note"] }
+  }
+ }
+}

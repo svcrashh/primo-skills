@@ -1,0 +1,30 @@
+{
+ "_sobre": "Format example of infinite zoom, with no brand: four levels of the sample page in the light theme (the whole page, the four features, the steps, the details table), text in a column on the left with an index, medium pace; the last detail becomes the closing, with the logo only. Greys, placeholder texts and the placeholder logo stand for the person's brand and content: swap them. Render (from $SKILL): node scripts/example-fonts.mjs <output>/.work-infinite-zoom-example && node templates/infinite-zoom/render.mjs templates/infinite-zoom/example.json --out <output> --mode final.",
+ "nome": "infinite-zoom-example",
+ "aberturaLogo": { "logo": "../../assets/example/logo-placeholder.png", "fundo": "#F5F5F5", "dur": 1 },
+ "formatos": ["16x9"],
+ "leiaute": "left-column",
+ "ritmo": "medio",
+ "indice": true,
+ "captura": { "pagina": "../../assets/example/page.html", "tema": "claro", "dsf": 4, "margem": 76 },
+ "niveis": [
+  { "nome": "Page", "texto": "The whole sample page", "tela": { "largura": 1136, "altura": 964 }, "entrar": "#contents a[href=\"#overview\"]" },
+  { "nome": "Features", "texto": "The four features", "tela": { "largura": 580, "altura": 492, "rolar": "#overview" }, "entrar": "#card-one .card-icon" },
+  { "nome": "Steps", "texto": "Four steps, one after another", "tela": { "largura": 580, "altura": 492, "rolar": "#how-it-works" }, "entrar": ".steps li:nth-child(4) span" },
+  { "nome": "Details", "texto": "Where each item is kept", "tela": { "largura": 580, "altura": 492, "rolar": "#details" }, "entrar": "#detail-items code" }
+ ],
+ "textos": { "rotulo": "Your product · guide" },
+ "marca": {
+  "fonte": "Inter",
+  "cores": { "fundo": "#383838", "texto": "#D6D6D6", "pilulaFundo": "#D6D6D6", "pilulaTexto": "#383838", "janela": "#F5F5F5" },
+  "corpo": { "titulo": 72, "rotulo": 30, "indice": 30 }
+ },
+ "fecho": { "logo": "../../assets/example/logo-placeholder.png", "fundo": "#F5F5F5", "largura": 640, "dur": 2.4 },
+ "trilha": {
+  "semente": 4120,
+  "identidade": {
+   "genero": "house", "bpm": [120, 122], "modos": ["maior", "mixolidio"], "tons": ["C", "D", "F", "G", "A"],
+   "instrumentos": { "harmonia": ["epiano", "piano"], "baixo": ["bass_note"], "percussao": ["kick", "clap", "hat", "hat_aberto", "shaker"], "melodia": ["pluck"], "textura": ["pad_note"] }
+  }
+ }
+}

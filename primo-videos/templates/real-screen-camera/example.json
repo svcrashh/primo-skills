@@ -1,0 +1,61 @@
+{
+  "_sobre": "Format example of real screen with camera, with no brand: the sample page recorded in two steps (in the contents, How it works; then the four steps), card on the left, hard cut, ending with the logo only. Greys, placeholder texts and the placeholder logo stand for the person's brand and content: swap them. Render (from $SKILL): (1) node templates/real-screen-camera/example-journey.mjs records the page; (2) node scripts/example-fonts.mjs ~/Documents/VideoStudio/examples/real-screen-camera; (3) node templates/real-screen-camera/assemble.mjs templates/real-screen-camera/example.json --mode draft.",
+  "aberturaLogo": { "logo": "../../assets/example/logo-placeholder.png", "fundo": "#F5F5F5", "dur": 1 },
+  "id": "real-screen-camera-example",
+  "gravacao": "~/Documents/VideoStudio/examples/real-screen-camera/recording/output/computer",
+  "saida": "~/Documents/VideoStudio/examples/real-screen-camera/videos",
+  "formatos": ["16x9"],
+  "titulo": ["How it works", "on the page"],
+  "rotulo": "Your product · guide",
+  "textoPasso": "Step {n} of {N}",
+  "moldura": "nenhuma",
+  "textoFora": true,
+  "etapas": [
+    { "passos": [1] },
+    { "intertitulo": "The steps", "passos": [2] }
+  ],
+  "fim": { "soLogo": true },
+  "fimDur": 3.0,
+  "intertituloDur": 0.9,
+  "segurarSucesso": 0.8,
+  "segurarFim": 0.2,
+  "trilha": {
+    "semente": 92,
+    "identidade": {
+      "genero": "acustico",
+      "bpm": [92, 93],
+      "modos": ["maior", "mixolidio"],
+      "tons": ["C", "D", "F", "G", "A"],
+      "instrumentos": {
+        "harmonia": ["corda", "piano"],
+        "baixo": ["bass_note"],
+        "percussao": ["kick", "shaker", "aro"],
+        "melodia": ["pluck"],
+        "textura": ["pad_note"]
+      }
+    }
+  },
+  "marca": {
+    "plano": true,
+    "cores": {
+      "fundo": "#505050",
+      "superficie": "#505050",
+      "texto": "#F5F5F5",
+      "destaque": "#979797",
+      "sobreDestaque": "#1B1B1B",
+      "rotulo": "#F5F5F5",
+      "veu": "#1B1B1B",
+      "fimFundo": "#F5F5F5",
+      "fimTexto": "#1D1D1D"
+    },
+    "veu": 0.6,
+    "textura": "liso",
+    "fontesPasta": "~/Documents/VideoStudio/examples/real-screen-camera/fonts",
+    "fontes": {
+      "titulo": { "familia": "Inter", "peso": 700, "caixa": "normal" },
+      "texto": { "familia": "Inter", "peso": 500, "pesoForte": 700 },
+      "mono": { "familia": "Inter", "peso": 600 }
+    },
+    "logo": { "arquivo": "../../assets/example/logo-placeholder.png", "w": 640, "h": 124.78 }
+  }
+}

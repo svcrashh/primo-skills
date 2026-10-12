@@ -1,0 +1,16 @@
+{
+  "titulo": "Forno Azul (padaria inventada) · exemplo de API, 8 s",
+  "duracao": 8.0, "bpm": 96, "compasso": 4, "taxa": 48000,
+  "saida": "exemplo-api.wav", "loudness_lufs": -18.0, "teto_dbtp": -1.5, "semente": 7,
+  "silencios": [], "fade": [7.0, 8.0],
+  "secoes": [
+    {"nome": "entrada", "de": 0.0, "ate": 2.5, "energia": "baixa", "descricao": "o pão aparece"},
+    {"nome": "corpo", "de": 2.5, "ate": 7.5, "energia": "media", "descricao": "o preço e o endereço"},
+    {"nome": "fim", "de": 7.5, "ate": 8.0, "energia": "baixa", "descricao": "fade"}
+  ],
+  "marcos": [
+    {"t": 2.5, "evento": "toque no pão", "som": "toque", "efeito": "toque", "opcional": false},
+    {"t": 5.0, "evento": "o preço entra", "som": "nota do acorde", "opcional": false},
+    {"t": 6.25, "evento": "troca para o endereço", "som": "whoosh", "efeito": "whoosh", "opcional": true}
+  ]
+}

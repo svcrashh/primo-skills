@@ -1,0 +1,154 @@
+{
+  "_sobre": "Format example of Rolling list, with no brand: poster speed ('cartaz'), three points, each with a full-screen poster sentence and then the proof over a color block, the corner tag left empty, closing with the logo alone. Sample numbers: replace them with true ones. Greys, placeholder texts and the placeholder logo stand for the person's brand and content: swap them. Render: node scripts/example-fonts.mjs <output>/rolling-list-example-poster && node templates/rolling-list/render.mjs templates/rolling-list/example-poster.json --out <output> --name rolling-list-example-poster --formats 16x9 --mode final",
+  "aberturaLogo": { "logo": "../../assets/example/logo-placeholder.png", "fundo": "#F5F5F5", "dur": 1 },
+  "velocidade": "cartaz",
+  "ritmo": {
+    "abertura": 1.8,
+    "item": 3.5,
+    "cartaz": 1.2,
+    "fecho": 2.4
+  },
+  "semente": 11,
+  "respira": true,
+  "marca": {
+    "nome": "Your brand",
+    "tema": "claro",
+    "logo": "../../assets/example/logo-placeholder.png",
+    "cores": {
+      "fundo": "#E8E8E8",
+      "superficie": "#F5F5F5",
+      "campo": "#E8E8E8",
+      "texto": "#666666",
+      "apoio": "#666666",
+      "apagado": "#666666",
+      "destaque": "#666666",
+      "tinta": "#F5F5F5",
+      "ok": "#666666",
+      "pino": "#F5F5F5",
+      "trilho": "#E8E8E8"
+    },
+    "paleta": [
+      "#383838",
+      "#D6D6D6",
+      "#383838"
+    ],
+    "fontes": {
+      "titulo": "Inter",
+      "texto": "Inter",
+      "mono": "Inter"
+    },
+    "pesoTitulo": 700,
+    "caixaAlta": false,
+    "inclina": 0,
+    "plano": true,
+    "gradeFundo": false,
+    "luz": 0,
+    "grao": 0
+  },
+  "abertura": {
+    "numero": 3,
+    "linhas": [
+      "main points",
+      "of your product"
+    ]
+  },
+  "itens": [
+    {
+      "etiqueta": "",
+      "frase": "First point, in short",
+      "cartaz": "The first point, said in one sentence",
+      "prova": {
+        "tipo": "lista",
+        "semTopo": true,
+        "linhas": [
+          "What proves the first point",
+          "A second line that supports it",
+          "A third, shorter line"
+        ]
+      }
+    },
+    {
+      "etiqueta": "",
+      "frase": "32 items in 3 groups",
+      "cartaz": "32 items in three groups",
+      "prova": {
+        "tipo": "numeros",
+        "semTopo": true,
+        "cartoes": [
+          {
+            "rotulo": "Group one",
+            "valor": 8
+          },
+          {
+            "rotulo": "Group two",
+            "valor": 8
+          },
+          {
+            "rotulo": "Third, larger group",
+            "valor": 16
+          }
+        ],
+        "total": {
+          "rotulo": "Items in the list",
+          "valor": 32
+        }
+      }
+    },
+    {
+      "etiqueta": "",
+      "frase": "Third point, in short",
+      "cartaz": "The third point in short",
+      "prova": {
+        "tipo": "lista",
+        "semTopo": true,
+        "linhas": [
+          "First line here",
+          "A second, longer line",
+          "A third line of text"
+        ]
+      }
+    }
+  ],
+  "fecho": {
+    "fundo": "#F5F5F5"
+  },
+  "trilha": {
+    "semente": 2120,
+    "identidade": {
+      "genero": "house",
+      "bpm": [
+        120,
+        120
+      ],
+      "modos": [
+        "maior"
+      ],
+      "tons": [
+        "C",
+        "F",
+        "G"
+      ],
+      "instrumentos": {
+        "harmonia": [
+          "epiano",
+          "piano"
+        ],
+        "baixo": [
+          "bass_note"
+        ],
+        "percussao": [
+          "kick",
+          "clap",
+          "hat",
+          "shaker"
+        ],
+        "melodia": [
+          "pluck"
+        ],
+        "textura": [
+          "pad_note"
+        ]
+      }
+    }
+  }
+}

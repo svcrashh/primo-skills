@@ -1,0 +1,81 @@
+{
+ "_sobre": "Format example of before and after, with no brand: the sample page at a narrow width, with the Contents menu closed and then open (the cursor clicks the button on the capture, a blade crosses the window, still camera, calm pace, symbol in the background; the two screens are in example-blade-wipe/). Greys, placeholder texts and the placeholder logo stand for the person's brand and content: swap them. Render (from $SKILL): node scripts/example-fonts.mjs <output>/project && node templates/before-after/render.mjs templates/before-after/example-blade-wipe.json --screens templates/before-after/example-blade-wipe --out <output> --formats 16x9 --mode draft.",
+ "nome": "before-after-example-blade-wipe",
+ "aberturaLogo": {"logo": "../../assets/example/logo-placeholder.png", "fundo": "#F5F5F5", "dur": 1},
+ "marca": {
+  "nome": "Your brand",
+  "logo": "../../assets/example/logo-placeholder-light.png",
+  "url": "",
+  "plano": true,
+  "cores": {
+   "fundo": "#1D1D1D",
+   "superficie": "#1D1D1D",
+   "texto": "#F5F5F5",
+   "apagado": "#F5F5F5",
+   "linha": "#1D1D1D",
+   "acento": "#979797",
+   "sobreAcento": "#1B1B1B",
+   "fechoFundo": "#1D1D1D"
+  },
+  "fontes": {
+   "titulo": "Inter",
+   "tituloPeso": 700,
+   "tituloCaixaAlta": false,
+   "tituloInclinacao": 0,
+   "texto": "Inter",
+   "mono": "Inter"
+  }
+ },
+ "fecho": "logo",
+ "textoFora": true,
+ "variacao": "corte",
+ "transicao": "lamina",
+ "camera": "estatica",
+ "ritmo": "calmo",
+ "fundo": {"tipo": "simbolo", "png": "../../assets/example/symbol-placeholder.png", "x": 0.13, "y": 1.05, "tamanho": 0.8, "giro": 5},
+ "textos": {"promessa": [[{"t": "Closed"}], [{"t": "and open"}]], "antes": "Contents closed", "depois": "Contents open", "virada": "Open."},
+ "gatilho": {"alvo": [59, 32]},
+ "falas": [{"id": "antes", "texto": "The page's contents, closed."}, {"id": "depois", "texto": "One click opens the list."}],
+ "trilha": {
+  "semente": 4417,
+  "identidade": {
+   "genero": "acustico",
+   "bpm": [
+    90,
+    90
+   ],
+   "modos": [
+    "maior",
+    "mixolidio"
+   ],
+   "tons": [
+    "C",
+    "D",
+    "F",
+    "G"
+   ],
+   "instrumentos": {
+    "harmonia": [
+     "piano",
+     "corda"
+    ],
+    "baixo": [
+     "bass_note"
+    ],
+    "percussao": [
+     "kick",
+     "shaker",
+     "aro"
+    ],
+    "melodia": [
+     "pluck"
+    ],
+    "textura": [
+     "pad_note"
+    ]
+   }
+  }
+ },
+ "captura": {"url": "../../assets/example/page.html", "rolar": 0, "esperar": 1500, "telas": {"page": {"w": 576, "h": 410, "escala": 3}}, "depois": {"clicar": "#contents-button"}},
+ "formatos": {"16x9": {"tela": "page", "foco": [0, 0, 576, 410], "detalhe": [110, 250]}}
+}

@@ -1,0 +1,58 @@
+{
+ "_sobre": "Format example of the typing text, with no brand: 16:9 in the 'lado' layout (the request in the left column, the answer in the right one), two requests in a row, the first answered by a card and the second by numbers that count, a diagonal mask between the blocks ('passagem'), and the closing with the logo alone on its own background. Greys, placeholder texts and the placeholder logo stand for the person's brand and content: swap them. Render: node scripts/example-fonts.mjs <output>/.work-typing-text-example-side && node templates/typing-text/render.mjs templates/typing-text/example-side.json --out <output> --mode final",
+ "nome": "typing-text-example-side",
+ "aberturaLogo": { "logo": "../../assets/example/logo-placeholder.png", "fundo": "#F5F5F5", "dur": 1 },
+ "formatos": ["16x9"],
+ "grao": 0,
+ "respira": 0.05,
+ "leiaute": "lado",
+ "passagem": { "tipo": "mascara", "dur": 0.55, "forma": "diagonal", "angulo": 20 },
+ "marca": {
+  "nome": "Your brand",
+  "cores": { "fundo": "#E6E6E6", "superficie": "#F5F5F5", "campo": "#F5F5F5", "borda": "#F5F5F5", "texto": "#505050", "apoio": "#505050", "destaque": "#505050", "ok": "#505050", "sobreDestaque": "#F5F5F5", "sombra": "#1B1B1B", "rotulo": "#505050", "etiqueta": "#979797", "sobreEtiqueta": "#1B1B1B" },
+  "fontes": { "titulo": "Inter", "texto": "Inter", "mono": "Inter" },
+  "caixaAlta": false,
+  "borda": false,
+  "sombra": false,
+  "raioCartao": 40,
+  "fundo": { "brilho": 0 },
+  "logo": { "arquivo": "logo-placeholder.png", "arquivo_origem": "../../assets/example/logo-placeholder.png", "proporcao": 5.129 }
+ },
+ "trilha": {
+  "semente": 41,
+  "identidade": {
+   "nome": "Your brand", "genero": "house", "bpm": [122, 122], "modos": ["mixolidio", "maior"], "tons": ["D", "F", "A"],
+   "instrumentos": { "harmonia": ["epiano", "piano"], "baixo": ["bass_note"], "percussao": ["kick", "clap", "hat", "shaker"], "melodia": ["pluck"], "textura": ["pad_note"] }
+  }
+ },
+ "cenas": [
+  {
+   "tipo": "pergunta", "dur": 6.4,
+   "titulo": "First request",
+   "rotulo": "Your product", "rotuloFs": 30,
+   "texto": "your first question, typed here",
+   "modo": "digita", "em": 0.4, "vel": 17, "teclado": "notebook",
+   "resposta": {
+    "em": 2.6, "tipo": "cartao",
+    "titulo": "First answer",
+    "chips": ["First tag", "Second tag"],
+    "linhas": ["The first line of the answer, short.", "The second line, just as short.", "The third line closes the answer."]
+   }
+  },
+  {
+   "tipo": "pergunta", "dur": 5.0,
+   "titulo": "Second request",
+   "rotulo": "Your product", "rotuloFs": 30,
+   "texto": "a question about a number?",
+   "modo": "digita", "em": 0.35, "vel": 17, "teclado": "notebook", "semente": 7,
+   "resposta": {
+    "em": 2.0, "tipo": "numeros",
+    "itens": [{ "rotulo": "items in the list", "valor": "128" }],
+    "total": { "rotulo": "ready to use", "valor": "24" }
+   }
+  },
+  {
+   "tipo": "fecho", "dur": 2.6, "logoEm": 0.1, "fundo": "#F5F5F5"
+  }
+ ]
+}

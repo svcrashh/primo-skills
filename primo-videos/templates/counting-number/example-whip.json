@@ -1,0 +1,50 @@
+{
+  "_sobre": "Format example of Counting number, with no brand: the brand-color background with the giant symbol turning slowly ('marca.simbolo'), the label in Bold ('pesoRotulo'), whip between blocks and between cards. The numbers are sample values: replace them with true numbers that have a source. Greys, placeholder texts, symbol and logo stand for the person's brand and content: swap them. Render: node scripts/example-fonts.mjs <folder> && templates/counting-number/render.sh templates/counting-number/example-whip.json <folder> 16x9 final",
+  "aberturaLogo": { "logo": "../../assets/example/logo-placeholder.png", "fundo": "#F5F5F5", "dur": 1 },
+  "titulo": "Your product in numbers",
+  "idioma": "en-US",
+  "formatos": ["16x9"],
+  "lista_numerada": false,
+  "milhar": ",",
+  "passagem": { "tipo": "whip", "dur": 0.45, "dir": "esquerda" },
+  "marca": {
+    "nome": "Your brand",
+    "logo": "../../assets/example/logo-placeholder.png",
+    "logoProporcao": 5.129,
+    "simbolo": { "arquivo": "../../assets/example/symbol-placeholder.png", "altura": 1250, "x": 1.08, "y": 0.7, "gira": 7 },
+    "cores": {
+      "fundo": "#848484",
+      "texto": "#F5F5F5",
+      "acento": "#F5F5F5",
+      "legendaFundo": "#848484",
+      "cartoes": ["#F5F5F5", "#848484"]
+    },
+    "fontes": {
+      "numero": { "familia": "Inter", "peso": 700, "caixaAlta": false },
+      "texto": { "familia": "Inter", "peso": 500, "pesoRotulo": 700 },
+      "etiqueta": { "familia": "Inter", "peso": 600, "caixaAlta": false }
+    },
+    "grade": false,
+    "brilho": 0,
+    "grao": 0
+  },
+  "trilha": {
+    "semente": 3124,
+    "identidade": {
+      "genero": "house", "bpm": [124, 124], "modos": ["maior", "mixolidio"], "tons": ["D", "F", "G", "A"],
+      "instrumentos": { "harmonia": ["piano", "epiano"], "baixo": ["bass_note"], "percussao": ["kick", "clap", "hat", "hat_aberto", "shaker"], "melodia": ["pluck"], "textura": ["pad_note"] }
+    }
+  },
+  "blocos": [
+    { "tipo": "contador", "de": 0, "ate": 24, "rotulo": "items in the list", "sozinho": 1.5, "dur": 3.2 },
+    {
+      "tipo": "cartoes", "cada": 1.1, "entrada": "whip",
+      "itens": [
+        { "valor": 12, "rotulo": "users in the team", "cor": "#F5F5F5", "tinta": "#848484" },
+        { "valor": 3, "rotulo": "steps to start", "cor": "#848484", "tinta": "#F5F5F5" },
+        { "valor": 5, "rotulo": "minutes saved a day", "cor": "#F5F5F5", "tinta": "#848484" }
+      ]
+    },
+    { "tipo": "fecho", "fundo": "#F5F5F5", "dur": 2.8 }
+  ]
+}

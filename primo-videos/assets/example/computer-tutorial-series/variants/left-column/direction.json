@@ -1,0 +1,18 @@
+{
+  "name": "3D panel tutorial · left column (the base series)",
+  "why": "The series as it is: a plain light background, the step in the left column, the 3D panel that flips at the opening and at each section, the index in pills of the third color and the chapter card in the main color.",
+  "pt": {
+    "name": "Tutorial em painel 3D · coluna à esquerda (a série de base)",
+    "why": "A série como ela é: fundo claro liso, o passo na coluna da esquerda, o painel 3D que vira na abertura e em cada seção, o índice em pílulas na terceira cor e o cartão de capítulo na cor principal."
+  },
+  "style": "panel-tutorial",
+  "structure": "step-by-step",
+  "layout": "left-column",
+  "transition": "flip",
+  "topic": "index-pill",
+  "camera": "dolly-3d",
+  "palette": "light-neutral",
+  "background": "plain",
+  "pace": "medium",
+  "soundtrack": "electronic pop 115"
+}

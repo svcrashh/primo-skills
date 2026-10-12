@@ -1,0 +1,59 @@
+{
+  "_sobre": "Format example of Rolling list, with no brand: list speed ('lista'), four steps, each with its sentence and a proof, the next item pushing the previous one out ('transicao'), the corner tag left empty, closing with the logo alone. Greys, placeholder texts and the placeholder logo stand for the person's brand and content: swap them. Render: node scripts/example-fonts.mjs <output>/rolling-list-example-list && node templates/rolling-list/render.mjs templates/rolling-list/example-list.json --out <output> --name rolling-list-example-list --formats 16x9 --mode final",
+  "aberturaLogo": { "logo": "../../assets/example/logo-placeholder.png", "fundo": "#F5F5F5", "dur": 1 },
+  "velocidade": "lista",
+  "ritmo": { "abertura": 2.0, "item": 2.5, "fecho": 2.4 },
+  "transicao": { "tipo": "push", "dur": 0.5, "dir": "esquerda" },
+  "semente": 4,
+  "respira": true,
+  "marca": {
+    "nome": "Your brand",
+    "tema": "claro",
+    "logo": "../../assets/example/logo-placeholder.png",
+    "cores": {
+      "fundo": "#F5F5F5", "superficie": "#EBEBEB", "campo": "#DEDEDE",
+      "texto": "#1D1D1D", "apoio": "#1D1D1D", "apagado": "#1D1D1D",
+      "destaque": "#1D1D1D", "tinta": "#F5F5F5", "ok": "#1D1D1D",
+      "pino": "#F5F5F5", "trilho": "#DEDEDE"
+    },
+    "fontes": { "titulo": "Inter", "texto": "Inter", "mono": "Inter" },
+    "pesoTitulo": 700,
+    "caixaAlta": false,
+    "inclina": 0,
+    "plano": true,
+    "gradeFundo": false,
+    "luz": 0,
+    "grao": 0
+  },
+  "abertura": { "numero": 4, "linhas": ["steps to", "use the product"] },
+  "itens": [
+    {
+      "etiqueta": "",
+      "frase": "First step: what to do",
+      "prova": { "tipo": "campo", "semTopo": true, "rotulo": "Label of the field", "de": "What the person types, as it comes", "para": "the text the product writes back" }
+    },
+    {
+      "etiqueta": "",
+      "frase": "Second step: pick an option",
+      "prova": { "tipo": "escolha", "semTopo": true, "pergunta": "The question the product asks", "opcoes": ["The first option", "Second option"], "ativa": 0, "colunas": 2 }
+    },
+    {
+      "etiqueta": "",
+      "frase": "Third step: what it checks",
+      "prova": { "tipo": "lista", "semTopo": true, "linhas": ["First thing it checks", "Second thing checked", "Third thing", "A fourth thing, on a longer line"] }
+    },
+    {
+      "etiqueta": "",
+      "frase": "Get the result",
+      "prova": { "tipo": "escolha", "semTopo": true, "pergunta": "What you get", "opcoes": ["Result one", "Result two", "Result three"], "ativa": 2, "colunas": 3 }
+    }
+  ],
+  "fecho": { "fundo": "#F5F5F5" },
+  "trilha": {
+    "semente": 2096,
+    "identidade": {
+      "genero": "acustico", "bpm": [94, 96], "modos": ["maior", "mixolidio"], "tons": ["D", "G", "A"],
+      "instrumentos": { "harmonia": ["piano", "epiano"], "baixo": ["bass_note"], "percussao": ["kick", "shaker", "aro"], "melodia": ["pluck"], "textura": ["pad_note"] }
+    }
+  }
+}

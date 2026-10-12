@@ -1,0 +1,83 @@
+{
+  "_sobre": "Format example of Kinetic typography, with no brand: full screen, hard cut on the beat, fast pace, slow zoom while each sentence holds ('guided-zoom'), flat shapes in the corners, a sentence that regroups into one line ('reorganiza') and a line in a pill. Sample facts: write the true ones. Greys, placeholder texts and the placeholder logo stand for the person's brand and content: swap them. Render: node scripts/example-fonts.mjs <output>/.work-kinetic-typography-example && node templates/kinetic-typography/render.mjs templates/kinetic-typography/example.json --out <output> --mode final",
+  "nome": "kinetic-typography-example",
+  "aberturaLogo": { "logo": "../../assets/example/logo-placeholder.png", "fundo": "#F5F5F5", "dur": 1 },
+  "titulo": "Your product in words",
+  "formatos": ["16x9"],
+  "bpm": 128,
+  "ritmo": "rapido",
+  "transicao": "cut-on-beat",
+  "leiaute": "full-screen",
+  "camera": "guided-zoom",
+  "pulso": 0.025,
+  "fonte": { "familia": "Inter", "peso": 400, "pesoDestaque": 700, "minimo": 64 },
+  "pares": [
+    ["#F5F5F5", "#1D1D1D", "AAA"], ["#EBEBEB", "#1D1D1D", "AAA"], ["#DEDEDE", "#1D1D1D", "AAA"], ["#1D1D1D", "#F5F5F5", "AAA"],
+    ["#505050", "#F5F5F5", "AAA"], ["#383838", "#D6D6D6", "AAA"], ["#D6D6D6", "#383838", "AAA"], ["#1B1B1B", "#979797", "AA"],
+    ["#979797", "#1B1B1B", "AA"], ["#E6E6E6", "#505050", "AA"], ["#F5F5F5", "#505050", "AA"], ["#2C2C2C", "#A8A8A8", "AA"],
+    ["#A8A8A8", "#2C2C2C", "AA"], ["#666666", "#F5F5F5", "AA"], ["#E8E8E8", "#666666", "AA"], ["#F5F5F5", "#666666", "AA"],
+    ["#848484", "#F5F5F5", "AA18"], ["#F5F5F5", "#848484", "AA18"], ["#EFEFEF", "#848484", "AA18"]
+  ],
+  "cores": { "fundo": "#1D1D1D", "texto": "#F5F5F5", "pilula": {"fundo": "#D6D6D6", "texto": "#383838"} },
+  "frases": [
+    {
+      "linhas": ["*128* items", "*24* categories", "*320* users"],
+      "formas": [
+        { "tipo": "circulo", "cor": "#848484", "tamanho": 0.6 },
+        { "tipo": "circulo", "cor": "#D6D6D6", "tamanho": 0.5 }
+      ]
+    },
+    {
+      "linhas": [
+        { "t": "Setup", "peso": 700, "tamanho": 1.4 },
+        "in *3* steps"
+      ],
+      "formas": [
+        { "tipo": "losango", "cor": "#979797", "tamanho": 0.7 },
+        { "tipo": "pilula", "cor": "#848484", "tamanho": 0.32 }
+      ],
+      "reorganiza": "linha"
+    },
+    {
+      "linhas": [
+        "*6* options",
+        { "t": "One · Two · Three", "peso": 500 },
+        { "t": "Four · Five · Six", "peso": 500 }
+      ],
+      "formas": [
+        { "tipo": "circulo", "cor": "#D6D6D6", "tamanho": 0.6 },
+        { "tipo": "circulo", "cor": "#979797", "tamanho": 0.5 }
+      ]
+    },
+    {
+      "linhas": [
+        "*96* steps",
+        "checked",
+        { "t": "from 128 total", "peso": 600, "pilula": true }
+      ],
+      "formas": [
+        { "tipo": "circulo", "cor": "#848484", "tamanho": 0.6 }
+      ]
+    }
+  ],
+  "fecho": {
+    "logo": "../../assets/example/logo-placeholder-light.png",
+    "fundo": "#1D1D1D",
+    "largura": 620
+  },
+  "trilha": {
+    "semente": 5202,
+    "identidade": {
+      "genero": "garage",
+      "modos": ["maior", "mixolidio"],
+      "tons": ["C", "D", "F", "G", "A"],
+      "instrumentos": {
+        "harmonia": ["epiano", "piano"],
+        "baixo": ["bass_note"],
+        "percussao": ["kick", "clap", "hat", "hat_aberto", "shaker"],
+        "melodia": ["pluck"],
+        "textura": ["pad_note"]
+      }
+    }
+  }
+}

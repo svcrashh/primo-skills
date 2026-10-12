@@ -1,0 +1,18 @@
+{
+  "name": "3D panel tutorial · right column, second color",
+  "why": "The step on the right and the panel facing front, still, with only the camera moving inside it; shapes in light shades of the second color in the background; the opening slides; the section rises on a card in the second color with the giant number and pushes the panel up.",
+  "pt": {
+    "name": "Tutorial em painel 3D · coluna à direita, segunda cor",
+    "why": "O passo à direita e o painel de frente, parado, só com a câmera andando dentro dele; formas em tons claros da segunda cor no fundo; a abertura desliza; a seção sobe num cartão na segunda cor com o número gigante e empurra o painel para cima."
+  },
+  "style": "panel-tutorial",
+  "structure": "step-by-step",
+  "layout": "right-column",
+  "transition": "push",
+  "topic": "big-number",
+  "camera": "guided-zoom",
+  "palette": "secondary-color",
+  "background": "shapes",
+  "pace": "calm",
+  "soundtrack": "acoustic pop 104"
+}

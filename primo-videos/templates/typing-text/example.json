@@ -1,0 +1,45 @@
+{
+ "_sobre": "Format example of the typing text, with no brand: 16:9, one request typed into the field and the product's answer as a card (title, tags and three lines that write themselves), then the closing with the logo alone, centered. No border, no shadow, no glow; the block grows slowly ('respira'). Greys, placeholder texts and the placeholder logo stand for the person's brand and content: swap them. Render: node scripts/example-fonts.mjs <output>/.work-typing-text-example && node templates/typing-text/render.mjs templates/typing-text/example.json --out <output> --mode draft",
+ "nome": "typing-text-example",
+ "aberturaLogo": { "logo": "../../assets/example/logo-placeholder.png", "fundo": "#F5F5F5", "dur": 1 },
+ "formatos": ["16x9"],
+ "grao": 0,
+ "respira": 0.05,
+ "areaSegura": true,
+ "marca": {
+  "nome": "Your brand",
+  "cores": { "fundo": "#F5F5F5", "superficie": "#EBEBEB", "campo": "#DEDEDE", "borda": "#DEDEDE", "texto": "#1D1D1D", "apoio": "#1D1D1D", "destaque": "#848484", "ok": "#666666", "sobreDestaque": "#F5F5F5", "sombra": "#1D1D1D", "rotulo": "#1D1D1D", "etiqueta": "#D6D6D6", "sobreEtiqueta": "#383838" },
+  "fontes": { "titulo": "Inter", "texto": "Inter", "mono": "Inter" },
+  "caixaAlta": false,
+  "borda": false,
+  "sombra": false,
+  "raioCartao": 40,
+  "fundo": { "brilho": 0 },
+  "logo": { "arquivo": "logo-placeholder.png", "arquivo_origem": "../../assets/example/logo-placeholder.png", "proporcao": 5.129 }
+ },
+ "trilha": {
+  "semente": 23,
+  "identidade": {
+   "nome": "Your brand", "genero": "house", "bpm": [120, 124], "modos": ["maior", "mixolidio"], "tons": ["C", "D", "F", "G", "A"],
+   "instrumentos": { "harmonia": ["epiano", "piano"], "baixo": ["bass_note"], "percussao": ["kick", "clap", "hat", "hat_aberto", "shaker"], "melodia": ["pluck"], "textura": ["pad_note"] }
+  }
+ },
+ "cenas": [
+  {
+   "tipo": "pergunta", "dur": 7.75,
+   "titulo": "Ask in your own words", "destaque": "own words",
+   "rotulo": "Your product", "rotuloFs": 30,
+   "texto": "Your request, as the person would type it",
+   "modo": "digita", "em": 0.5, "vel": 17, "teclado": "notebook",
+   "resposta": {
+    "em": 4.2, "tipo": "cartao",
+    "titulo": "What the product answers",
+    "chips": ["First tag", "Second tag", "Third tag"],
+    "linhas": ["First, what the product does with the request.", "Then, how it builds the answer and checks the result.", "Last, where the person finds what the product made."]
+   }
+  },
+  {
+   "tipo": "fecho", "dur": 2.7, "logoEm": 0
+  }
+ ]
+}

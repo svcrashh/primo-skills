@@ -1,0 +1,53 @@
+{
+ "titulo": "your-product",
+ "prompt": "$",
+ "comandos": [
+  {
+   "cmd": "echo \"128 items\"",
+   "legenda": "What the first command counts",
+   "saida": [
+    {
+     "t": 0.01,
+     "texto": "128 items"
+    }
+   ],
+   "codigo": 0,
+   "ms": 10,
+   "cortado": false
+  },
+  {
+   "cmd": "echo \"24 new items\"",
+   "legenda": "What the second one counts",
+   "saida": [
+    {
+     "t": 0.009,
+     "texto": "24 new items"
+    }
+   ],
+   "codigo": 0,
+   "ms": 10,
+   "cortado": false
+  },
+  {
+   "cmd": "printf '%s\\n' one two three",
+   "legenda": "What the third one lists",
+   "saida": [
+    {
+     "t": 0.007,
+     "texto": "one"
+    },
+    {
+     "t": 0.007,
+     "texto": "two"
+    },
+    {
+     "t": 0.007,
+     "texto": "three"
+    }
+   ],
+   "codigo": 0,
+   "ms": 8,
+   "cortado": false
+  }
+ ]
+}

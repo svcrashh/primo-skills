@@ -1,0 +1,40 @@
+{
+  "_sobre": "Format example of the card stack, with no brand: 4 cards, dividido layout (title, large counter and progress dots on the left; the stack on the right, the cards behind rotated), swipe exit, still camera, closing by whip. Greys, placeholder texts and the placeholder logo stand for the person's brand and content: swap them. Render: node scripts/example-fonts.mjs <output>/.work-card-stack-example-split && node templates/card-stack/render.mjs templates/card-stack/example-split.json --out <output> --formats 16x9 --mode final.",
+  "nome": "card-stack-example-split",
+  "aberturaLogo": { "logo": "../../assets/example/logo-placeholder.png", "fundo": "#F5F5F5", "dur": 1 },
+  "formatos": ["16x9", "9x16", "1x1"],
+  "marca": {
+    "nome": "Your brand",
+    "cores": {
+      "fundo": "#848484", "cartao": "#F5F5F5", "texto": "#1D1D1D", "titulo": "#1D1D1D",
+      "cabecalho": "#F5F5F5", "ponto": "#F5F5F5", "pontoApagado": "#C7C7C7"
+    },
+    "pilha": ["#C7C7C7", "#EFEFEF"],
+    "fontes": { "titulo": { "familia": "Inter", "peso": 700 }, "texto": { "familia": "Inter", "peso": 500 } },
+    "raio": 40
+  },
+  "titulo": "How it works",
+  "leiaute": "dividido",
+  "saida": "swipe",
+  "camera": "estatica",
+  "inclina": 3,
+  "ritmo": { "base": 0.7, "porPalavra": 0.16 },
+  "cartoes": [
+    { "titulo": "First step goes here", "texto": "Say what the person does in this step, in one or two lines.", "icone": "../../assets/example/icon-placeholder.png" },
+    { "titulo": "The second step", "texto": "What happens next, in one line.", "icone": "../../assets/example/icon-placeholder.png" },
+    { "titulo": "Third step, kept short", "texto": "A short line about this step.", "icone": "../../assets/example/icon-placeholder.png" },
+    { "titulo": "The last step", "texto": "The result the person gets here.", "icone": "../../assets/example/icon-placeholder.png" }
+  ],
+  "fecho": {
+    "logo": "../../assets/example/logo-placeholder.png",
+    "fundo": "#F5F5F5",
+    "transicao": "whip"
+  },
+  "trilha": {
+    "semente": 3120,
+    "identidade": {
+      "genero": "house", "bpm": [118, 120], "modos": ["maior", "mixolidio"], "tons": ["C", "D", "F", "G", "A"],
+      "instrumentos": { "harmonia": ["epiano", "piano"], "baixo": ["bass_note"], "percussao": ["kick", "clap", "hat", "hat_aberto", "shaker"], "melodia": ["pluck"], "textura": ["pad_note"] }
+    }
+  }
+}

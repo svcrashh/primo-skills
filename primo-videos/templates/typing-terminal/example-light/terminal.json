@@ -1,0 +1,44 @@
+{
+ "titulo": "your-product",
+ "prompt": "$",
+ "comandos": [
+  {
+   "cmd": "printf 'Item %s\\n' 1 2 3 4",
+   "legenda": "What the first command lists",
+   "saida": [
+    {
+     "t": 0.007,
+     "texto": "Item 1"
+    },
+    {
+     "t": 0.007,
+     "texto": "Item 2"
+    },
+    {
+     "t": 0.007,
+     "texto": "Item 3"
+    },
+    {
+     "t": 0.007,
+     "texto": "Item 4"
+    }
+   ],
+   "codigo": 0,
+   "ms": 8,
+   "cortado": false
+  },
+  {
+   "cmd": "printf 'Item %s\\n' 1 2 3 4 | grep -c Item",
+   "legenda": "What the second command counts",
+   "saida": [
+    {
+     "t": 0.029,
+     "texto": "4"
+    }
+   ],
+   "codigo": 0,
+   "ms": 30,
+   "cortado": false
+  }
+ ]
+}

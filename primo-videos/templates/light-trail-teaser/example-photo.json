@@ -1,0 +1,25 @@
+{
+  "_sobre": "Format example of the light-trail teaser, with no brand: 16:9, two slow fragments (a cropped photo with no text over it, a number that counts), the phone reveal, and the closing with the logo alone opening in a circle from the light (fecho.abre: circulo). The screenshot in example-photo/ comes from the sample page, captured by example-photo/capture-guide.cjs. Greys, placeholder texts, photo and screen and the placeholder logo stand for the person's brand and content: swap them. Render: node scripts/example-fonts.mjs <output>/project && templates/light-trail-teaser/render.sh templates/light-trail-teaser/example-photo.json <output> 16x9",
+  "aberturaLogo": { "logo": "../../assets/example/logo-placeholder.png", "fundo": "#F5F5F5", "dur": 1 },
+  "marca": "Your brand",
+  "titulo": "Light teaser · A photo and a number",
+  "duracao": 12.6,
+  "formatos": ["16x9"],
+  "cores": { "fundo": "#383838", "luz": "#D6D6D6", "noLuz": "#383838", "texto": "#D6D6D6", "etiqueta": "#D6D6D6" },
+  "ui": { "superficie": "#F5F5F5", "superficie2": "#E8E8E8", "borda": "#E8E8E8", "texto": "#666666", "texto2": "#666666", "destaque": "#666666", "noDestaque": "#F5F5F5", "raio": 40 },
+  "fontes": { "titulo": "Inter", "texto": "Inter", "mono": "Inter" },
+  "tituloCaixaAlta": false,
+  "liso": true,
+  "grade": false,
+  "grao": 0,
+  "logo": { "arquivo": "../../assets/example/logo-placeholder.png", "altura": 124 },
+  "promessa": "Your product in a minute",
+  "etiqueta": "New",
+  "fragmentos": [
+    { "tipo": "imagem", "nome": "Feature one", "arquivo": "../../assets/example/photos/photo-placeholder-01.jpg", "largura": 1600, "recorte": [0, 216, 1600, 851] },
+    { "tipo": "numero", "nome": "Feature two", "titulo": "Title of this number", "valor": 24, "rotulo": "what it counts" }
+  ],
+  "revelacao": { "imagem": { "arquivo": "example-photo/page-phone-overview.jpg", "largura": 780, "altura": 3600, "rolar": [0, 0.5] } },
+  "fecho": { "soLogo": true, "abre": "circulo", "fundo": "#F5F5F5", "logoAltura": 124 },
+  "tempos": { "revelacao": 2.2, "fecho": 3.0 }
+}

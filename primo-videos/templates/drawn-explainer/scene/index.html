@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>drawn explainer</title>
+<link rel="stylesheet" href="fonts/fonts.css">
+<!-- Motor portado do explainroo (MIT, © 2026 Vincent Schmalbach): ver LICENSE-explainroo.txt do molde. -->
+<style>html, body { margin: 0; padding: 0; background: #000; overflow: hidden; } canvas { display: block; }</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script type="module">
+import { iniciar } from './engine/runtime.js'
+iniciar().catch((e) => { console.error('STARTUP ERROR: ' + (e && e.message ? e.message : e)); throw e })
+</script>
+</body>
+</html>

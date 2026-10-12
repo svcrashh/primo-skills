@@ -1,0 +1,62 @@
+{
+  "_sobre": "Format example of Growing chart, with no brand: two scenes in the split layout (chart on one side, title on the other, a rule in between), a donut and then columns, push between the scenes and into the closing, which is the logo alone. Sample numbers: replace them with true ones and their source ('nota'). Greys, placeholder texts and the placeholder logo stand for the person's brand and content: swap them. Render: node scripts/example-fonts.mjs <output>/.work-growing-chart-example-split && node templates/growing-chart/render.mjs templates/growing-chart/example-split.json --out <output> --mode draft",
+  "nome": "growing-chart-example-split",
+  "aberturaLogo": { "logo": "../../assets/example/logo-placeholder.png", "fundo": "#F5F5F5", "dur": 1 },
+  "textos": { "de": "of" },
+  "formatos": ["16x9"],
+  "leiaute": "dividido",
+  "transicao": "push",
+  "marca": {
+    "nome": "Your brand",
+    "logo": "../../assets/example/logo-placeholder.png",
+    "cores": {
+      "fundo": "#383838",
+      "texto": "#D6D6D6",
+      "apoio": "#D6D6D6",
+      "eixo": "#666666",
+      "divisor": "#666666",
+      "serie": ["#D6D6D6"],
+      "destaque": "#D6D6D6",
+      "trilho": "#666666"
+    },
+    "fontes": { "titulo": "Inter", "texto": "Inter" },
+    "pesos": { "titulo": 700, "texto": 500, "rotulo": 600, "numero": 700 },
+    "grao": 0
+  },
+  "cenas": [
+    {
+      "tipo": "rosca",
+      "titulo": "A part of the whole",
+      "nota": "Source of the numbers, in short",
+      "valor": 96,
+      "total": 128,
+      "rotulo": "items are already done",
+      "lado": "esquerda",
+      "dur": 4.6
+    },
+    {
+      "tipo": "colunas",
+      "titulo": "Items in each group",
+      "nota": "Source of the data and its unit",
+      "milhar": "",
+      "lado": "direita",
+      "dur": 5.2,
+      "itens": [
+        { "rotulo": "One", "valor": 1600 },
+        { "rotulo": "Two", "valor": 2000 },
+        { "rotulo": "Three", "valor": 2400 },
+        { "rotulo": "Four", "valor": 1200 },
+        { "rotulo": "Five", "valor": 1000 },
+        { "rotulo": "Six", "valor": 800 }
+      ]
+    }
+  ],
+  "fecho": { "fundo": "#F5F5F5", "dur": 2.4 },
+  "trilha": {
+    "semente": 3122,
+    "identidade": {
+      "genero": "house", "bpm": [122, 124], "modos": ["maior", "mixolidio"], "tons": ["C", "D", "F", "G", "A"],
+      "instrumentos": { "harmonia": ["epiano", "piano"], "baixo": ["bass_note"], "percussao": ["kick", "clap", "hat", "hat_aberto", "shaker"], "melodia": ["pluck"], "textura": ["pad_note"] }
+    }
+  }
+}

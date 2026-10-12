@@ -1,0 +1,44 @@
+{
+  "_sobre": "Format example of Timeline, with no brand: vertical axis, four dates, the guided camera ('guiada': the whole axis, then close to each milestone as it lights up, then back), the current pill in its own color ('etiquetaAtiva') and a push upward into the closing, which is the logo alone. The dates are samples: write the true ones. Greys, placeholder texts, the placeholder logo stand for the person's brand and content: swap them. Render: node scripts/example-fonts.mjs <output>/.work-timeline-example-vertical && node templates/timeline/render.mjs templates/timeline/example-vertical.json --out <output> --mode draft",
+  "nome": "timeline-example-vertical",
+  "aberturaLogo": { "logo": "../../assets/example/logo-placeholder.png", "fundo": "#F5F5F5", "dur": 1 },
+  "formatos": ["16x9"],
+  "titulo": "The history of your product",
+  "orientacao": "vertical",
+  "camera": "guiada",
+  "passo": 1.8,
+  "transicao": "push",
+  "marca": {
+    "nome": "Your brand",
+    "logo": "../../assets/example/logo-placeholder.png",
+    "cores": {
+      "fundo": "#F5F5F5",
+      "texto": "#1D1D1D",
+      "eixo": "#DEDEDE",
+      "ponto": "#DEDEDE",
+      "progresso": "#1D1D1D",
+      "aceso": "#848484",
+      "etiqueta": "#DEDEDE",
+      "etiquetaTexto": "#1D1D1D",
+      "etiquetaAtiva": "#1D1D1D",
+      "etiquetaAtivaTexto": "#F5F5F5"
+    },
+    "fontes": { "titulo": "Inter", "texto": "Inter" },
+    "pesos": { "titulo": 700, "texto": 500, "etiqueta": 600 },
+    "grao": 0
+  },
+  "marcos": [
+    { "data": "Jan 2025", "texto": "What happened on this date" },
+    { "data": "Apr 2025", "texto": "The second milestone, in one line" },
+    { "data": "Jul 2025", "texto": "A shorter third line" },
+    { "data": "Oct 2025", "texto": "Where the product is today" }
+  ],
+  "fecho": { "fundo": "#F5F5F5", "dur": 2.4 },
+  "trilha": {
+    "semente": 4096,
+    "identidade": {
+      "nome": "Your brand · internal process", "genero": "acustico", "bpm": [88, 92], "modos": ["maior", "mixolidio"], "tons": ["C", "D", "F", "G", "A"],
+      "instrumentos": { "harmonia": ["piano", "corda"], "baixo": ["bass_note"], "percussao": ["kick", "shaker", "aro"], "melodia": ["pluck"], "textura": ["pad_note"] }
+    }
+  }
+}

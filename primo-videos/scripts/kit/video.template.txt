@@ -1,0 +1,41 @@
+// {{id}} — {{produto}}. Created by kit new-video ({{data}}): {{pedido140}}
+// What belongs to this video: recording/journey.mjs (the journey) and {{arquivoTextos}}. The rest comes from the kit:
+// the recording base (recording/base.mjs: sign in, language, tours, barrier, sample data), the series and the seed.
+//   node video.mjs --check        checks the journey and everything compor would refuse, without recording{{checkVoz}}
+//   node video.mjs                records{{gravaVoz}}
+//   node video.mjs --antes        the journey on the previous version of the site (ANTES_ORIGEM, default http://[::1]:{{antesPorta}}): the g.foto calls become antes/*.png
+import fs from 'node:fs'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { rodar, principal } from '{{gravar}}'
+import { base, fechar } from './recording/base.mjs'
+import { roteiro } from './recording/journey.mjs'
+
+const pasta = path.dirname(fileURLToPath(import.meta.url))
+const ANTES = process.argv.includes('--antes')
+const TEXTOS = JSON.parse(fs.readFileSync(path.join(pasta, {{caminhoTextos}}), 'utf8'))
+/** The lines by id (abertura, p1…pN, fechamento): the journey says each one in g.passo, and so do the title and closing screens. */
+export const FALAS = Object.fromEntries(TEXTOS.falas.map((f) => [f.id, f.texto]))
+const falta = TEXTOS.falas.filter((f) => /^TODO/.test(f.texto)).map((f) => f.id)
+if (falta.length) throw new Error(`write the lines ${falta.join(', ')} in {{arquivoFalas}} (they still say TODO)`)
+// the title in lines: one sentence per line, and a long sentence breaks near 22 letters
+const linhas = (txt, max = 22) => txt.split(/(?<=[.!?])\s+/).flatMap((f) => { const ls = ['']; for (const w of f.split(' ')) { if ((ls.at(-1) + ' ' + w).trim().length > max && ls.at(-1)) ls.push(w); else ls[ls.length - 1] = (ls.at(-1) + ' ' + w).trim() } return ls })
+
+const video = {
+  id: ANTES ? '{{id}}-antes' : '{{id}}',
+  titulo: FALAS.abertura,
+  tituloLinhas: linhas(FALAS.abertura),
+  fimLinhas: [FALAS.fechamento],
+  pasta: ANTES ? path.join(pasta, 'antes') : pasta,
+  fotos: path.join(pasta, 'antes'),
+  serie: '{{serie}}',
+  cinema: '{{cinema}}',
+  semente: {{semente}},
+  ...base({ origem: ANTES ? process.env.ANTES_ORIGEM || 'http://[::1]:{{antesPorta}}' : '{{origem}}', inicio: '{{inicio}}', pasta: ANTES ? path.join(pasta, 'antes') : pasta, versao: '{{versao}}' }),
+{{linhaVoz}}  roteiro: (g) => roteiro(g, { FALAS, antes: ANTES }),
+}
+export default video
+if (principal(import.meta.url)) {
+  const res = await rodar(video)
+  process.exitCode = await fechar(res)
+}

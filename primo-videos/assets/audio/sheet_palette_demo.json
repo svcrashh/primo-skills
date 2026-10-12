@@ -1,0 +1,38 @@
+{
+  "titulo": "Demo da paleta ampliada do synth (cada instrumento novo por ~1,5 s)",
+  "duracao": 30.0,
+  "bpm": 100,
+  "compasso": 4,
+  "taxa": 48000,
+  "saida": "demo_paleta.wav",
+  "loudness_lufs": -16.0,
+  "teto_dbtp": -1.5,
+  "semente": 20260927,
+  "silencios": [],
+  "fade": [29.0, 30.0],
+  "secoes": [
+    {"nome": "tonais", "de": 0.5, "ate": 13.3, "energia": "média", "descricao": "corda, epiano, piano, orgao, baixo808, pad_coral, metais, cordas_orq"},
+    {"nome": "percussao", "de": 13.3, "ate": 22.9, "energia": "média", "descricao": "shaker, aro, conga, tamborim, palma_seca, prato_ride"},
+    {"nome": "texturas", "de": 22.9, "ate": 26.1, "energia": "baixa", "descricao": "vinil e fita"},
+    {"nome": "impacto", "de": 26.1, "ate": 30.0, "energia": "alta", "descricao": "impacto_cinema e fade"}
+  ],
+  "marcos": [
+    {"t": 0.5, "evento": "corda", "som": "violão dedilhado Karplus-Strong, arpejo Mi menor", "opcional": false},
+    {"t": 2.1, "evento": "epiano", "som": "piano elétrico FM, acorde Rém9", "opcional": false},
+    {"t": 3.7, "evento": "piano", "som": "piano acústico, arpejo Dó maior sobre Dó3", "opcional": false},
+    {"t": 5.3, "evento": "orgao", "som": "órgão de drawbars 888000000 com Leslie, acorde Dó", "opcional": false},
+    {"t": 6.9, "evento": "baixo808", "som": "808 em Lá1 e depois glide Lá1→Ré2", "opcional": false},
+    {"t": 8.5, "evento": "pad_coral", "som": "coro na vogal 'a', acorde Lá maior (ataque lento)", "opcional": true},
+    {"t": 10.1, "evento": "metais", "som": "três stabs de metais em Si♭ maior", "opcional": false},
+    {"t": 11.7, "evento": "cordas_orq", "som": "naipe de cordas, acorde Sol maior (ataque lento)", "opcional": true},
+    {"t": 13.3, "evento": "shaker", "som": "semicolcheias de shaker com acento", "opcional": false},
+    {"t": 14.9, "evento": "aro", "som": "aro/cross-stick em padrão de bossa", "opcional": false},
+    {"t": 16.5, "evento": "conga", "som": "conga: abertos, tapa e tumba", "opcional": false},
+    {"t": 18.1, "evento": "tamborim", "som": "teleco-teco de tamborim", "opcional": false},
+    {"t": 19.7, "evento": "palma_seca", "som": "três palmas secas", "opcional": false},
+    {"t": 21.3, "evento": "prato_ride", "som": "condução de ride", "opcional": false},
+    {"t": 22.9, "evento": "vinil", "som": "chiado e estalos de vinil (textura, sem ataque)", "opcional": true},
+    {"t": 24.5, "evento": "fita", "som": "acorde de epiano passando por fita (wow/flutter forte)", "opcional": false},
+    {"t": 26.1, "evento": "impacto_cinema", "som": "impacto de trailer com cauda", "opcional": false}
+  ]
+}

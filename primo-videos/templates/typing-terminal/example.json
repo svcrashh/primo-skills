@@ -1,0 +1,26 @@
+{
+ "_sobre": "Format example of the typing terminal, with no brand: 16:9, a dark terminal with one command and six lines of output, the caption below, no window chrome, the closing with the logo alone. The recording (example/terminal.json) is the real output of the placeholder command in example/commands.json. Greys, placeholder commands and captions and the placeholder logo stand for the person's brand and content: swap them. Render: node scripts/example-fonts.mjs <output>/.work-typing-terminal-example && node templates/typing-terminal/render.mjs templates/typing-terminal/example.json --out <output> --mode draft",
+ "nome": "typing-terminal-example",
+ "aberturaLogo": { "logo": "../../assets/example/logo-placeholder.png", "fundo": "#F5F5F5", "dur": 1 },
+ "formatos": ["16x9"],
+ "gravacao": "example/terminal.json",
+ "titulo": "",
+ "moldura": false,
+ "areaSegura": true,
+ "mono": "Menlo",
+ "fonte": "Inter",
+ "cps": 12,
+ "inicio": 0.1,
+ "linhaMin": 0.25,
+ "pausa": 0.25,
+ "cores": { "fundo": "#1D1D1D", "janela": "#1D1D1D", "barra": "#1D1D1D", "texto": "#F5F5F5", "comando": "#F5F5F5", "prompt": "#F5F5F5", "cursor": "#D6D6D6", "legenda": "#F5F5F5" },
+ "fecho": { "logo": "../../assets/example/logo-placeholder.png", "fundo": "#F5F5F5", "dur": 2.4, "largura": 640 },
+ "teclado": "notebook",
+ "trilha": {
+  "semente": 11,
+  "identidade": {
+   "nome": "Your brand", "genero": "acustico", "bpm": [82, 86], "modos": ["maior", "mixolidio"], "tons": ["C", "D", "F", "G", "A"],
+   "instrumentos": { "harmonia": ["piano", "corda"], "baixo": ["bass_note"], "percussao": ["kick", "shaker", "aro"], "melodia": ["pluck"], "textura": ["pad_note"] }
+  }
+ }
+}

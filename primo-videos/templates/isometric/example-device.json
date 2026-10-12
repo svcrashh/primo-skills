@@ -1,0 +1,38 @@
+{
+ "_sobre": "Format example of the isometric template in device mode (\"modo\": \"aparelho\"), with no brand: a tray, four keys with an icon each and a monitor whose screen loads to 100% and shows the result; studio light, labels in one column, hard cut, horizontal formats only (16:9 here); logo opening (\"aberturaLogo\") and logo-only closing. Greys, placeholder texts, the placeholder icon and logo stand for the person's brand and content: swap them. Render: node scripts/example-fonts.mjs <output>/.work-isometric-example-device && node templates/isometric/render.mjs templates/isometric/example-device.json --out <output> --mode final.",
+ "nome": "isometric-example-device",
+ "aberturaLogo": { "logo": "../../assets/example/logo-placeholder.png", "fundo": "#F5F5F5", "dur": 1 },
+ "titulo": "Your product as a device",
+ "formatos": ["16x9"],
+ "modo": "aparelho",
+ "chamada": "Your product",
+ "marca": {
+  "nome": "Your brand",
+  "fonte": "Inter",
+  "cores": {
+   "fundo": "#F5F5F5", "texto": "#1D1D1D", "apoio": "#1D1D1D", "linha": "#1D1D1D",
+   "chamadaFundo": "#D6D6D6", "chamadaTexto": "#383838"
+  },
+  "linhaAlfa": 1
+ },
+ "camadas": [
+  { "rotulo": "The base", "detalhe": "what everything else rests on", "cor": { "topo": "#EBEBEB", "frente": "#DEDEDE", "lado": "#DEDEDE" } },
+  { "rotulo": "Four features", "detalhe": "feature one, two, three and four", "cor": { "topo": "#E6E6E6", "frente": "#979797", "lado": "#505050" },
+    "pecas": [
+     { "cor": "#A8A8A8", "icone": "../../assets/example/icon-placeholder.png" },
+     { "cor": "#979797", "icone": "../../assets/example/icon-placeholder.png" },
+     { "cor": "#E6E6E6", "icone": "../../assets/example/icon-placeholder.png" },
+     { "cor": "#D6D6D6", "icone": "../../assets/example/icon-placeholder.png" }
+    ] },
+  { "rotulo": "Where people use it", "detalhe": "the screen the person sees", "cor": { "topo": "#C7C7C7", "frente": "#A8A8A8", "lado": "#848484" } }
+ ],
+ "tela": { "fundo": "#EBEBEB", "texto": "#1D1D1D", "cheio": "#1D1D1D", "vazio": "#DEDEDE", "carregando": "Loading…", "pronto": "Checked" },
+ "fecho": { "logo": "../../assets/example/logo-placeholder.png", "fundo": "#F5F5F5", "dur": 2.4 },
+ "trilha": {
+  "semente": 3086,
+  "identidade": {
+   "nome": "Your brand · isometric", "genero": "acustico", "bpm": [86, 86], "modos": ["maior", "mixolidio"], "tons": ["C", "D", "F", "G", "A"],
+   "instrumentos": { "harmonia": ["piano", "corda"], "baixo": ["bass_note"], "percussao": ["kick", "shaker", "aro"], "melodia": ["pluck"], "textura": ["pad_note"] }
+  }
+ }
+}

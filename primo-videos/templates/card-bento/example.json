@@ -1,0 +1,69 @@
+{
+  "_sobre": "Format example of the bento grid, with no brand: 4 cards in a 4×2 grid (16:9; 2 columns in 9:16, 3 in 1:1), guided zoom camera (the grid builds first, the camera visits each card and pulls back), closing by zoom through the first card. Greys, placeholder texts and the placeholder logo stand for the person's brand and content: swap them. Render: node scripts/example-fonts.mjs <output>/.work-card-bento-example && node templates/card-bento/render.mjs templates/card-bento/example.json --out <output> --formats 16x9 --mode final.",
+  "nome": "card-bento-example",
+  "aberturaLogo": { "logo": "../../assets/example/logo-placeholder.png", "fundo": "#F5F5F5", "dur": 1 },
+  "formatos": ["16x9", "9x16", "1x1"],
+  "marca": {
+    "nome": "Your brand",
+    "cores": { "fundo": "#F5F5F5", "texto": "#1D1D1D", "destaque": "#848484", "ladrilho": "#F5F5F5", "vazio": "#F5F5F5" },
+    "cartoes": [{ "fundo": "#EBEBEB", "texto": "#1D1D1D" }, { "fundo": "#DEDEDE", "texto": "#1D1D1D" }],
+    "fontes": { "titulo": { "familia": "Inter", "peso": 700 }, "texto": { "familia": "Inter", "peso": 500 } },
+    "raio": 40
+  },
+  "camera": { "modo": "zoom" },
+  "montagem": "antes",
+  "entrada": "pop",
+  "ritmo": "medio",
+  "cartoes": [
+    {
+      "titulo": "Feature one",
+      "texto": "What this feature does, in one line",
+      "icone": "../../assets/example/icon-placeholder.png",
+      "tamanho": "alto",
+      "visual": {
+        "tipo": "cores",
+        "cores": [
+          ["#2C2C2C", "#1B1B1B", "#383838", "#1D1D1D"],
+          ["#848484", "#505050", "#666666", "#DEDEDE"],
+          ["#A8A8A8", "#979797", "#D6D6D6", "#EBEBEB"],
+          ["#C7C7C7", "#D4D4D4", "#E8E8E8", "#F5F5F5"],
+          ["#EFEFEF", "#E6E6E6"]
+        ]
+      }
+    },
+    {
+      "titulo": "Feature two",
+      "texto": "What the second feature does for you",
+      "icone": "../../assets/example/icon-placeholder.png",
+      "tamanho": "largo",
+      "visual": { "tipo": "slides" }
+    },
+    {
+      "titulo": "Feature three",
+      "texto": "A short line about the third",
+      "icone": "../../assets/example/icon-placeholder.png",
+      "tamanho": "pequeno",
+      "visual": { "tipo": "linhas", "linhas": 3 }
+    },
+    {
+      "titulo": "Feature four",
+      "texto": "What the last feature brings",
+      "icone": "../../assets/example/icon-placeholder.png",
+      "tamanho": "largo",
+      "visual": { "tipo": "play" }
+    }
+  ],
+  "fecho": {
+    "logo": "../../assets/example/logo-placeholder.png",
+    "fundo": "#F5F5F5",
+    "transicao": "zoom-through",
+    "cartao": 0
+  },
+  "trilha": {
+    "semente": 3122,
+    "identidade": {
+      "genero": "house", "bpm": [120, 122], "modos": ["maior", "mixolidio"], "tons": ["C", "D", "F", "G", "A"],
+      "instrumentos": { "harmonia": ["epiano", "piano"], "baixo": ["bass_note"], "percussao": ["kick", "clap", "hat", "hat_aberto", "shaker"], "melodia": ["pluck"], "textura": ["pad_note"] }
+    }
+  }
+}

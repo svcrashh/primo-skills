@@ -1,0 +1,56 @@
+{
+  "versao": 2,
+  "nome": "Your brand · web tool tutorial · dark stage",
+  "papel": "protagonista",
+  "estilo": "nocturnal broken electronic: soft break, pad and epiano in long chords, deep bass, sparse bell; lead, but held back",
+  "bpm": [
+    94,
+    100
+  ],
+  "modos": [
+    "dorico",
+    "menor"
+  ],
+  "tons": [
+    "C",
+    "D",
+    "F",
+    "G",
+    "A"
+  ],
+  "instrumentos": {
+    "harmonia": [
+      "pad_note",
+      "epiano"
+    ],
+    "baixo": [
+      "baixo808"
+    ],
+    "percussao": [
+      "kick",
+      "snare",
+      "hat"
+    ],
+    "melodia": [
+      "bell"
+    ],
+    "textura": [
+      "shimmer_pad"
+    ]
+  },
+  "groove": [
+    "break"
+  ],
+  "bumbo": "break",
+  "padrao_baixo": [
+    "quebrado",
+    "sincopado"
+  ],
+  "padrao_harmonia": [
+    "respiro",
+    "pulsado"
+  ],
+  "cede_db": 3.0,
+  "densidade": "baixa",
+  "loudness_lufs": -14.0
+}

@@ -1,0 +1,18 @@
+{
+  "name": "3D panel tutorial · dark stage",
+  "why": "Dark stage with the giant brand symbol, tone on tone, behind the light screen, and light text in the column; the opening passes through a curtain in the main color; the panel orbits slowly; the section opens in a light circle with the name typed out; the closing is the light logo on the dark background.",
+  "pt": {
+    "name": "Tutorial em painel 3D · palco escuro",
+    "why": "Palco escuro com o símbolo da marca gigante, tom sobre tom, atrás da tela clara, e texto claro na coluna; a abertura passa numa cortina na cor principal; o painel orbita devagar; a seção abre num círculo claro com o nome datilografado; o fecho é o logo claro sobre o fundo escuro."
+  },
+  "style": "panel-tutorial",
+  "structure": "step-by-step",
+  "layout": "left-column",
+  "transition": "mask",
+  "topic": "typed-text",
+  "camera": "orbit",
+  "palette": "dark-neutral",
+  "background": "giant-symbol",
+  "pace": "medium",
+  "soundtrack": "broken-beat electronic 96"
+}

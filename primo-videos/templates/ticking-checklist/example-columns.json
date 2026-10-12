@@ -1,0 +1,43 @@
+{
+ "_sobre": "Format example of the ticking checklist, with no brand: colunas structure (does and doesn’t, each with its colors and its counter in the header; ✓ in one, ✕ with the strike line in the other), fast pace, still camera, hard cut to the logo. Greys, placeholder texts and the placeholder logo stand for the person's brand and content: swap them. Render: node scripts/example-fonts.mjs <output>/.work-ticking-checklist-example-columns && node templates/ticking-checklist/render.mjs templates/ticking-checklist/example-columns.json --out <output> --mode final.",
+ "nome": "ticking-checklist-example-columns",
+ "aberturaLogo": { "logo": "../../assets/example/logo-placeholder.png", "fundo": "#F5F5F5", "dur": 1 },
+ "textos": { "de": "of" },
+ "formatos": ["16x9"],
+ "estrutura": "colunas",
+ "ritmo": "rapido",
+ "camera": "parada",
+ "transicao": "corte",
+ "titulo": "What your product does",
+ "colunas": [
+  {
+   "titulo": "Does", "marca": "ok",
+   "itens": ["First thing it does", "128 items", "Third thing it does", "Fourth thing it does"],
+   "cores": { "cartao": "#D6D6D6", "sobreCartao": "#383838", "ok": "#383838", "sobreOk": "#D6D6D6", "vazio": "#E8E8E8" }
+  },
+  {
+   "titulo": "Doesn’t", "marca": "nao",
+   "itens": ["One thing left out", "A limit", "Another left out"],
+   "cores": { "cartao": "#383838", "sobreCartao": "#D6D6D6", "nao": "#D6D6D6", "sobreNao": "#383838", "vazio": "#666666", "risco": "#D6D6D6" }
+  }
+ ],
+ "marca": {
+  "nome": "Your brand",
+  "logo": "../../assets/example/logo-placeholder.png",
+  "cores": {
+   "fundo": "#F5F5F5", "texto": "#1D1D1D", "titulo": "#1D1D1D",
+   "cartao": "#D6D6D6", "sobreCartao": "#383838",
+   "ok": "#383838", "sobreOk": "#D6D6D6"
+  },
+  "fontes": { "texto": "Inter" },
+  "grao": 0
+ },
+ "fecho": { "fundo": "#F5F5F5" },
+ "trilha": {
+  "semente": 4124,
+  "identidade": {
+   "genero": "house", "bpm": [124, 124], "modos": ["maior", "mixolidio"], "tons": ["C", "D", "F", "G", "A"],
+   "instrumentos": { "harmonia": ["epiano", "piano"], "baixo": ["bass_note"], "percussao": ["kick", "clap", "hat", "hat_aberto", "shaker"], "melodia": ["pluck"], "textura": ["pad_note"] }
+  }
+ }
+}

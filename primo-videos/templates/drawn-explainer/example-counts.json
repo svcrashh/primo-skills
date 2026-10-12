@@ -1,0 +1,226 @@
+{
+ "_sobre": "Format example of the drawn explainer, with no brand: four counting numbers (sample values) in a split layout (number panel on the left, a wall of pieces sliding sideways on the right), a push between scenes (\"transicao\": \"push\"), stacked shapes in the opening, logo-only closing, fast pace, 16:9; logo opening (\"aberturaLogo\"). Greys, placeholder texts and the placeholder logo, symbol, icon, illustration and photos stand for the person's brand and content: swap them. Render: node scripts/example-fonts.mjs <output>/.work-drawn-explainer-example-counts && node templates/drawn-explainer/render.mjs templates/drawn-explainer/example-counts.json --out <output> --mode final.",
+ "nome": "drawn-explainer-example-counts",
+ "aberturaLogo": { "logo": "../../assets/example/logo-placeholder.png", "fundo": "#F5F5F5", "dur": 1 },
+ "idioma": "en-US",
+ "formatos": [
+  "16x9"
+ ],
+ "cenas": "example-counts-scenes.js",
+ "textura": "nenhuma",
+ "legenda": false,
+ "semente": 23,
+ "ritmo": {
+  "transicao": 0.5
+ },
+ "marca": {
+  "nome": "Your brand",
+  "cores": {
+   "fundo": "#F5F5F5",
+   "superficie": "#EBEBEB",
+   "texto": "#1D1D1D",
+   "apoio": "#505050",
+   "destaque": "#848484",
+   "ok": "#666666"
+  },
+  "paleta": {
+   "pink": "#848484",
+   "purple": "#979797",
+   "green": "#666666",
+   "blue": "#505050",
+   "yellow": "#D6D6D6",
+   "red": "#2C2C2C"
+  },
+  "fontes": {
+   "titulo": "Inter",
+   "texto": "Inter",
+   "ui": "Inter"
+  },
+  "pesoTitulo": 700,
+  "pesoTexto": 500,
+  "caixaAlta": false,
+  "forma": {
+   "raio": 36,
+   "sombra": false
+  },
+  "logo": "../../assets/example/logo-placeholder-light.png",
+  "ui": {
+   "escuro": false,
+   "surface": "#EBEBEB",
+   "text": "#1D1D1D"
+  }
+ },
+ "trilha": {
+  "semente": 1240,
+  "identidade": {
+   "genero": "house",
+   "bpm": [
+    124,
+    124
+   ],
+   "modos": [
+    "maior",
+    "mixolidio"
+   ],
+   "tons": [
+    "C",
+    "D",
+    "F",
+    "G",
+    "A"
+   ],
+   "instrumentos": {
+    "harmonia": [
+     "epiano",
+     "piano"
+    ],
+    "baixo": [
+     "bass_note"
+    ],
+    "percussao": [
+     "kick",
+     "clap",
+     "hat",
+     "hat_aberto",
+     "shaker"
+    ],
+    "melodia": [
+     "pluck"
+    ],
+    "textura": [
+     "pad_note"
+    ]
+   }
+  }
+ },
+ "midia": [
+  "../../assets/example/symbol-placeholder-light.png",
+  "../../assets/example/logo-placeholder-light.png",
+  "../../assets/example/illustration-placeholder.png",
+  "../../assets/example/icon-placeholder.png",
+  "../../assets/example/photos/photo-placeholder-01.jpg",
+  "../../assets/example/photos/photo-placeholder-02.jpg",
+  "../../assets/example/photos/photo-placeholder-03.jpg",
+  "../../assets/example/photos/photo-placeholder-04.jpg",
+  "../../assets/example/photos/photo-placeholder-05.jpg"
+ ],
+ "roteiro": [
+  {
+   "id": "abertura",
+   "min": 2.0
+  },
+  {
+   "id": "icones",
+   "min": 2.4,
+   "transicao": "push"
+  },
+  {
+   "id": "ilustracoes",
+   "min": 2.4,
+   "transicao": "push"
+  },
+  {
+   "id": "fotos",
+   "min": 2.4,
+   "transicao": "push"
+  },
+  {
+   "id": "slides",
+   "min": 2.4,
+   "transicao": "push"
+  },
+  {
+   "id": "fecho",
+   "min": 1.6,
+   "transicao": "push"
+  }
+ ],
+ "dados": {
+  "cores": {
+   "painel": "#505050",
+   "fundo": "#E6E6E6",
+   "texto": "#F5F5F5",
+   "ladrilho": "#F5F5F5",
+   "pilulaFundo": "#E6E6E6",
+   "pilulaTexto": "#505050",
+   "formas": [
+    "#979797",
+    "#D4D4D4"
+   ],
+   "escuro": "#1B1B1B"
+  },
+  "pilula": "Your product",
+  "abertura": {
+   "titulo": "Your\nproduct",
+   "apoio": "What it has, in four numbers",
+   "wordmark": "media/logo-placeholder-light.png",
+   "simbolo": "media/symbol-placeholder-light.png"
+  },
+  "icones": {
+   "numero": 128,
+   "rotulo": "items",
+   "apoio": "32 kinds × 4 sizes",
+   "pecas": [
+    "media/icon-placeholder.png",
+    "media/icon-placeholder.png",
+    "media/icon-placeholder.png",
+    "media/icon-placeholder.png",
+    "media/icon-placeholder.png",
+    "media/icon-placeholder.png",
+    "media/icon-placeholder.png",
+    "media/icon-placeholder.png",
+    "media/icon-placeholder.png",
+    "media/icon-placeholder.png",
+    "media/icon-placeholder.png",
+    "media/icon-placeholder.png",
+    "media/icon-placeholder.png",
+    "media/icon-placeholder.png",
+    "media/icon-placeholder.png",
+    "media/icon-placeholder.png",
+    "media/icon-placeholder.png",
+    "media/icon-placeholder.png",
+    "media/icon-placeholder.png",
+    "media/icon-placeholder.png",
+    "media/icon-placeholder.png",
+    "media/icon-placeholder.png",
+    "media/icon-placeholder.png",
+    "media/icon-placeholder.png",
+    "media/icon-placeholder.png",
+    "media/icon-placeholder.png",
+    "media/icon-placeholder.png",
+    "media/icon-placeholder.png",
+    "media/icon-placeholder.png",
+    "media/icon-placeholder.png",
+    "media/icon-placeholder.png",
+    "media/icon-placeholder.png"
+   ]
+  },
+  "ilustracoes": {
+   "numero": 24,
+   "rotulo": "features",
+   "apoio": "What the second number counts",
+   "peca": "media/illustration-placeholder.png"
+  },
+  "fotos": {
+   "numero": 256,
+   "rotulo": "photos",
+   "apoio": "What the third number counts",
+   "pecas": [
+    "media/photo-placeholder-01.jpg",
+    "media/photo-placeholder-02.jpg",
+    "media/photo-placeholder-03.jpg",
+    "media/photo-placeholder-04.jpg",
+    "media/photo-placeholder-05.jpg"
+   ]
+  },
+  "slides": {
+   "numero": 12,
+   "rotulo": "page\nlayouts",
+   "apoio": "What the fourth number counts"
+  },
+  "fecho": {
+   "fundo": "#505050",
+   "logo": "media/logo-placeholder-light.png"
+  }
+ }
+}

@@ -1,0 +1,84 @@
+{
+  "_sobre": "Format example of before and after, with no brand: the sample page in the light theme and, after a click on Theme, in the dark one (column on the left, hard cut, drawn trigger; the two screens are in example/). Greys, placeholder texts and the placeholder logo stand for the person's brand and content: swap them. Render (from $SKILL): node scripts/example-fonts.mjs <output>/project && node templates/before-after/render.mjs templates/before-after/example.json --screens templates/before-after/example --out <output> --formats 16x9 --mode draft.",
+  "nome": "before-after-example",
+  "aberturaLogo": { "logo": "../../assets/example/logo-placeholder.png", "fundo": "#F5F5F5", "dur": 1 },
+  "marca": {
+    "nome": "Your brand",
+    "logo": "../../assets/example/logo-placeholder.png",
+    "url": "",
+    "plano": true,
+    "cores": {
+      "fundo": "#848484",
+      "superficie": "#1D1D1D",
+      "texto": "#F5F5F5",
+      "apagado": "#F5F5F5",
+      "linha": "#1D1D1D",
+      "acento": "#848484",
+      "sobreAcento": "#F5F5F5",
+      "fechoFundo": "#F5F5F5"
+    },
+    "fontes": {
+      "titulo": "Inter",
+      "tituloPeso": 700,
+      "tituloCaixaAlta": false,
+      "tituloInclinacao": 0,
+      "texto": "Inter",
+      "mono": "Inter"
+    }
+  },
+  "fecho": "logo",
+  "respiro": true,
+  "textoFora": true,
+  "variacao": "corte",
+  "textos": {
+    "promessa": [
+      [{ "t": "Light" }],
+      [{ "t": "and dark" }]
+    ],
+    "antes": "Light theme",
+    "depois": "Dark theme",
+    "virada": "Dark."
+  },
+  "gatilho": {
+    "titulo": "Theme",
+    "opcoes": ["Light", "Dark"],
+    "escolha": 1
+  },
+  "falas": [
+    { "id": "antes", "texto": "The sample page, light theme." },
+    { "id": "depois", "texto": "One click turns it dark." }
+  ],
+  "trilha": {
+    "semente": 1208,
+    "identidade": {
+      "genero": "house",
+      "bpm": [120, 121],
+      "modos": ["maior", "mixolidio"],
+      "tons": ["C", "D", "F", "G", "A"],
+      "instrumentos": {
+        "harmonia": ["epiano", "piano"],
+        "baixo": ["bass_note"],
+        "percussao": ["kick", "clap", "hat", "hat_aberto", "shaker"],
+        "melodia": ["pluck"],
+        "textura": ["pad_note"]
+      }
+    }
+  },
+  "captura": {
+    "url": "../../assets/example/page.html",
+    "esperar": 600,
+    "telas": {
+      "page": { "w": 930, "h": 504, "escala": 3 }
+    },
+    "depois": {
+      "clicar": "#theme"
+    }
+  },
+  "formatos": {
+    "16x9": {
+      "tela": "page",
+      "foco": [264, 0, 666, 474],
+      "detalhe": [600, 100]
+    }
+  }
+}

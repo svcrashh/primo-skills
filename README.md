@@ -1,13 +1,14 @@
 # primo-skills
 
-Minhas skills do Claude Code, uma pasta por skill. Valem no Mac e no Windows.
+Minhas skills do Claude Code, uma pasta por skill. As de terminal valem no Mac e no Windows; a `primo-videos`, por enquanto, só no Mac.
 
 | Skill | O que faz |
 |---|---|
 | `terminal-claude` | Abre várias janelas de terminal, cada uma com um Claude e o seu prompt, acompanha em que pé está cada uma e fecha no fim. |
 | `terminal-organizar` | Arruma as janelas de terminal em grade, cada monitor com a sua. |
+| `primo-videos` | Faz vídeo do seu produto, sem narração: lê o projeto, pergunta o que falta, mostra cada cena como imagem parada antes de animar e entrega o MP4 com trilha original. A marca e as ideias são suas. Só Mac por enquanto. [Como usar](primo-videos/README.md). |
 
-As duas andam juntas: a `terminal-claude` usa a grade da `terminal-organizar`.
+As duas de terminal andam juntas: a `terminal-claude` usa a grade da `terminal-organizar`.
 
 ## Instalar
 
@@ -36,6 +37,7 @@ Depois de instalar, não mova nem apague esta pasta: as skills apontam para ela.
 ## Requisitos
 
 - **Mac:** Terminal.app e `python3`.
+- **`primo-videos` (Mac):** Node 18 ou mais novo, ffmpeg (`brew install ffmpeg`) e, uma vez por máquina, `node ~/.claude/skills/primo-videos/scripts/environment.mjs --fix` (acha o Playwright e cria o Python da trilha). O resto está no [README dela](primo-videos/README.md).
 - **Windows:** Python (`python`), Windows Terminal (`wt`) e o `claude` no PATH. O lado Windows foi escrito no Mac e ainda não rodou num Windows de verdade; o `SKILL.md` de cada skill diz o que conferir na primeira vez.
 
 ## Acrescentar uma skill

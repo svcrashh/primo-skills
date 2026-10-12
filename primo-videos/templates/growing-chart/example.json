@@ -1,0 +1,48 @@
+{
+  "_sobre": "Format example of Growing chart, with no brand: one scene of horizontal bars, title on top, the highlight moving from bar to bar after they grow ('percorrer'), a circle mask into the closing, which is the logo alone. Sample numbers: replace them with true ones and their source ('nota'). Greys, placeholder texts and the placeholder logo stand for the person's brand and content: swap them. Render: node scripts/example-fonts.mjs <output>/.work-growing-chart-example && node templates/growing-chart/render.mjs templates/growing-chart/example.json --out <output> --mode draft",
+  "nome": "growing-chart-example",
+  "aberturaLogo": { "logo": "../../assets/example/logo-placeholder.png", "fundo": "#F5F5F5", "dur": 1 },
+  "textos": { "de": "of" },
+  "formatos": ["16x9"],
+  "leiaute": "em-cima",
+  "transicao": "mascara",
+  "marca": {
+    "nome": "Your brand",
+    "logo": "../../assets/example/logo-placeholder.png",
+    "cores": {
+      "fundo": "#1D1D1D",
+      "texto": "#F5F5F5",
+      "apoio": "#F5F5F5",
+      "eixo": "#DEDEDE",
+      "serie": ["#DEDEDE"],
+      "destaque": "#848484"
+    },
+    "fontes": { "titulo": "Inter", "texto": "Inter" },
+    "pesos": { "titulo": 700, "texto": 500, "rotulo": 600, "numero": 700 },
+    "grao": 0
+  },
+  "cenas": [
+    {
+      "tipo": "barras",
+      "titulo": "Your product in numbers",
+      "nota": "Source of the numbers, with the date",
+      "destaque": 0,
+      "percorrer": true,
+      "dur": 5.8,
+      "itens": [
+        { "rotulo": "items", "valor": 240 },
+        { "rotulo": "users", "valor": 160 },
+        { "rotulo": "minutes saved", "valor": 80 },
+        { "rotulo": "new features", "valor": 60 }
+      ]
+    }
+  ],
+  "fecho": { "fundo": "#F5F5F5", "dur": 2.4 },
+  "trilha": {
+    "semente": 3107,
+    "identidade": {
+      "genero": "house", "bpm": [120, 122], "modos": ["maior", "mixolidio"], "tons": ["C", "D", "F", "G", "A"],
+      "instrumentos": { "harmonia": ["epiano", "piano"], "baixo": ["bass_note"], "percussao": ["kick", "clap", "hat", "hat_aberto", "shaker"], "melodia": ["pluck"], "textura": ["pad_note"] }
+    }
+  }
+}

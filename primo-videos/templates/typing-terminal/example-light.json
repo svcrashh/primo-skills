@@ -1,0 +1,27 @@
+{
+ "_sobre": "Format example of the typing terminal, with no brand: 16:9, a light terminal with two commands (a list of four lines, then a count), the caption below, the camera slowly coming closer from the corner where the command is typed, the closing with the logo alone. The recording (example-light/terminal.json) is the real output of the placeholder commands in example-light/commands.json. Greys, placeholder commands and captions and the placeholder logo stand for the person's brand and content: swap them. Render: node scripts/example-fonts.mjs <output>/.work-typing-terminal-example-light && node templates/typing-terminal/render.mjs templates/typing-terminal/example-light.json --out <output> --mode final",
+ "nome": "typing-terminal-example-light",
+ "aberturaLogo": { "logo": "../../assets/example/logo-placeholder.png", "fundo": "#F5F5F5", "dur": 1 },
+ "formatos": ["16x9"],
+ "gravacao": "example-light/terminal.json",
+ "titulo": "",
+ "moldura": false,
+ "areaSegura": true,
+ "camera": { "de": 0.84, "origem": [0.12, 0.18] },
+ "mono": "Menlo",
+ "fonte": "Inter",
+ "cps": 13,
+ "inicio": 0.2,
+ "linhaMin": 0.22,
+ "pausa": 1.4,
+ "cores": { "fundo": "#F5F5F5", "janela": "#DEDEDE", "barra": "#DEDEDE", "texto": "#1D1D1D", "comando": "#1D1D1D", "prompt": "#1D1D1D", "cursor": "#1D1D1D", "legenda": "#1D1D1D" },
+ "fecho": { "logo": "../../assets/example/logo-placeholder.png", "fundo": "#F5F5F5", "dur": 2.4, "largura": 640 },
+ "teclado": "notebook",
+ "trilha": {
+  "semente": 92,
+  "identidade": {
+   "nome": "Your brand", "genero": "acustico", "bpm": [90, 92], "modos": ["maior"], "tons": ["D", "G", "A"],
+   "instrumentos": { "harmonia": ["piano", "corda"], "baixo": ["bass_note"], "percussao": ["kick", "shaker", "aro"], "melodia": ["pluck"], "textura": ["pad_note"] }
+  }
+ }
+}

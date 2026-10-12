@@ -1,0 +1,18 @@
+{
+  "name": "3D panel tutorial · bottom strip, third color",
+  "why": "The large screen on top and the step on a strip in the dark shade of the third color that bleeds off the bottom edge (section and label on the left, the sentence beside them); a fine grid in the background; the opening dives into the screen; the panel moves sideways (tracking) and the section passes in a whip with the card in the third color.",
+  "pt": {
+    "name": "Tutorial em painel 3D · faixa embaixo, terceira cor",
+    "why": "A tela grande em cima e o passo numa faixa no tom escuro da terceira cor, que sangra na borda de baixo (seção e rótulo à esquerda, a frase ao lado); grade fina no fundo; a abertura mergulha na tela; o painel anda de lado (travelling) e a seção passa num chicote com o cartão na terceira cor."
+  },
+  "style": "panel-tutorial",
+  "structure": "step-by-step",
+  "layout": "bottom-strip",
+  "transition": "whip",
+  "topic": "chapter-card",
+  "camera": "tracking",
+  "palette": "accent-color",
+  "background": "grid",
+  "pace": "fast",
+  "soundtrack": "soft house 122"
+}

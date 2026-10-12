@@ -1,0 +1,30 @@
+{
+ "_sobre": "Format example of infinite zoom, with no brand: three levels of the sample page in the dark theme (the whole page, the install command, the plans table), text in a strip below the window, calm pace, no index. The sample page changes theme by its button, so each level clicks it (tela.clicar). Greys, placeholder texts and the placeholder logo stand for the person's brand and content: swap them. Render (from $SKILL): node scripts/example-fonts.mjs <output>/.work-infinite-zoom-example-bottom-strip && node templates/infinite-zoom/render.mjs templates/infinite-zoom/example-bottom-strip.json --out <output> --mode final.",
+ "nome": "infinite-zoom-example-bottom-strip",
+ "aberturaLogo": { "logo": "../../assets/example/logo-placeholder.png", "fundo": "#F5F5F5", "dur": 1 },
+ "formatos": ["16x9"],
+ "leiaute": "bottom-strip",
+ "ritmo": "calmo",
+ "indice": false,
+ "aspectoJanela": 1.6,
+ "captura": { "pagina": "../../assets/example/page.html", "tema": "escuro", "dsf": 4, "margem": 76 },
+ "niveis": [
+  { "nome": "Page", "texto": "The sample page, dark theme", "tela": { "largura": 1237, "altura": 773, "clicar": "#theme" }, "entrar": "#contents a[href=\"#install\"]" },
+  { "nome": "Install", "texto": "One command to install", "tela": { "largura": 618, "altura": 386, "clicar": "#theme", "rolar": ".code" }, "entrar": "#command" },
+  { "nome": "Plans", "texto": "The plan for a small team", "tela": { "largura": 618, "altura": 386, "clicar": "#theme", "rolar": "#plans-table" }, "entrar": "#plan-team th" }
+ ],
+ "textos": { "rotulo": "Your product · guide" },
+ "marca": {
+  "fonte": "Inter",
+  "cores": { "fundo": "#1D1D1D", "texto": "#F5F5F5", "pilulaFundo": "#F5F5F5", "pilulaTexto": "#1D1D1D", "janela": "#1D1D1D" },
+  "corpo": { "titulo": 72, "rotulo": 30, "indice": 30 }
+ },
+ "fecho": { "logo": "../../assets/example/logo-placeholder-light.png", "fundo": "#1D1D1D", "largura": 640, "dur": 2.4 },
+ "trilha": {
+  "semente": 840,
+  "identidade": {
+   "nome": "Your brand · calm", "genero": "acustico", "bpm": [84, 85], "modos": ["maior", "dorico"], "tons": ["C", "D", "F", "G", "A"],
+   "instrumentos": { "harmonia": ["epiano", "piano"], "baixo": ["bass_note"], "percussao": ["kick", "aro", "shaker"], "melodia": ["pluck"], "textura": ["pad_note"] }
+  }
+ }
+}

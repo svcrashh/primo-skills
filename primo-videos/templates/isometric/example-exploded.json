@@ -1,0 +1,38 @@
+{
+ "_sobre": "Format example of the isometric template, with no brand: an exploded stack of five layers, dolly-3d camera, labels on the left, the layer just named in the highlight color (\"destaque\"), fast pace, mask transition, 16:9; logo opening (\"aberturaLogo\") and logo-only closing. Greys, placeholder texts and the placeholder logo stand for the person's brand and content: swap them. Render: node scripts/example-fonts.mjs <output>/.work-isometric-example-exploded && node templates/isometric/render.mjs templates/isometric/example-exploded.json --out <output> --mode final.",
+ "nome": "isometric-example-exploded",
+ "aberturaLogo": { "logo": "../../assets/example/logo-placeholder.png", "fundo": "#F5F5F5", "dur": 1 },
+ "titulo": "How your product works",
+ "formatos": ["16x9"],
+ "chamada": "How your product works",
+ "rotulos": "esquerda",
+ "camera": "dolly-3d",
+ "transicao": "mascara",
+ "ritmo": "rapido",
+ "explodido": true,
+ "marca": {
+  "nome": "Your brand",
+  "fonte": "Inter",
+  "cores": {
+   "fundo": "#1D1D1D", "texto": "#F5F5F5", "apoio": "#F5F5F5", "linha": "#F5F5F5",
+   "chamadaFundo": "#F5F5F5", "chamadaTexto": "#1D1D1D"
+  },
+  "linhaAlfa": 0.7
+ },
+ "camadas": [
+  { "rotulo": "First step", "detalhe": "what happens at the start", "cor": { "topo": "#F5F5F5", "frente": "#EBEBEB", "lado": "#DEDEDE" }, "largura": 0.9 },
+  { "rotulo": "Second step", "detalhe": "the three parts it has", "cor": { "topo": "#F5F5F5", "frente": "#EBEBEB", "lado": "#DEDEDE" }, "largura": 0.9, "partes": 3 },
+  { "rotulo": "Third step", "detalhe": "what this step turns it into", "cor": { "topo": "#F5F5F5", "frente": "#EBEBEB", "lado": "#DEDEDE" }, "largura": 0.9 },
+  { "rotulo": "Fourth step", "detalhe": "the four checks it runs", "cor": { "topo": "#F5F5F5", "frente": "#EBEBEB", "lado": "#DEDEDE" }, "largura": 0.9, "partes": 4 },
+  { "rotulo": "The result", "detalhe": "6 items come out", "cor": { "topo": "#F5F5F5", "frente": "#EBEBEB", "lado": "#DEDEDE" }, "largura": 0.9, "partes": 6 }
+ ],
+ "destaque": { "topo": "#E8E8E8", "frente": "#D6D6D6", "lado": "#666666" },
+ "fecho": { "logo": "../../assets/example/logo-placeholder.png", "fundo": "#F5F5F5", "dur": 2.4 },
+ "trilha": {
+  "semente": 1247,
+  "identidade": {
+   "nome": "Your brand · isometric", "genero": "house", "bpm": [124, 124], "modos": ["maior", "mixolidio"], "tons": ["C", "D", "F", "G", "A"],
+   "instrumentos": { "harmonia": ["epiano", "piano"], "baixo": ["bass_note"], "percussao": ["kick", "clap", "hat", "hat_aberto", "shaker"], "melodia": ["pluck"], "textura": ["pad_note"] }
+  }
+ }
+}

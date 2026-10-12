@@ -1,0 +1,40 @@
+{
+  "_sobre": "Format example of the card stack, with no brand: 4 cards, centro layout (the stack in the middle, the counter in a pill), flip exit, camera that moves in while each card is read, closing by virada. Greys, placeholder texts and the placeholder logo stand for the person's brand and content: swap them. Render: node scripts/example-fonts.mjs <output>/.work-card-stack-example && node templates/card-stack/render.mjs templates/card-stack/example.json --out <output> --formats 16x9 --mode final.",
+  "nome": "card-stack-example",
+  "aberturaLogo": { "logo": "../../assets/example/logo-placeholder.png", "fundo": "#F5F5F5", "dur": 1 },
+  "formatos": ["16x9", "9x16", "1x1"],
+  "marca": {
+    "nome": "Your brand",
+    "cores": {
+      "fundo": "#E6E6E6", "cartao": "#F5F5F5", "texto": "#1D1D1D", "titulo": "#505050",
+      "cabecalho": "#505050", "contador": "#505050", "contadorTexto": "#F5F5F5"
+    },
+    "pilha": ["#D4D4D4", "#979797"],
+    "fontes": { "titulo": { "familia": "Inter", "peso": 700 }, "texto": { "familia": "Inter", "peso": 500 } },
+    "raio": 40
+  },
+  "titulo": "Title of the series",
+  "leiaute": "centro",
+  "saida": "flip",
+  "camera": "aproxima",
+  "ritmo": { "base": 0.7, "porPalavra": 0.15, "saida": 0.6 },
+  "cartoes": [
+    { "titulo": "First tip of the series", "texto": "One short line that says what to do here and why.", "icone": "../../assets/example/icon-placeholder.png" },
+    { "titulo": "The second tip goes here", "texto": "A detail that helps, in up to fourteen words.", "icone": "../../assets/example/icon-placeholder.png" },
+    { "titulo": "Third tip, kept short", "texto": "The title takes up to seven words.", "icone": "../../assets/example/icon-placeholder.png" },
+    { "titulo": "The last tip", "texto": "Then the closing shows only your logo.", "icone": "../../assets/example/icon-placeholder.png" }
+  ],
+  "fecho": {
+    "logo": "../../assets/example/logo-placeholder.png",
+    "fundo": "#F5F5F5",
+    "transicao": "virada",
+    "dur": 2.2
+  },
+  "trilha": {
+    "semente": 3092,
+    "identidade": {
+      "genero": "acustico", "bpm": [88, 94], "modos": ["maior", "mixolidio"], "tons": ["C", "D", "F", "G", "A"],
+      "instrumentos": { "harmonia": ["epiano", "piano"], "baixo": ["bass_note"], "percussao": ["kick", "shaker"], "melodia": ["pluck"], "textura": ["pad_note"] }
+    }
+  }
+}

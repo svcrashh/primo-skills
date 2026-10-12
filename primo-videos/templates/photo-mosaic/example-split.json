@@ -1,0 +1,71 @@
+{
+  "_sobre": "Format example of the photo mosaic, with no brand: split layout (label panel on the left, ten photos on the right, bleeding off the edge), travelling camera, the highlight of one photo and a new mosaic with two large photos, medium pace, 120 BPM, 16:9; logo opening (\"aberturaLogo\") and logo-only closing on the panel color. Greys, placeholder texts, photos and logo stand for the person's brand and content: swap them. Render: node scripts/example-fonts.mjs <output>/.work-photo-mosaic-example-split && node templates/photo-mosaic/render.mjs templates/photo-mosaic/example-split.json --out <output> --mode final.",
+  "nome": "photo-mosaic-example-split",
+  "aberturaLogo": { "logo": "../../assets/example/logo-placeholder.png", "fundo": "#F5F5F5", "dur": 1 },
+  "titulo": "Title of the video",
+  "formatos": ["16x9"],
+  "bpm": 120,
+  "ritmo": "medio",
+  "leiaute": "dividido",
+  "camera": "travelling",
+  "fonte": { "familia": "Inter" },
+  "raio": 40,
+  "vao": 18,
+  "pares": [
+    ["#F5F5F5", "#1D1D1D", "AAA"], ["#EBEBEB", "#1D1D1D", "AAA"], ["#DEDEDE", "#1D1D1D", "AAA"], ["#1D1D1D", "#F5F5F5", "AAA"],
+    ["#505050", "#F5F5F5", "AAA"], ["#383838", "#D6D6D6", "AAA"], ["#D6D6D6", "#383838", "AAA"], ["#1B1B1B", "#979797", "AA"],
+    ["#979797", "#1B1B1B", "AA"], ["#E6E6E6", "#505050", "AA"], ["#F5F5F5", "#505050", "AA"], ["#2C2C2C", "#A8A8A8", "AA"],
+    ["#A8A8A8", "#2C2C2C", "AA"], ["#666666", "#F5F5F5", "AA"], ["#E8E8E8", "#666666", "AA"], ["#F5F5F5", "#666666", "AA"],
+    ["#848484", "#F5F5F5", "AA18"], ["#F5F5F5", "#848484", "AA18"], ["#EFEFEF", "#848484", "AA18"]
+  ],
+  "cores": {
+    "fundo": "#E8E8E8",
+    "painel": "#383838",
+    "rotulo": "#D6D6D6",
+    "etiqueta": { "fundo": "#D6D6D6", "texto": "#383838" }
+  },
+  "etiqueta": "Your brand",
+  "fotos": [
+    { "arquivo": "../../assets/example/photos/photo-placeholder-01.jpg", "foco": [50, 45] },
+    { "arquivo": "../../assets/example/photos/photo-placeholder-02.jpg", "foco": [45, 40] },
+    { "arquivo": "../../assets/example/photos/photo-placeholder-03.jpg", "foco": [50, 40] },
+    { "arquivo": "../../assets/example/photos/photo-placeholder-04.jpg", "foco": [50, 40] },
+    { "arquivo": "../../assets/example/photos/photo-placeholder-05.jpg", "foco": [55, 40] },
+    { "arquivo": "../../assets/example/photos/photo-placeholder-06.jpg", "foco": [50, 45] },
+    { "arquivo": "../../assets/example/photos/photo-placeholder-07.jpg", "foco": [55, 50] },
+    { "arquivo": "../../assets/example/photos/photo-placeholder-08.jpg", "foco": [45, 55] },
+    { "arquivo": "../../assets/example/photos/photo-placeholder-09.jpg", "foco": [55, 40] },
+    { "arquivo": "../../assets/example/photos/photo-placeholder-10.jpg", "foco": [50, 40] }
+  ],
+  "etapas": [
+    { "tipo": "mosaico", "grade": [5, 2], "rotulo": "Your brand's photos" },
+    { "tipo": "destaque", "foto": 0, "rotulo": "24 sample photos" },
+    {
+      "tipo": "mosaico",
+      "grade": [8, 2],
+      "grandes": [2, 7],
+      "ordem": [2, 0, 1, 3, 4, 7, 5, 6, 8, 9],
+      "rotulo": "A fact about the whole set"
+    }
+  ],
+  "fecho": {
+    "logo": "../../assets/example/logo-placeholder-light.png",
+    "fundo": "#383838",
+    "largura": 620
+  },
+  "trilha": {
+    "semente": 6202,
+    "identidade": {
+      "genero": "house",
+      "modos": ["maior", "mixolidio"],
+      "tons": ["C", "D", "F", "G", "A"],
+      "instrumentos": {
+        "harmonia": ["epiano", "piano"],
+        "baixo": ["bass_note"],
+        "percussao": ["kick", "clap", "hat", "hat_aberto", "shaker"],
+        "melodia": ["pluck"],
+        "textura": ["pad_note"]
+      }
+    }
+  }
+}

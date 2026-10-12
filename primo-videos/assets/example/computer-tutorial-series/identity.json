@@ -1,0 +1,60 @@
+{
+  "versao": 2,
+  "nome": "Your brand · web tool tutorial",
+  "papel": "protagonista",
+  "estilo": "restrained electronic pop: straight, light pulse, epiano and piano in open chords, short pluck, no climax or drop; lead, but held back (the video has no voice)",
+  "bpm": [
+    112,
+    118
+  ],
+  "modos": [
+    "maior",
+    "mixolidio"
+  ],
+  "tons": [
+    "C",
+    "D",
+    "F",
+    "G",
+    "A"
+  ],
+  "instrumentos": {
+    "harmonia": [
+      "epiano",
+      "piano"
+    ],
+    "baixo": [
+      "bass_note"
+    ],
+    "percussao": [
+      "kick",
+      "hat",
+      "shaker"
+    ],
+    "melodia": [
+      "pluck"
+    ],
+    "textura": [
+      "pad_note"
+    ]
+  },
+  "groove": [
+    "reto",
+    "leve",
+    "contratempo"
+  ],
+  "bumbo": "eletronico",
+  "padrao_baixo": [
+    "raiz_quinta",
+    "pulso",
+    "ancora"
+  ],
+  "padrao_harmonia": [
+    "pulsado",
+    "respiro",
+    "arpejo"
+  ],
+  "cede_db": 2,
+  "densidade": "baixa",
+  "loudness_lufs": -14.0
+}

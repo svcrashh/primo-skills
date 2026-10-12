@@ -1,0 +1,55 @@
+{
+ "_sobre": "Format example of chat bubbles, with no brand: dividido layout (the conversation on the left; the lista card, with a chip on each item, opens in a panel on the right), zoom camera, the same 4-message back and forth, mascara to the logo. Greys, placeholder texts and the placeholder logo stand for the person's brand and content: swap them. Render: node scripts/example-fonts.mjs <output>/.work-chat-bubbles-example-split && node templates/chat-bubbles/render.mjs templates/chat-bubbles/example-split.json --out <output> --mode final.",
+ "nome": "chat-bubbles-example-split",
+ "aberturaLogo": { "logo": "../../assets/example/logo-placeholder.png", "fundo": "#F5F5F5", "dur": 1 },
+ "formatos": ["16x9"],
+ "leiaute": "dividido",
+ "camera": "zoom",
+ "transicao": "mascara",
+ "pessoa": { "nome": "You" },
+ "produto": { "nome": "Your product" },
+ "ritmo": { "digitando": 1.0, "porPalavra": 0.16 },
+ "chips": {
+  "tag a": { "fundo": "#505050", "texto": "#F5F5F5" },
+  "tag b": { "fundo": "#979797", "texto": "#1B1B1B" }
+ },
+ "marca": {
+  "nome": "Your brand",
+  "logo": "../../assets/example/logo-placeholder.png",
+  "cores": {
+   "fundo": "#E6E6E6", "texto": "#505050", "rotulo": "#505050",
+   "pessoa": "#505050", "sobrePessoa": "#F5F5F5",
+   "produto": "#F5F5F5", "sobreProduto": "#505050", "pontos": "#505050",
+   "painel": "#F5F5F5", "sobrePainel": "#505050",
+   "cartao": "#F5F5F5", "sobreCartao": "#505050",
+   "linha": "#E6E6E6", "sobreLinha": "#505050"
+  },
+  "fontes": { "texto": "Inter" },
+  "grao": 0
+ },
+ "mensagens": [
+  { "de": "pessoa", "texto": "this is my request, written in plain words" },
+  { "de": "produto", "texto": "One question back before I start: this or that?" },
+  { "de": "pessoa", "texto": "This one, the first option." },
+  {
+   "de": "produto", "texto": "Here is the list, one tag each:",
+   "cartao": {
+    "tipo": "lista", "titulo": "List title", "passo": 0.62,
+    "itens": [
+     { "t": "First item of the list", "chip": "tag a" },
+     { "t": "Second item, a little longer", "chip": "tag a" },
+     { "t": "Third item, about this size", "chip": "tag b" },
+     { "t": "Fourth item", "chip": "tag b" }
+    ]
+   }
+  }
+ ],
+ "fecho": { "fundo": "#F5F5F5" },
+ "trilha": {
+  "semente": 3192,
+  "identidade": {
+   "genero": "acustico", "bpm": [92, 92], "modos": ["maior"], "tons": ["C", "D", "F", "G"],
+   "instrumentos": { "harmonia": ["corda", "piano"], "baixo": ["bass_note"], "percussao": ["kick", "shaker", "aro"], "melodia": ["pluck"], "textura": ["pad_note"] }
+  }
+ }
+}

@@ -1,0 +1,52 @@
+{
+  "_sobre": "Format example of Counting number, with no brand: three formats, a counter with a scrolling list, three numbers on color cards (text color fixed per item, 'tinta') and the closing with the logo alone. The numbers are sample values: replace them with true numbers that have a source. Greys, placeholder texts and the placeholder logo stand for the person's brand and content: swap them. Render: node scripts/example-fonts.mjs <folder> && templates/counting-number/render.sh templates/counting-number/example.json <folder> 16x9,9x16,1x1 draft",
+  "aberturaLogo": { "logo": "../../assets/example/logo-placeholder.png", "fundo": "#F5F5F5", "dur": 1 },
+  "titulo": "Your product in numbers",
+  "idioma": "en-US",
+  "formatos": ["16x9", "9x16", "1x1"],
+  "chamada": "Your product today",
+  "lista_numerada": false,
+  "milhar": ",",
+  "marca": {
+    "nome": "Your brand",
+    "logo": "../../assets/example/logo-placeholder.png",
+    "logoProporcao": 5.129,
+    "cores": {
+      "fundo": "#383838",
+      "texto": "#D6D6D6",
+      "acento": "#D6D6D6",
+      "legendaFundo": "#383838",
+      "cartoes": ["#D6D6D6", "#E8E8E8", "#666666"]
+    },
+    "fontes": {
+      "numero": { "familia": "Inter", "peso": 700, "caixaAlta": false },
+      "texto": { "familia": "Inter", "peso": 500 },
+      "etiqueta": { "familia": "Inter", "peso": 600, "caixaAlta": false }
+    },
+    "grade": false,
+    "brilho": 0,
+    "grao": 0
+  },
+  "trilha": {
+    "semente": 2120,
+    "identidade": {
+      "genero": "house", "bpm": [120, 122], "modos": ["maior", "mixolidio"], "tons": ["C", "D", "F", "G", "A"],
+      "instrumentos": { "harmonia": ["epiano", "piano"], "baixo": ["bass_note"], "percussao": ["kick", "clap", "hat", "hat_aberto", "shaker"], "melodia": ["pluck"], "textura": ["pad_note"] }
+    }
+  },
+  "blocos": [
+    {
+      "tipo": "contador", "de": 0, "ate": 240, "rotulo": "items in the list",
+      "lista": ["60 in group one", "60 in group two", "60 in group three", "60 in group four"]
+    },
+    {
+      "tipo": "cartoes", "cada": 1.2, "dur": 3.5,
+      "itens": [
+        { "valor": 320, "rotulo": "users of the product", "cor": "#D6D6D6", "tinta": "#383838" },
+        { "valor": 60, "rotulo": "minutes saved", "cor": "#E8E8E8", "tinta": "#666666" },
+        { "valor": 24, "rotulo": "features ready to use", "cor": "#666666", "tinta": "#F5F5F5" }
+      ]
+    },
+    { "tipo": "fecho", "fundo": "#F5F5F5" }
+  ]
+}

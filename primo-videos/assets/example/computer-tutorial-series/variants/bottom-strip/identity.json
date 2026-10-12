@@ -1,0 +1,57 @@
+{
+  "versao": 2,
+  "nome": "Your brand · web tool tutorial · bottom strip",
+  "papel": "protagonista",
+  "estilo": "light house: soft four-on-the-floor kick, open hi-hat on the offbeat, epiano chord on the offbeat, short pluck; lead, but held back (no drop)",
+  "bpm": [
+    120,
+    124
+  ],
+  "modos": [
+    "maior",
+    "mixolidio"
+  ],
+  "tons": [
+    "C",
+    "D",
+    "F",
+    "G",
+    "A"
+  ],
+  "instrumentos": {
+    "harmonia": [
+      "epiano",
+      "piano"
+    ],
+    "baixo": [
+      "bass_note"
+    ],
+    "percussao": [
+      "kick",
+      "hat",
+      "hat_aberto",
+      "clap"
+    ],
+    "melodia": [
+      "pluck"
+    ],
+    "textura": [
+      "pad_note"
+    ]
+  },
+  "groove": [
+    "house"
+  ],
+  "bumbo": "house",
+  "padrao_baixo": [
+    "contratempo",
+    "contratempo_oitava"
+  ],
+  "padrao_harmonia": [
+    "stab",
+    "stab_sincopado"
+  ],
+  "cede_db": 4.0,
+  "densidade": "baixa",
+  "loudness_lufs": -14.0
+}

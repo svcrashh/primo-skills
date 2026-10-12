@@ -1,0 +1,21 @@
+// The journey of this video ({{produto}}): {{pedido160}}
+// Each step starts with a g.passo carrying its line (FALAS.p1…) and goes on with what the screen does. What the kit's base
+// already does (sign in, screen language, tours, write barrier, sample data) is not repeated here. The recorder API (g.passo, g.na,
+// g.toque, g.digita, g.aponta, g.rola, g.espera, g.pausa, g.prova, g.placar, g.antes, g.foto) is in
+// references/tutorial.md. Check with  node video.mjs --check  before recording.
+//
+// antes = true when it runs with --antes, on the previous version of the site: only the taps that lead there and a g.foto in each
+// old state (the image becomes the step's g.antes, in the same framing).
+export async function roteiro(g, { FALAS, antes = false }) {
+  const { p } = g
+  throw new Error('write the journey in recording/journey.mjs (one block per step, like the commented example below)')
+  // ---------- 1 ----------
+  // await g.passo(FALAS.p1, { junto: true })
+  // if (antes) { await g.foto('antes-1'); return }
+  // await g.antes('antes/antes-1.png', { regiao: { x: 440, y: 575, w: 440, h: 205 } })   // what changed, in app px
+  // await g.na('Save and continue')                                                        // the word of the line where the tap lands
+  // await g.toque(p.getByRole('button', { name: 'Save and continue', exact: true }))
+  // await g.prova('Saved')                                                                 // up to 16 letters
+  // ---------- end ----------
+  // await g.placar([{ valor: 3, rotulo: 'orders live' }])                                 // the default already holds 2.5 s, readable
+}

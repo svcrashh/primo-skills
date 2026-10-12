@@ -1,0 +1,99 @@
+{
+  "_sobre": "Format example of before and after, with no brand: the search of the sample page, empty and then with \"install\" typed, which leaves 1 of 8 parts (column on the right, the after opens in a circle from the search field, circles in the background; the two screens are in example-side/). Greys, placeholder texts and the placeholder logo stand for the person's brand and content: swap them. Render (from $SKILL): node scripts/example-fonts.mjs <output>/project && node templates/before-after/render.mjs templates/before-after/example-side.json --screens templates/before-after/example-side --out <output> --formats 16x9 --mode draft.",
+  "nome": "before-after-example-side",
+  "aberturaLogo": { "logo": "../../assets/example/logo-placeholder.png", "fundo": "#F5F5F5", "dur": 1 },
+  "marca": {
+    "nome": "Your brand",
+    "logo": "../../assets/example/logo-placeholder-light.png",
+    "url": "",
+    "plano": true,
+    "cores": {
+      "fundo": "#383838",
+      "superficie": "#383838",
+      "texto": "#D6D6D6",
+      "apagado": "#D6D6D6",
+      "linha": "#383838",
+      "acento": "#D6D6D6",
+      "sobreAcento": "#383838",
+      "fechoFundo": "#383838"
+    },
+    "fontes": {
+      "titulo": "Inter",
+      "tituloPeso": 700,
+      "tituloCaixaAlta": false,
+      "tituloInclinacao": 0,
+      "texto": "Inter",
+      "mono": "Inter"
+    }
+  },
+  "fecho": "logo",
+  "respiro": true,
+  "textoFora": true,
+  "variacao": "corte",
+  "lado": "direita",
+  "transicao": "mascara",
+  "fundo": {
+    "tipo": "formas",
+    "formas": [
+      { "x": 0.965, "y": -0.04, "r": 0.17, "cor": "#666666" },
+      { "x": 0.86, "y": -0.07, "r": 0.15, "cor": "#E8E8E8" },
+      { "x": 0.765, "y": -0.09, "r": 0.13, "cor": "#D6D6D6" },
+      { "x": 0.0, "y": 1.06, "r": 0.17, "cor": "#666666" },
+      { "x": 0.075, "y": 1.1, "r": 0.13, "cor": "#D6D6D6" }
+    ]
+  },
+  "textos": {
+    "promessa": [
+      [{ "t": "Search" }],
+      [{ "t": "filters" }],
+      [{ "t": "the page" }]
+    ],
+    "antes": "No search",
+    "depois": "Search: install",
+    "virada": "1 of 8."
+  },
+  "gatilho": {
+    "campo": "Search this page",
+    "termo": "install"
+  },
+  "falas": [
+    { "id": "antes", "texto": "The whole page, no search." },
+    { "id": "depois", "texto": "Searching install leaves 1 of 8." }
+  ],
+  "trilha": {
+    "semente": 2210,
+    "identidade": {
+      "genero": "house",
+      "bpm": [123, 123],
+      "modos": ["maior", "mixolidio"],
+      "tons": ["C", "D", "F", "G", "A"],
+      "instrumentos": {
+        "harmonia": ["epiano", "piano"],
+        "baixo": ["bass_note"],
+        "percussao": ["kick", "clap", "hat", "hat_aberto", "shaker"],
+        "melodia": ["pluck"],
+        "textura": ["pad_note"]
+      }
+    }
+  },
+  "captura": {
+    "url": "../../assets/example/page.html",
+    "rolar": 0,
+    "esperar": 1200,
+    "telas": {
+      "page": { "w": 930, "h": 504, "escala": 2 }
+    },
+    "depois": {
+      "js": "(async () => { const c = document.getElementById('search'); c.focus(); c.value = 'install'; c.dispatchEvent(new Event('input', { bubbles: true })); await new Promise((r) => setTimeout(r, 500)) })()",
+      "esperar": 600
+    }
+  },
+  "formatos": {
+    "16x9": {
+      "tela": "page",
+      "foco": [264, 0, 666, 474],
+      "detalhe": [560, 40],
+      "origem": [554, 32]
+    }
+  }
+}

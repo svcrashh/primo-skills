@@ -1,0 +1,83 @@
+{
+  "_sobre": "Format example of the light-trail teaser, with no brand: 16:9, three fragments (a number that counts, a list, a close-up of a real screen), the reveal with a phone-width screenshot that scrolls, and the closing with the logo alone (fecho.soLogo, the light blade). The screenshots in example/ come from the sample page, captured by example/capture-guide.cjs. Greys, placeholder texts and screens and the placeholder logo stand for the person's brand and content: swap them. Render: node scripts/example-fonts.mjs <output>/project && MODO=draft templates/light-trail-teaser/render.sh templates/light-trail-teaser/example.json <output> 16x9",
+  "aberturaLogo": { "logo": "../../assets/example/logo-placeholder.png", "fundo": "#F5F5F5", "dur": 1 },
+  "marca": "Your brand",
+  "titulo": "Light teaser · Your product",
+  "duracao": 14,
+  "formatos": ["16x9"],
+  "cores": {
+    "fundo": "#1D1D1D",
+    "luz": "#848484",
+    "noLuz": "#F5F5F5",
+    "texto": "#F5F5F5",
+    "etiqueta": "#F5F5F5"
+  },
+  "ui": {
+    "superficie": "#F5F5F5",
+    "superficie2": "#EBEBEB",
+    "borda": "#DEDEDE",
+    "texto": "#1D1D1D",
+    "texto2": "#1D1D1D",
+    "destaque": "#848484",
+    "noDestaque": "#F5F5F5",
+    "raio": 40
+  },
+  "fontes": {
+    "titulo": "Inter",
+    "texto": "Inter",
+    "mono": "Inter"
+  },
+  "tituloCaixaAlta": false,
+  "liso": true,
+  "grade": false,
+  "grao": 0,
+  "logo": {
+    "arquivo": "../../assets/example/logo-placeholder.png",
+    "altura": 124
+  },
+  "promessa": "What your product promises, in one line",
+  "etiqueta": "New",
+  "fragmentos": [
+    {
+      "tipo": "numero",
+      "nome": "Feature one",
+      "titulo": "Number title",
+      "valor": 128,
+      "rotulo": "what the number counts"
+    },
+    {
+      "tipo": "lista",
+      "nome": "Feature two",
+      "titulo": "List title",
+      "itens": [
+        ["First item", "128"],
+        ["Second item", "24"],
+        ["Third item", "3"]
+      ]
+    },
+    {
+      "tipo": "imagem",
+      "nome": "Feature three",
+      "arquivo": "example/page-card.jpg",
+      "largura": 768,
+      "recorte": [0, 0, 768, 528]
+    }
+  ],
+  "revelacao": {
+    "imagem": {
+      "arquivo": "example/page-phone.jpg",
+      "largura": 780,
+      "altura": 4400,
+      "rolar": [0, 1]
+    }
+  },
+  "fecho": {
+    "soLogo": true,
+    "fundo": "#F5F5F5",
+    "logoAltura": 124
+  },
+  "tempos": {
+    "revelacao": 2.4,
+    "fecho": 3.0
+  }
+}

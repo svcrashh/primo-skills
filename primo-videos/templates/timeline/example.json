@@ -1,0 +1,46 @@
+{
+  "_sobre": "Format example of Timeline, with no brand: horizontal axis, seven steps with an icon on a tile beside each text, the camera travelling along the axis ('travelling'), and a zoom through the last point into the closing, which is the logo alone. The steps are samples: write the true ones, in the order they happen. Greys, placeholder texts, the placeholder icon and the placeholder logo stand for the person's brand and content: swap them. Render: node scripts/example-fonts.mjs <output>/.work-timeline-example && node templates/timeline/render.mjs templates/timeline/example.json --out <output> --mode draft",
+  "nome": "timeline-example",
+  "aberturaLogo": { "logo": "../../assets/example/logo-placeholder.png", "fundo": "#F5F5F5", "dur": 1 },
+  "formatos": ["16x9"],
+  "titulo": "The steps of your process",
+  "orientacao": "horizontal",
+  "camera": "travelling",
+  "passo": 1.3,
+  "transicao": "zoom",
+  "marca": {
+    "nome": "Your brand",
+    "logo": "../../assets/example/logo-placeholder.png",
+    "cores": {
+      "fundo": "#505050",
+      "texto": "#F5F5F5",
+      "eixo": "#979797",
+      "ponto": "#979797",
+      "progresso": "#F5F5F5",
+      "aceso": "#F5F5F5",
+      "etiqueta": "#F5F5F5",
+      "etiquetaTexto": "#505050",
+      "ladrilho": "#F5F5F5"
+    },
+    "fontes": { "titulo": "Inter", "texto": "Inter" },
+    "pesos": { "titulo": 700, "texto": 500, "etiqueta": 700 },
+    "grao": 0
+  },
+  "marcos": [
+    { "etapa": "Step 1", "texto": "What happens first, in one line", "icone": "../../assets/example/icon-placeholder.png" },
+    { "etapa": "Step 2", "texto": "What comes next, and why", "icone": "../../assets/example/icon-placeholder.png" },
+    { "etapa": "Step 3", "texto": "The third step, in a few words", "icone": "../../assets/example/icon-placeholder.png" },
+    { "etapa": "Step 4", "texto": "A step that waits for an answer", "icone": "../../assets/example/icon-placeholder.png" },
+    { "etapa": "Step 5", "texto": "The longest line, at most seven words", "icone": "../../assets/example/icon-placeholder.png" },
+    { "etapa": "Step 6", "texto": "What gets checked before the end", "icone": "../../assets/example/icon-placeholder.png" },
+    { "etapa": "Step 7", "texto": "The result the person receives", "icone": "../../assets/example/icon-placeholder.png" }
+  ],
+  "fecho": { "fundo": "#F5F5F5", "dur": 2.4 },
+  "trilha": {
+    "semente": 4124,
+    "identidade": {
+      "genero": "house", "bpm": [122, 124], "modos": ["maior", "mixolidio"], "tons": ["C", "D", "F", "G", "A"],
+      "instrumentos": { "harmonia": ["epiano", "piano"], "baixo": ["bass_note"], "percussao": ["kick", "clap", "hat", "hat_aberto", "shaker"], "melodia": ["pluck"], "textura": ["pad_note"] }
+    }
+  }
+}

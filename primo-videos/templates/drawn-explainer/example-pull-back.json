@@ -1,0 +1,214 @@
+{
+ "_sobre": "Format example of the drawn explainer, with no brand: a single full-screen frame that changes shape (three landscape formats, then three upright ones); the camera starts close and pulls back, and between scenes it dives into the frame until its color fills the screen (camera plus a hard cut); logo-only closing, calm pace, 16:9; logo opening (\"aberturaLogo\"). Greys, placeholder texts and the placeholder logo stand for the person's brand and content: swap them. Render: node scripts/example-fonts.mjs <output>/.work-drawn-explainer-example-pull-back && node templates/drawn-explainer/render.mjs templates/drawn-explainer/example-pull-back.json --out <output> --mode final.",
+ "nome": "drawn-explainer-example-pull-back",
+ "aberturaLogo": { "logo": "../../assets/example/logo-placeholder.png", "fundo": "#F5F5F5", "dur": 1 },
+ "idioma": "en-US",
+ "formatos": [
+  "16x9"
+ ],
+ "cenas": "example-pull-back-scenes.js",
+ "textura": "nenhuma",
+ "legenda": false,
+ "semente": 31,
+ "marca": {
+  "nome": "Your brand",
+  "cores": {
+   "fundo": "#F5F5F5",
+   "superficie": "#EBEBEB",
+   "texto": "#1D1D1D",
+   "apoio": "#505050",
+   "destaque": "#848484",
+   "ok": "#666666"
+  },
+  "paleta": {
+   "pink": "#848484",
+   "purple": "#979797",
+   "green": "#666666",
+   "blue": "#505050",
+   "yellow": "#D6D6D6",
+   "red": "#2C2C2C"
+  },
+  "fontes": {
+   "titulo": "Inter",
+   "texto": "Inter",
+   "ui": "Inter"
+  },
+  "pesoTitulo": 700,
+  "pesoTexto": 500,
+  "caixaAlta": false,
+  "forma": {
+   "raio": 36,
+   "sombra": false
+  },
+  "logo": "../../assets/example/logo-placeholder-light.png",
+  "ui": {
+   "escuro": false,
+   "surface": "#EBEBEB",
+   "text": "#1D1D1D"
+  }
+ },
+ "trilha": {
+  "semente": 880,
+  "identidade": {
+   "genero": "acustico",
+   "bpm": [
+    88,
+    92
+   ],
+   "modos": [
+    "maior",
+    "mixolidio"
+   ],
+   "tons": [
+    "C",
+    "D",
+    "F",
+    "G",
+    "A"
+   ],
+   "instrumentos": {
+    "harmonia": [
+     "piano",
+     "corda"
+    ],
+    "baixo": [
+     "bass_note"
+    ],
+    "percussao": [
+     "kick",
+     "shaker",
+     "aro"
+    ],
+    "melodia": [
+     "pluck"
+    ],
+    "textura": [
+     "pad_note"
+    ]
+   }
+  }
+ },
+ "midia": [],
+ "roteiro": [
+  {
+   "id": "horizontais",
+   "min": 5.8,
+   "transicao": "cut"
+  },
+  {
+   "id": "verticais",
+   "min": 5.8,
+   "transicao": "cut"
+  },
+  {
+   "id": "fecho",
+   "min": 1.4,
+   "transicao": "cut"
+  }
+ ],
+ "dados": {
+  "cores": {
+   "vazio": "#666666"
+  },
+  "horizontais": {
+   "tempos": [
+    0.15,
+    1.75,
+    3.25
+   ],
+   "mergulho": 5.2,
+   "fim": 4.95,
+   "pilula": "Your product",
+   "fundo": "#383838",
+   "quadro": "#D6D6D6",
+   "texto": "#383838",
+   "pilulaFundo": "#D6D6D6",
+   "pilulaTexto": "#383838",
+   "fixa": "altura",
+   "base": 600,
+   "zoom": [
+    1.3,
+    1.04,
+    1.0
+   ],
+   "mergulhoZoom": 2.4,
+   "hud": 0.15,
+   "formatos": [
+    {
+     "nome": "16:9",
+     "uso": "First format",
+     "tamanho": "1920 × 1080",
+     "w": 1920,
+     "h": 1080
+    },
+    {
+     "nome": "19:9",
+     "uso": "Second format",
+     "tamanho": "2280 × 1080",
+     "w": 2280,
+     "h": 1080
+    },
+    {
+     "nome": "21:9",
+     "uso": "Third format",
+     "tamanho": "2520 × 1080",
+     "w": 2520,
+     "h": 1080
+    }
+   ],
+   "guia": "#666666"
+  },
+  "verticais": {
+   "tempos": [
+    0.15,
+    1.75,
+    3.25
+   ],
+   "mergulho": 5.2,
+   "fim": 4.95,
+   "pilula": "Your product",
+   "fundo": "#D6D6D6",
+   "quadro": "#383838",
+   "texto": "#D6D6D6",
+   "pilulaFundo": "#383838",
+   "pilulaTexto": "#D6D6D6",
+   "fixa": "largura",
+   "base": 520,
+   "zoom": [
+    1.4,
+    1.04,
+    1.0
+   ],
+   "mergulhoZoom": 6,
+   "hud": 0.3,
+   "formatos": [
+    {
+     "nome": "1:1",
+     "uso": "Fourth format",
+     "tamanho": "1080 × 1080",
+     "w": 1080,
+     "h": 1080
+    },
+    {
+     "nome": "4:5",
+     "uso": "Fifth format",
+     "tamanho": "1080 × 1350",
+     "w": 1080,
+     "h": 1350
+    },
+    {
+     "nome": "9:16",
+     "uso": "Sixth format",
+     "tamanho": "1080 × 1920",
+     "w": 1080,
+     "h": 1920
+    }
+   ],
+   "guia": "#666666"
+  },
+  "fecho": {
+   "fundo": "#383838",
+   "logo": "media/logo-placeholder-light.png"
+  }
+ }
+}
