@@ -281,6 +281,12 @@ jobs:
           sleep 5
           echo "navegador depois do painel: $(janelas msedge)"
           node "$SK/scripts/board.mjs" stop "$P"
+          # o "abrir o arquivo" que o SKILL.md ensina para o Windows: start "" "<arquivo>", no Git Bash
+          printf 'nota de teste\r\n' > "$RUNNER_TEMP/nota.txt"
+          start "" "$RUNNER_TEMP/nota.txt"
+          for i in $(seq 1 15); do [ -n "$(janelas notepad)" ] && break; sleep 1; done
+          echo "bloco de notas: $(janelas notepad)"
+          [ -n "$(janelas notepad)" ]
           # board agent --terminal: o Windows Terminal abre na pasta do projeto e roda o claude (aqui um falso, que só
           # anota como foi chamado) com o prompt do painel
           mkdir -p "$RUNNER_TEMP/claude-falso"
