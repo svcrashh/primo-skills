@@ -1,8 +1,8 @@
 """A parte do terminais.py que é do Windows: Windows Terminal (wt.exe), janelas por Win32 e o
 processo que cada janela roda.
 
-Escrito no Mac em 11/10/2026 e ainda não executado num Windows de verdade: a lógica foi exercitada
-com as chamadas do sistema simuladas. Na primeira vez, rode `terminais.py abrir --dry-run`.
+Rodou num Windows de verdade em 12/10/2026, com um claude de mentira: é o teste_windows_real.py, que o
+GitHub Actions roda a cada mudança. Mexeu aqui? Ele e o teste_windows_simulado.py têm de passar.
 """
 import json
 import msvcrt

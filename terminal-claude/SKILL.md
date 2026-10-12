@@ -269,17 +269,39 @@ Nos dois sistemas:
 
 ### No Windows
 
-**Escrito no Mac em 11/10/2026 e ainda não rodado num Windows de verdade.** A lógica passa no
-`scripts/teste_windows_simulado.py` (sistema simulado), mas as chamadas ao Windows e ao Windows
-Terminal nunca foram executadas. Na primeira vez: `abrir <pasta> --dry-run`, depois uma janela só
-com `--modo manual`, depois `status` e `fechar`. O que falhar, conserta na fonte (`so_windows.py`,
-ou `janelas_win.py` no terminal-organizar) e, quando tudo rodar, tira este parágrafo.
+**Rodou num Windows de verdade em 12/10/2026:** o Windows Server 2025 do GitHub Actions
+(`windows-latest`), com o Windows Terminal 1.23 e janelas de verdade, e um `claude` de mentira no
+lugar do de verdade (lá não há conta do Claude). Passou o ciclo inteiro: `abrir --dry-run`, um lote
+de 4 nascendo cada uma no seu quadrado, `status`, `esperar` voltando a cada parada, pergunta, claude
+que sai e janela fechada no X, `ver`, `fechar <id>`, `fechar`, a guarda do servidor com e sem
+`--forcar`, janela minimizada que continua no registro e, no fim, registro vazio e nenhum processo
+sobrando. Tudo com espaço e acento no caminho do Python, das skills e do projeto, e com prompt de
+várias linhas, aspas, `%`, `&` e emoji. O teste é o `scripts/teste_windows_real.py`, e o workflow
+`.github/workflows/windows-terminais.yml` roda ele a cada mudança nestas duas skills.
 
-- **Precisa de:** Python (`python`), Windows Terminal (`wt`; `winget install
-  Microsoft.WindowsTerminal`) e o `claude` nativo no PATH.
+**Sem prova:** o claude de verdade rodando os hooks, tela com escala acima de 100% e mais de um
+monitor. Na primeira vez num Windows, confira nesta ordem:
+
+1. `python $T abrir <pasta> --dry-run` mostra o comando do claude.
+2. `python $T abrir <pasta> --prompt "diz oi"`: a janela abre num quadrado e o claude responde. Pasta
+   que o claude nunca abriu pede para confiar nela: confirme na janela.
+3. `python $T status` passa de `trabalhando` para `parada`. Se ficar em `abrindo` com o claude já
+   respondendo, o hook não rodou: atualize o claude (`claude update`), porque os hooks vão no formato
+   sem shell (`command` com `args`) das versões novas.
+4. `python $T ver <id>` traz a resposta; `python $T fechar <id>` fecha a janela.
+
+- **Precisa de:** Python 3.8 ou mais novo (`python`), o Windows Terminal (`wt`; já vem no Windows 11,
+  no 10 é `winget install Microsoft.WindowsTerminal`) e o claude. Vale o do PATH, o do instalador
+  oficial mesmo fora do PATH (`%USERPROFILE%\.local\bin\claude.exe`: o instalador não põe essa pasta
+  no PATH) e o do npm, pelo `claude.exe` que vem no pacote: pelo `claude.cmd` o prompt de várias
+  linhas chegava só com a primeira. `scripts/requisitos.py` diz o que falta e como resolver.
 - Cada janela é um Windows Terminal novo rodando `python terminais.py rodar <base>`: é o Python que
   chama o claude, com os argumentos lidos de um JSON, e segura o sono do sistema enquanto ele roda
   (a tela ainda apaga). Quando o claude sai, abre um PowerShell na pasta da trilha.
+- **Hooks sem shell:** cada um vai como `{"command": <python>, "args": [terminais.py, "marcar",
+  <estado>]}`, e o Claude Code chama o Python direto. Com shell, o comando iria para o Git Bash ou,
+  sem ele, para o PowerShell, e nenhum jeito de escrever um caminho com espaço vale nos dois: o Git
+  Bash come a barra invertida e o PowerShell não chama caminho entre aspas.
 - Registro em `%TEMP%\claude-terminais-abertos.tsv`; arquivos das janelas em
   `%LOCALAPPDATA%\terminal-claude\`. O id é o da janela e a marca é o pid do processo dela.
 - `fechar` mata a árvore de processos da janela (`taskkill /T /F`) e pede pra ela fechar. A guarda
@@ -288,9 +310,11 @@ ou `janelas_win.py` no terminal-organizar) e, quando tudo rodar, tira este pará
   Terminal.
 - **Monitores:** o Windows não diz qual tela é a do notebook, então todas contam como monitor
   externo e a primeira janela nasce no monitor principal. `--monitor notebook` não acha nada lá.
-- **Hooks:** o comando é `python terminais.py marcar <estado>`. Se as janelas ficarem presas em
-  `abrindo` com o claude já respondendo, o hook não rodou: confere o shell que o Claude Code usa
-  pros hooks no Windows.
+- Entre duas colunas da grade fica uma fresta de uns 16 px: é a borda invisível que o Windows conta
+  no tamanho da janela.
+- Os testes: `teste_windows_simulado.py` (lógica, roda no Mac e no Windows), `teste_mac_simulado.py`
+  (no Windows roda a parte do registro e do `esperar`) e `teste_windows_real.py` (janelas de verdade,
+  só no Windows; abre, move e fecha janelas, então não rode numa máquina em uso).
 
 ## O que não fazer
 
