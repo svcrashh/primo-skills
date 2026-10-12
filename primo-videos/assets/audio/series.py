@@ -33,6 +33,11 @@ from pathlib import Path
 
 import numpy as np
 
+# No Windows, a saída por pipe (a do Claude Code) sai no código de página do sistema e quebra no primeiro "Δ" ou "→".
+for _s in (sys.stdout, sys.stderr):
+    if hasattr(_s, 'reconfigure') and (_s.encoding or '').lower().replace('-', '') != 'utf8':
+        _s.reconfigure(encoding='utf-8', errors='replace')
+
 NOMES = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'Ab', 'A', 'Bb', 'B']
 _PC = {n: i for i, n in enumerate(NOMES)}
 _PC.update({'C#': 1, 'D#': 3, 'Gb': 6, 'G#': 8, 'A#': 10, 'Cb': 11, 'Fb': 4, 'E#': 5, 'B#': 0})

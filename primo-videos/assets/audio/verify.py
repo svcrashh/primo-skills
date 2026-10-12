@@ -23,6 +23,11 @@ from pathlib import Path
 import numpy as np
 from scipy.signal import butter, lfilter, resample_poly, sosfilt, sosfiltfilt
 
+# No Windows, a saída por pipe (a do Claude Code) sai no código de página do sistema e quebra no primeiro "Δ" ou "→".
+for _s in (sys.stdout, sys.stderr):
+    if hasattr(_s, 'reconfigure') and (_s.encoding or '').lower().replace('-', '') != 'utf8':
+        _s.reconfigure(encoding='utf-8', errors='replace')
+
 TOL_ONSET = 0.010          # s
 LIM_DC = 1e-3              # ≈ -60 dBFS
 LIM_LADO_GRAVE = -20.0     # dB, energia lateral/central abaixo de 120 Hz

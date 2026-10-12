@@ -68,7 +68,7 @@ def main():
     ap.add_argument('--seed', type=int, default=0)
     ap.add_argument('--segments', default='[]')
     a = ap.parse_args()
-    cues = json.loads(Path(a.cues).read_text())
+    cues = json.loads(Path(a.cues).read_text(encoding='utf-8'))
     y = gerar(cues, a.duration, a.ref_lufs, a.seed, [tuple(t) for t in json.loads(a.segments)])
     wavfile.write(a.out, SR, y.T.astype(np.float32))
     print(f'{len(cues)} sound(s) → {a.out} ({a.duration:.2f} s, peak {20 * np.log10(max(1e-9, np.abs(y).max())):.1f} dBFS)')

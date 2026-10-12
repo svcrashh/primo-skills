@@ -19,12 +19,18 @@ Tudo em numpy/scipy, sem ffmpeg na cadeia: o arquivo começa exatamente em t=0.
 """
 import json
 import math
+import sys
 import wave
 from pathlib import Path
 
 import numpy as np
 from scipy.ndimage import maximum_filter1d, uniform_filter1d
 from scipy.signal import butter, fftconvolve, lfilter, resample_poly, sosfilt, sosfiltfilt
+
+# No Windows, a saída por pipe (a do Claude Code) sai no código de página do sistema e quebra no primeiro "Δ" ou "→".
+for _s in (sys.stdout, sys.stderr):
+    if hasattr(_s, 'reconfigure') and (_s.encoding or '').lower().replace('-', '') != 'utf8':
+        _s.reconfigure(encoding='utf-8', errors='replace')
 
 TAU = 2 * np.pi
 BUSES_PADRAO = ('drums', 'pad', 'saw', 'bass', 'arp', 'lead', 'keys', 'fx')
