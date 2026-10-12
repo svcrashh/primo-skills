@@ -90,7 +90,7 @@ jobs:
 
   experimento:
     runs-on: windows-latest
-    timeout-minutes: 15
+    timeout-minutes: 10
     defaults:
       run:
         shell: pwsh
@@ -99,34 +99,10 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
-      - name: um .cmd entre o python e o programa estraga o prompt?
-        continue-on-error: true
-        run: |
-          New-Item -ItemType Directory -Force cmdteste | Out-Null
-          Set-Content -Encoding utf8 cmdteste\eco.py 'import sys, json; print(json.dumps(sys.argv[1:]))'
-          Set-Content -Encoding ascii cmdteste\eco.cmd '@python "%~dp0eco.py" %*'
-          @'
-          import json, subprocess, sys
-          for p in ['uma linha simples', 'duas\nlinhas', 'aspas "assim" e fim', '100% & | > < ^ fim']:
-              r = subprocess.run([sys.argv[1], p], capture_output=True)
-              saida = r.stdout.decode('utf-8', 'replace').strip()
-              print(repr(p), '->', saida or r.stderr.decode('utf-8', 'replace').strip(), '| igual:', saida == json.dumps([p]))
-          '@ | Set-Content -Encoding utf8 cmdteste\teste.py
-          python cmdteste\teste.py cmdteste\eco.cmd
-      - name: claude pelo npm, e o requisitos
-        continue-on-error: true
+      - name: claude pelo npm de verdade
         run: |
           npm install -g @anthropic-ai/claude-code 2>&1 | Select-Object -Last 1
-          Get-Content C:\npm\prefix\claude.cmd
-          Get-ChildItem C:\npm\prefix\node_modules\@anthropic-ai -Recurse -Depth 1 | Select-Object -First 15 FullName | Out-String -Width 300
-          python terminal-claude/scripts/requisitos.py; "saiu com $LASTEXITCODE"
-      - name: claude nativo fora do PATH, o comando do PATH e o requisitos
-        continue-on-error: true
-        run: |
-          irm https://claude.ai/install.ps1 | iex
-          python terminal-claude/scripts/requisitos.py; "saiu com $LASTEXITCODE"
-          npm uninstall -g @anthropic-ai/claude-code 2>&1 | Select-Object -Last 1
-          [Environment]::SetEnvironmentVariable('Path', [Environment]::GetEnvironmentVariable('Path', 'User') + ';' + $env:USERPROFILE + '\.local\bin', 'User')
-          $env:Path = [Environment]::GetEnvironmentVariable('Path','Machine') + ';' + [Environment]::GetEnvironmentVariable('Path','User')
-          claude --version
+          $exe = python -c "import sys; sys.path[:0] = ['terminal-claude/scripts', 'terminal-organizar/scripts']; import so_windows; print(so_windows.achar_claude())"
+          "achar_claude: $exe"
+          & $exe --version
           python terminal-claude/scripts/requisitos.py; "saiu com $LASTEXITCODE"

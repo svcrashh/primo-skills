@@ -65,17 +65,23 @@ def relatorio():
         item("✖", f"Python 3.8 ou mais novo (este é o {v.major}.{v.minor})",
              ["No PowerShell:", "     winget install Python.Python.3.12"] if WIN else ["No Terminal:", "     brew install python"])
 
+    # A mesma busca do terminais.py (achar_claude no so_windows.py e no so_mac.py).
     achado = shutil.which("claude")
     nativo = Path.home() / (".local/bin/claude.exe" if WIN else ".local/bin/claude")
-    if WIN and achado and achado.lower().endswith((".cmd", ".bat")) and not nativo.exists():
-        item("✖", "claude: o que está no PATH é o do npm (claude.cmd), e por ele o prompt de várias linhas ou com "
-                  "aspas não chega inteiro na janela. A skill precisa do claude nativo.",
-             instalar_claude() + ["O do npm pode ficar; se quiser tirar: npm uninstall -g @anthropic-ai/claude-code"])
-    elif achado and not (WIN and achado.lower().endswith((".cmd", ".bat"))):
+    npm = None
+    if WIN and achado and achado.lower().endswith((".cmd", ".bat")):
+        npm = Path(achado).parent / "node_modules" / "@anthropic-ai" / "claude-code" / "bin" / "claude.exe"
+        achado = None
+    if achado:
         item("✔", f"claude ({curto(achado)})")
+    elif npm and npm.exists():
+        item("✔", "claude (o do npm: a skill chama direto o claude.exe que vem no pacote)")
     elif WIN and nativo.exists():
         item("✔", f"claude ({curto(nativo)}): a skill acha ele lá, mesmo fora do PATH",
              ["Para o comando claude valer também no PowerShell, ponha a pasta no PATH:", "     " + PATH_WIN])
+    elif npm:
+        item("✖", "claude: o do PATH é um claude.cmd, e por ele o prompt de várias linhas chega só com a primeira. "
+                  "A skill precisa do claude nativo.", instalar_claude())
     elif nativo.exists():
         item("✖", f"claude: está em {curto(nativo)}, mas essa pasta não está no PATH, e a janela não acha ele",
              ["No Terminal:", "     echo 'export PATH=\"$HOME/.local/bin:$PATH\"' >> ~/.zshrc",

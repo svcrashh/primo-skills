@@ -58,22 +58,24 @@ def marcar(a):
 
 
 def achar_claude():
-    """O claude que a janela chama: o do PATH ou o do instalador oficial, que fica em
-    %USERPROFILE%\\.local\\bin e não entra no PATH sozinho."""
+    """O claude.exe que a janela chama: o do PATH; o de dentro do pacote, quando o do PATH é o
+    claude.cmd do npm; ou o do instalador oficial, que fica em %USERPROFILE%\\.local\\bin e não
+    entra no PATH sozinho."""
     achado = shutil.which("claude")
     nativo = Path.home() / ".local/bin/claude.exe"
-    if achado and not achado.lower().endswith((".cmd", ".bat")):
-        return achado
-    if nativo.exists():
-        return str(nativo)
-    if achado:
-        # O do npm é um claude.cmd: tudo que vai para ele passa pelo cmd, e o prompt de várias linhas
-        # chega cortado na primeira (as aspas e o % também se perdem).
-        sys.exit("O claude deste computador é o do npm (claude.cmd), e por ele o prompt não chega inteiro "
-                 "na janela. Instale o claude nativo no PowerShell:\n"
-                 "    irm https://claude.ai/install.ps1 | iex\n"
-                 "e rode de novo (o do npm pode ficar).")
-    return None
+    if achado and achado.lower().endswith((".cmd", ".bat")):
+        # O claude.cmd do npm só repassa ao claude.exe do pacote. Pelo .cmd o prompt passa pelo cmd e
+        # chega só com a primeira linha (medido em 12/10/2026): vai direto ao .exe.
+        exe = Path(achado).parent / "node_modules/@anthropic-ai/claude-code/bin/claude.exe"
+        if exe.exists():
+            return str(exe)
+        if not nativo.exists():
+            sys.exit(f"O claude deste computador é um .cmd ({achado}), e por ele o prompt de várias linhas "
+                     "chega só com a primeira. Instale o claude nativo no PowerShell:\n"
+                     "    irm https://claude.ai/install.ps1 | iex\n"
+                     "e rode de novo (o outro pode ficar).")
+        achado = None
+    return achado or (str(nativo) if nativo.exists() else None)
 
 
 def travar(arquivo):

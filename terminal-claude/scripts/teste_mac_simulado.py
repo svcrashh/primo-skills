@@ -101,7 +101,7 @@ def arquivos(base):
     return sorted(p.suffix for p in so.CACHE.glob(Path(base).name + ".*"))
 
 def roda(*argv):
-    buf = io.TextIOWrapper(io.BytesIO(), encoding="utf-8"); sys.argv = ["terminais.py", *argv]
+    buf = io.TextIOWrapper(io.BytesIO(), encoding="utf-8", newline="\n"); sys.argv = ["terminais.py", *argv]
     with contextlib.redirect_stdout(buf):
         try: terminais.main()
         except SystemExit as e: buf.write(f"[saiu: {e}]")

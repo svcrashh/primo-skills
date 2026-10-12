@@ -289,6 +289,54 @@ def linha_de(status, h):
     return next((l for l in status.splitlines() if l.startswith(f"{h} ")), "")
 
 
+def de_onde_vem_o_claude(raiz, claude):
+    """A busca do claude, no terminais.py e no requisitos.py: o do instalador oficial fora do PATH, o
+    claude.cmd do npm (que só repassa ao claude.exe do pacote), um .cmd sem .exe e nenhum."""
+    sem = os.pathsep.join(d for d in os.environ["PATH"].split(os.pathsep)
+                          if d and not any((Path(d) / f"claude{e}").exists() for e in (".exe", ".cmd", ".bat")))
+    casa, vazia = raiz / "casa", raiz / "casa vazia"
+    (casa / ".local/bin").mkdir(parents=True)
+    vazia.mkdir()
+    shutil.copy(claude, casa / ".local/bin/claude.exe")
+    npm = raiz / "npm"
+    pacote = npm / "node_modules/@anthropic-ai/claude-code/bin"
+    pacote.mkdir(parents=True)
+    (npm / "claude.cmd").write_text('@"%~dp0node_modules\\@anthropic-ai\\claude-code\\bin\\claude.exe" %*\r\n', encoding="ascii")
+    shutil.copy(claude, pacote / "claude.exe")
+
+    def roda(argv, path, casa_):
+        r = subprocess.run(argv, capture_output=True, cwd=raiz, env={**ENV, "PATH": path, "USERPROFILE": str(casa_)})
+        return r.returncode, (r.stdout + r.stderr).decode("utf-8", "replace").strip()
+
+    def busca(path, casa_):
+        return roda([sys.executable, "-c", f"import sys; sys.path[:0] = [{str(AQUI)!r}, {str(ORGANIZAR.parent)!r}]; "
+                     "import so_windows; print(so_windows.achar_claude())"], path, casa_)
+
+    def requisitos(path, casa_):
+        return roda([sys.executable, str(AQUI / "requisitos.py")], path, casa_)
+
+    codigo, achado = busca(sem, casa)
+    confere("o claude do instalador oficial, fora do PATH: a skill acha ele em .local\\bin",
+            codigo == 0 and achado == str(casa / ".local/bin/claude.exe"), achado)
+    codigo, saida = requisitos(sem, casa)
+    confere("e o requisitos diz ✔, com o comando para pôr a pasta no PATH", codigo == 0 and
+            "✔ claude (%USERPROFILE%\\.local\\bin\\claude.exe): a skill acha ele lá" in saida and "SetEnvironmentVariable" in saida, saida)
+    codigo, achado = busca(str(npm) + os.pathsep + sem, vazia)
+    confere("o claude.cmd do npm: a skill chama direto o claude.exe do pacote", codigo == 0 and achado == str(pacote / "claude.exe"), achado)
+    codigo, saida = requisitos(str(npm) + os.pathsep + sem, vazia)
+    confere("e o requisitos diz ✔ para o do npm", codigo == 0 and "✔ claude (o do npm" in saida, saida)
+    (pacote / "claude.exe").unlink()
+    codigo, saida = busca(str(npm) + os.pathsep + sem, vazia)
+    confere("um .cmd sem o .exe do pacote: a skill não abre e diz como instalar o nativo",
+            codigo == 1 and "é um .cmd" in saida and "irm https://claude.ai/install.ps1 | iex" in saida, saida)
+    codigo, saida = requisitos(str(npm) + os.pathsep + sem, vazia)
+    confere("e o requisitos diz ✖, com a instalação", codigo == 1 and "✖ claude: o do PATH é um claude.cmd" in saida, saida)
+    codigo, saida = requisitos(sem, vazia)
+    confere("sem claude nenhum, o requisitos diz ✖ e como instalar e pôr no PATH", codigo == 1 and "✖ claude: não achei" in saida
+            and "irm https://claude.ai/install.ps1 | iex" in saida and "SetEnvironmentVariable" in saida, saida)
+    print("      " + saida.replace("\n", "\n      "))
+
+
 def principal():
     global ENV, REGISTRO, REGISTROS, ARTEFATOS
     for saida in (sys.stdout, sys.stderr):
@@ -312,6 +360,7 @@ def principal():
            "TEMP": str(temp), "TMP": str(temp), "PATH": str(Path(claude).parent) + os.pathsep + os.environ["PATH"]}
     ENV.pop("CLAUDE_CONFIG_DIR", None)
     print(f"python: {sys.executable}\nskills: {AQUI.parents[1]}\nclaude de mentira: {claude}\n", flush=True)
+    de_onde_vem_o_claude(raiz, claude)
 
     alheias = todas_wt()
     for h in alheias:
@@ -321,8 +370,8 @@ def principal():
 
     # --- abrir --dry-run ------------------------------------------------------------------------------
     saida = terminais("abrir", pasta, "--dry-run", "--prompt", "oi")
-    confere("abrir --dry-run mostra o plano e o comando do claude", "[simulação]" in saida and claude in saida
-            and "--dangerously-skip-permissions" in saida, saida)
+    confere("abrir --dry-run mostra o plano e o comando do claude", "[simulação]" in saida
+            and claude.lower() in saida.lower() and "--dangerously-skip-permissions" in saida, saida)
     time.sleep(2)
     confere("o --dry-run não abre janela nem registra", not win.janelas() and not registro(), f"{win.janelas()} {registro()}")
 
