@@ -87,22 +87,3 @@ jobs:
           path: captura/
           retention-days: 7
           if-no-files-found: ignore
-
-  experimento:
-    runs-on: windows-latest
-    timeout-minutes: 10
-    defaults:
-      run:
-        shell: pwsh
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-python@v7
-        with:
-          python-version: "3.12"
-      - name: claude pelo npm de verdade
-        run: |
-          npm install -g @anthropic-ai/claude-code 2>&1 | Select-Object -Last 1
-          $exe = python -c "import sys; sys.path[:0] = ['terminal-claude/scripts', 'terminal-organizar/scripts']; import so_windows; print(so_windows.achar_claude())"
-          "achar_claude: $exe"
-          & $exe --version
-          python terminal-claude/scripts/requisitos.py; "saiu com $LASTEXITCODE"
