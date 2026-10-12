@@ -120,7 +120,7 @@ b = saidas.get("B · difícil", {"argv": [], "env": []})
 confere("prompt difícil chegou idêntico", prompt_dificil in b["argv"])
 confere("modelo da trilha vence o padrão", b["argv"][b["argv"].index("--model") + 1] == "sonnet" if "--model" in b["argv"] else False)
 confere("bypass por padrão", "--dangerously-skip-permissions" in b["argv"])
-confere("ambiente do claude: só o perfil e o arquivo de estado", b["env"] == ["CLAUDE_CONFIG_DIR", "TERMINAL_CLAUDE_ESTADO"] and b["config"] == r"C:\Users\gu\.claude-insiders", str(b["env"]))
+confere("ambiente do claude: só o perfil e o arquivo de estado", b["env"] == ["CLAUDE_CONFIG_DIR", "TERMINAL_CLAUDE_ESTADO", "TERMINAL_CLAUDE_INICIO"] and b["config"] == r"C:\Users\gu\.claude-insiders", str(b["env"]))
 confere("claude rodou na pasta da trilha", os.path.realpath(b.get("cwd", "")) == os.path.realpath(pasta))
 confere("manteve acordado enquanto o claude rodava e soltou depois", fake.acordado[:2] == [True, False], str(fake.acordado))
 estados = sorted(Path(c[5] + ".estado").read_text(encoding="utf-8") for c in reg)
@@ -129,6 +129,24 @@ confere("depois que o claude sai o estado vira encerrada", estados == ["encerrad
 # --- marcar, status, ver -----------------------------------------------------------------
 os.environ["TERMINAL_CLAUDE_ESTADO"] = reg[0][5] + ".estado"
 sys.argv = ["terminais.py", "marcar", "trabalhando"]; terminais.main()
+# --- limpeza: conta por pasta, "agora não" e "nunca" --------------------------------------
+def uso(): return json.loads((so.CACHE / "uso.json").read_text(encoding="utf-8"))
+def conta(dias_atras=None, **campos):
+    """Reescreve a conta da pasta e soma um lote; devolve o que o abrir imprimiria."""
+    u = uso(); u["pastas"][pasta].update(campos); terminais.gravar_uso(u)
+    buf = io.StringIO()
+    with contextlib.redirect_stdout(buf): terminais.contar_lote({pasta})
+    return buf.getvalue()
+dia = lambda n: time.strftime("%Y-%m-%d", time.localtime(time.time() - n * 86400))
+confere("o lote entrou na conta de uso da pasta", uso()["pastas"][pasta]["lotes"] == 1)
+confere("poucos lotes e pouco tempo: sem aviso", conta() == "")
+confere("no 10º lote o aviso aparece", "Aviso: 10 lote(s)" in conta(lotes=9))
+confere("14 dias de uso também avisam", "Aviso:" in conta(lotes=1, desde=dia(14)))
+os.environ.update(TERMINAL_CLAUDE_ESTADO=reg[1][5] + ".estado", TERMINAL_CLAUDE_INICIO="trabalhando")
+sys.argv = ["terminais.py", "marcar", "inicio"]; terminais.main()
+confere("no início, janela com prompt já nasce trabalhando", Path(reg[1][5] + ".estado").read_text(encoding="utf-8") == "trabalhando")
+del os.environ["TERMINAL_CLAUDE_INICIO"]; terminais.main()
+confere("no início, janela sem prompt fica parada", Path(reg[1][5] + ".estado").read_text(encoding="utf-8") == "parada")
 confere("marcar grava o estado", Path(reg[0][5] + ".estado").read_text(encoding="utf-8") == "trabalhando")
 del os.environ["TERMINAL_CLAUDE_ESTADO"]
 import io, contextlib
@@ -142,6 +160,19 @@ def roda(*argv):
 st = roda("status")
 confere("status lista as 3 com estado e título", st.count("\n") == 3 and "trabalhando" in st and "B · difícil" in st, st)
 confere("ver sem transcript avisa em vez de ler a tela", "ainda não gravou" in roda("ver", reg[0][0]))
+confere("limpeza com pasta e sem dizer o que houve explica as opções", "--feita (limpou)" in roda("limpeza", pasta))
+confere("--adiar anota e avisa quando volta", "daqui a 3 dias" in roda("limpeza", pasta, "--adiar") and "adiado" in uso()["pastas"][pasta])
+confere("adiado hoje: sem aviso, mesmo com muitos lotes", conta(lotes=50) == "")
+confere("adiado há 3 dias: pergunta de novo", "Aviso:" in conta(adiado=dia(3)))
+confere("--nunca desliga a pergunta", "não pergunto mais" in roda("limpeza", "--nunca") and conta(adiado=dia(9)) == "")
+confere("a listagem mostra a conta e que a pergunta está desligada", "desligada" in roda("limpeza") and "lote(s) desde" in roda("limpeza"))
+confere("--perguntar liga de novo", "volto a perguntar" in roda("limpeza", "--perguntar") and "Aviso:" in conta())
+confere("--feita zera a conta da pasta", "zerada" in roda("limpeza", pasta, "--feita") and pasta not in uso()["pastas"])
+espera = roda("esperar", "--minutos", "0")
+confere("esperar com tempo esgotado volta e avisa que ainda há janela trabalhando", "Ainda há janela trabalhando" in espera, espera)
+Path(reg[0][5] + ".estado").write_text("parada", encoding="utf-8")
+espera = roda("esperar")
+confere("esperar volta na hora quando nenhuma janela trabalha", "Nenhuma janela trabalhando" in espera and espera.count("\n") == 4, espera)
 
 # --- fechar ------------------------------------------------------------------------------
 eu = os.getpid(); mortos = []
@@ -156,7 +187,7 @@ confere("fechar <id> fecha só aquela, matando a árvore do processo", "1 janela
 saida = roda("fechar")
 confere("fechar fecha as outras duas da sessão", "2 janela(s) fechada(s)" in saida and sorted(fake.jan) == [1001], saida)
 confere("a janela do dono não foi tocada pelo fechar", 1001 in fake.jan)
-confere("registro e cache limpos depois", roda("status").startswith("Nenhuma janela") and sorted(p.name for p in so.CACHE.iterdir()) == ["hooks.json"], str(list(so.CACHE.iterdir())))
+confere("registro e cache limpos depois", roda("status").startswith("Nenhuma janela") and sorted(p.name for p in so.CACHE.iterdir()) == ["hooks.json", "uso.json"], str(list(so.CACHE.iterdir())))
 confere("fechar com opção errada diz quais valem", "Valem --todas" in roda("fechar", "--tudo"))
 
 shutil.rmtree(raiz, ignore_errors=True)

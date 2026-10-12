@@ -76,7 +76,8 @@ def subcomandos(sub):
 def comando_hook(estado):
     # Só grava o arquivo. Escrever no terminal daqui (a marca no título, por exemplo) cai no meio do
     # desenho da tela do claude e suja a janela.
-    return f'[ -n "$TERMINAL_CLAUDE_ESTADO" ] && printf %s {estado} > "$TERMINAL_CLAUDE_ESTADO"; true'
+    valor = '"${TERMINAL_CLAUDE_INICIO:-parada}"' if estado == "inicio" else estado
+    return f'[ -n "$TERMINAL_CLAUDE_ESTADO" ] && printf %s {valor} > "$TERMINAL_CLAUDE_ESTADO"; true'
 
 
 def travar(arquivo):
@@ -122,12 +123,13 @@ def lancador(t, base, cfg, args):
         "for v in $(env | sed -n 's/^\\(CLAUDE[A-Za-z0-9_]*\\)=.*/\\1/p') AI_AGENT; do unset \"$v\"; done; unset v",
         # Só exporta se a sessão tem: CLAUDE_CONFIG_DIR=~/.claude faria o claude ler outro .claude.json.
         *([f"export CLAUDE_CONFIG_DIR={q(cfg)}"] if cfg else []),
-        f"export TERMINAL_CLAUDE_ESTADO={q(base + '.estado')}",
+        f"export TERMINAL_CLAUDE_ESTADO={q(base + '.estado')} "
+        f"TERMINAL_CLAUDE_INICIO={'trabalhando' if t.get('prompt') else 'parada'}",
         "clear",
         "caffeinate -ims " + " ".join(map(q, args)),
         # O claude já saiu e não desenha mais nada: aqui dá pra escrever o título sem sujar a tela.
         f"printf encerrada > \"$TERMINAL_CLAUDE_ESTADO\"; printf '\\033]0;%s\\007' {q(t['titulo'] + ' · encerrada')}",
-        "unset TERMINAL_CLAUDE_ESTADO",
+        "unset TERMINAL_CLAUDE_ESTADO TERMINAL_CLAUDE_INICIO",
     ]) + "\n"
 
 

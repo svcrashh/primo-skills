@@ -6,7 +6,9 @@ Uso: terminais.py abrir [pasta ...] [-n N] [--prompt TEXTO]... [--lote trilhas.j
                         [--modelo M] [--esforco E] [--modo MODO] [--monitor M]
                         [--worktree] [--continuar] [--dry-run]
      terminais.py status [--todas]
+     terminais.py esperar [--minutos N]
      terminais.py ver <id>
+     terminais.py limpeza [pasta --feita | pasta --adiar | --nunca | --perguntar]
      terminais.py fechar [--listar] [--todas] [--forcar] [id ...]
 
 Um só motor para os perfis ~/.claude, ~/.claude-devin (via link) e ~/.claude-insiders: a janela
@@ -40,6 +42,9 @@ else:
 
 SESSAO = os.environ.get("CLAUDE_CODE_SESSION_ID", "sem-sessao")
 CAMPOS = {"titulo", "prompt", "pasta", "modelo", "esforco", "worktree"}
+# Depois de tantos lotes ou dias de uso numa pasta, o abrir lembra de perguntar pela limpeza dos .md
+# que as trilhas deixam pelo projeto. Quem responde "agora não" volta a ser perguntado em LIMPEZA_ADIA dias.
+LIMPEZA_LOTES, LIMPEZA_DIAS, LIMPEZA_ADIA = 10, 14, 3
 MARCAS = {"abrindo": "🕓", "trabalhando": "⏳", "parada": "✅", "pergunta": "❓", "encerrada": "⏹"}
 
 def hook(estado):
@@ -49,7 +54,9 @@ def hook(estado):
 # Vai no --settings de cada janela: é daqui que o status sabe em que pé está cada trilha.
 HOOKS = {"hooks": {
     # A janela nasce "abrindo" e só sai disso aqui: presa na tela de confiar na pasta, fica nele.
-    "SessionStart": [{"matcher": "startup|resume", "hooks": hook("parada")}],
+    # "inicio" grava "trabalhando" na janela que nasceu com prompt e "parada" na que nasceu vazia: se
+    # passasse por "parada" antes do prompt entrar, o esperar podia voltar cedo demais.
+    "SessionStart": [{"matcher": "startup|resume", "hooks": hook("inicio")}],
     "UserPromptSubmit": [{"hooks": hook("trabalhando")}],
     "Stop": [{"hooks": hook("parada")}],
     "PreToolUse": [{"matcher": "AskUserQuestion", "hooks": hook("pergunta")}],
@@ -144,7 +151,7 @@ def registro_vivo():
     donos = {c[5] for c in linhas}
     if so.CACHE.is_dir():
         for f in so.CACHE.iterdir():
-            if f.name != "hooks.json" and str(f.with_suffix("")) not in donos:
+            if f.name not in ("hooks.json", "uso.json") and str(f.with_suffix("")) not in donos:
                 f.unlink()
     return linhas
 
@@ -261,6 +268,7 @@ def cmd_abrir(a):
             Path(base + ".estado").write_text("abrindo", encoding="utf-8")
             Path(base + ".json").write_text(json.dumps({
                 "titulo": t["titulo"], "sessao": t["sessao"], "config": cfg, "pasta": str(t["pasta"]), "args": args,
+                "inicio": "trabalhando" if t.get("prompt") else "parada",
             }), encoding="utf-8")
             jid, marca = so.abrir(t, base, cfg, args, destino)
             with so.REGISTRO.open("a", encoding="utf-8") as f:
@@ -271,6 +279,74 @@ def cmd_abrir(a):
             organizar.aplicar(outras)
             so.ativar(abertas)
             print(f"{len(trilhas)} janela(s) aberta(s).")
+            contar_lote({str(t["pasta"]) for t in trilhas})
+
+
+def ler_uso():
+    """{"nunca": não perguntar mais, "pastas": {pasta: {"lotes", "desde", "adiado"}}}"""
+    arquivo = so.CACHE / "uso.json"
+    uso = json.loads(arquivo.read_text(encoding="utf-8")) if arquivo.exists() else {}
+    uso.setdefault("pastas", {})
+    return uso
+
+
+def gravar_uso(uso):
+    so.CACHE.mkdir(parents=True, exist_ok=True)
+    (so.CACHE / "uso.json").write_text(json.dumps(uso, ensure_ascii=False, indent=1), encoding="utf-8")
+
+
+def dias_desde(data):
+    return (time.time() - time.mktime(time.strptime(data, "%Y-%m-%d"))) / 86400
+
+
+def contar_lote(pastas):
+    """Soma um lote em cada pasta e avisa quando já é hora de perguntar pela limpeza."""
+    uso = ler_uso()
+    for pasta in sorted(pastas):
+        u = uso["pastas"].setdefault(pasta, {"lotes": 0, "desde": time.strftime("%Y-%m-%d")})
+        u["lotes"] += 1
+        if "adiado" in u:
+            hora_de_perguntar = dias_desde(u["adiado"]) >= LIMPEZA_ADIA
+        else:
+            hora_de_perguntar = u["lotes"] >= LIMPEZA_LOTES or dias_desde(u["desde"]) >= LIMPEZA_DIAS
+        if hora_de_perguntar and not uso.get("nunca"):
+            q = shlex.quote(pasta)
+            print(f"Aviso: {u['lotes']} lote(s) em {pasta} desde {u['desde']} sem limpeza. Pergunta se é pra limpar "
+                  f"os .md que as trilhas deixaram lá e registra a resposta: \"limpeza {q} --feita\" (limpou), "
+                  f"\"limpeza {q} --adiar\" (agora não: pergunta de novo em {LIMPEZA_ADIA} dias) ou "
+                  "\"limpeza --nunca\" (não perguntar mais).")
+    gravar_uso(uso)
+
+
+def cmd_limpeza(a):
+    """Registra a resposta à pergunta da limpeza; sem nada, mostra a conta de cada pasta."""
+    if bool(a.pasta) != bool(a.feita or a.adiar):
+        sys.exit("Com a pasta, diz o que houve: --feita (limpou) ou --adiar (agora não). "
+                 "Sem pasta: nada (mostra a conta), --nunca ou --perguntar.")
+    with trava():
+        uso = ler_uso()
+        pasta = str(Path(os.path.expanduser(a.pasta)).resolve()) if a.pasta else None
+        if a.feita:
+            uso["pastas"].pop(pasta, None)
+            print(f"Conta de {pasta} zerada.")
+        elif a.adiar:
+            uso["pastas"].setdefault(pasta, {"lotes": 0, "desde": time.strftime("%Y-%m-%d")})["adiado"] = time.strftime("%Y-%m-%d")
+            print(f"Anotado: volto a perguntar pela limpeza de {pasta} daqui a {LIMPEZA_ADIA} dias.")
+        elif a.nunca:
+            uso["nunca"] = True
+            print("Anotado: não pergunto mais pela limpeza. Para voltar a perguntar: limpeza --perguntar")
+        elif a.perguntar:
+            uso.pop("nunca", None)
+            print("Anotado: volto a perguntar pela limpeza.")
+        else:
+            for nome, u in sorted(uso["pastas"].items()):
+                print(f"{u['lotes']} lote(s) desde {u['desde']}" + (f", adiado em {u['adiado']}" if "adiado" in u else "") + f"  ·  {nome}")
+            if uso.get("nunca"):
+                print("A pergunta da limpeza está desligada (limpeza --perguntar liga de novo).")
+            elif not uso["pastas"]:
+                print("Nenhum lote contado ainda.")
+            return
+        gravar_uso(uso)
 
 
 def ha(instante):
@@ -278,17 +354,76 @@ def ha(instante):
     return f"{s} s" if s < 60 else f"{s // 60} min" if s < 3600 else f"{s // 3600} h {s % 3600 // 60} min"
 
 
-def cmd_status(a):
+def ler_estado(arquivo):
+    # O hook esvazia o arquivo antes de escrever: lido bem nessa hora, vem vazio.
+    for _ in range(5):
+        if nome := arquivo.read_text(encoding="utf-8").strip():
+            return nome
+        time.sleep(0.05)
+    return "abrindo"
+
+
+def situacao(todas=False):
+    """(id, estado, quando mudou, título, pasta) de cada janela aberta por esta sessão."""
+    janelas = []
+    # Lê os arquivos com a trava: outra chamada pode estar limpando o cache de uma janela que fechou.
     with trava():
-        linhas = [c for c in registro_vivo() if a.todas or c[3] == SESSAO]
-    if not linhas:
+        for c in registro_vivo():
+            if todas or c[3] == SESSAO:
+                estado = Path(c[5] + ".estado")
+                titulo = json.loads(Path(c[5] + ".json").read_text(encoding="utf-8"))["titulo"]
+                janelas.append((c[0], ler_estado(estado), estado.stat().st_mtime, titulo, c[2]))
+    return janelas
+
+
+def mostrar(janelas):
+    for jid, estado, desde, titulo, pasta in janelas:
+        print(f"{jid}  {MARCAS[estado]} {estado} há {ha(desde)}  ·  {titulo}  ·  {pasta}")
+
+
+def cmd_status(a):
+    janelas = situacao(a.todas)
+    if not janelas:
         print("Nenhuma janela aberta" + ("." if a.todas else " por esta sessão (--todas mostra as das outras)."))
+    mostrar(janelas)
+
+
+# Janela que não sai de "abrindo" está parada na tela de confiar na pasta: não conta como trabalho.
+ABRINDO_DEMAIS = 90
+
+
+def presa(estado, desde):
+    return estado == "abrindo" and time.time() - desde >= ABRINDO_DEMAIS
+
+
+def cmd_esperar(a):
+    """Segura até as janelas desta sessão pararem de trabalhar ou uma delas fazer uma pergunta.
+
+    É como o Claude que abriu as janelas fica de olho nelas sem perguntar o estado a toda hora:
+    roda isto em segundo plano e é avisado quando volta.
+    """
+    ja_perguntavam = {j[0] for j in situacao() if j[1] == "pergunta"}
+    fim = time.time() + a.minutos * 60
+    while True:
+        janelas = situacao()
+        perguntas = [j for j in janelas if j[1] == "pergunta" and j[0] not in ja_perguntavam]
+        ocupadas = [j for j in janelas if j[1] == "trabalhando" or (j[1] == "abrindo" and not presa(j[1], j[2]))]
+        if perguntas or not ocupadas or time.time() >= fim:
+            break
+        time.sleep(3)
+    if not janelas:
+        print("Nenhuma janela aberta por esta sessão.")
         return
-    for c in linhas:
-        estado = Path(c[5] + ".estado")
-        nome = estado.read_text(encoding="utf-8").strip()
-        titulo = json.loads(Path(c[5] + ".json").read_text(encoding="utf-8"))["titulo"]
-        print(f"{c[0]}  {MARCAS[nome]} {nome} há {ha(estado.stat().st_mtime)}  ·  {titulo}  ·  {c[2]}")
+    mostrar(janelas)
+    for j in perguntas:
+        print(f"A janela {j[0]} ({j[3]}) fez uma pergunta e espera a resposta nela.")
+    for j in janelas:
+        if presa(j[1], j[2]):
+            print(f"A janela {j[0]} ({j[3]}) não saiu de \"abrindo\": deve estar na tela de confiar na pasta.")
+    if ocupadas:
+        print("Ainda há janela trabalhando" + ("." if perguntas else f" depois de {a.minutos:g} min.") + " Roda o esperar de novo.")
+    else:
+        print("Nenhuma janela trabalhando: colhe com `ver <id>` e fecha as que terminaram.")
 
 
 def ultima_resposta(meta):
@@ -312,7 +447,7 @@ def cmd_ver(a):
     if not linha:
         sys.exit(f"A janela {a.id} não está no registro (já fechou?). O status lista as abertas.")
     meta = json.loads(Path(linha[5] + ".json").read_text(encoding="utf-8"))
-    print(f"{meta['titulo']} · {Path(linha[5] + '.estado').read_text(encoding='utf-8').strip()}\n")
+    print(f"{meta['titulo']} · {ler_estado(Path(linha[5] + '.estado'))}\n")
     # Sem resposta gravada ainda, o que dá pra ver é a tela (onde o sistema deixa ler).
     print(ultima_resposta(meta) or so.tela(a.id) or "A trilha ainda não gravou nenhuma resposta.")
 
@@ -346,6 +481,15 @@ def main():
     st = sub.add_parser("status")
     st.add_argument("--todas", action="store_true")
     st.set_defaults(func=cmd_status)
+    es = sub.add_parser("esperar")
+    es.add_argument("--minutos", type=float, default=30)
+    es.set_defaults(func=cmd_esperar)
+    li = sub.add_parser("limpeza")
+    li.add_argument("pasta", nargs="?")
+    resposta = li.add_mutually_exclusive_group()
+    for opcao in ("--feita", "--adiar", "--nunca", "--perguntar"):
+        resposta.add_argument(opcao, action="store_true")
+    li.set_defaults(func=cmd_limpeza)
     ve = sub.add_parser("ver")
     ve.add_argument("id", type=int)
     ve.set_defaults(func=cmd_ver)

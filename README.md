@@ -34,6 +34,43 @@ Se já existir uma pasta de verdade com o nome da skill, o instalador não mexe 
 
 Depois de instalar, não mova nem apague esta pasta: as skills apontam para ela.
 
+## Fazer o Claude usar sozinho
+
+Instalada, a skill só roda quando você pede ("abre 3 terminais", `/terminal-claude`). Para o Claude dividir o trabalho por conta própria, cole o bloco abaixo no seu `~/.claude/CLAUDE.md` e **troque o número do limite**.
+
+```markdown
+## Terminais em paralelo — /terminal-claude
+
+Quando o trabalho se divide em partes grandes e independentes, usa a skill `/terminal-claude` por conta própria: uma janela de terminal por parte, cada uma com um Claude e o seu prompt, todas numa chamada só. Não precisa eu pedir.
+
+- **Limite: no máximo 3 janelas abertas ao mesmo tempo.** Se o trabalho pede mais, faz em levas: espera uma terminar, colhe o resultado, fecha e abre a próxima. Passar do limite, só se eu pedir na hora.
+- Antes de abrir, me diz em uma linha quantas janelas vão subir e o que cada uma faz.
+- Você é o supervisor: eu falo com você, e você abre as janelas, fica de olho nelas, colhe o resultado de cada uma, fecha e me conta. Se uma janela fizer uma pergunta, me avisa qual.
+- Terminal é para trabalho de verdade (implementar, migrar, refatorar), que leva mais que alguns minutos. Para busca, leitura ou conferência curta, usa subagent. Se a tarefa cabe numa sessão, não abre nada.
+- Duas partes que mexem no mesmo arquivo não vão em paralelo: viram uma só, ou cada uma no seu worktree.
+- Não cria `PROMPT.md`, `HANDOFF.md` nem relatório em `.md` no projeto para passar trabalho: o prompt vai inteiro para a janela e o resultado volta na resposta.
+```
+
+### Quem fica de olho
+
+Você conversa com um Claude só, o da sua sessão. É ele que abre as janelas, espera, lê a resposta de cada uma, fecha e te conta o resultado. Você não precisa ir de janela em janela; só entra numa quando o Claude de lá faz uma pergunta, e o supervisor te avisa qual.
+
+### Que limite pôr
+
+Cada janela é uma sessão inteira do Claude, gastando do mesmo plano ou da mesma chave. Três janelas trabalhando gastam mais ou menos o triplo de uma no mesmo tempo.
+
+- **Comece com 2 ou 3.** Use alguns dias, olhe o consumo com `/usage` no Claude Code e só então suba.
+- **Plano por assinatura:** mais janelas fazem você bater no limite de uso mais cedo.
+- **API paga por uso:** a conta sobe na mesma proporção.
+- **As janelas rodam em bypass**, sem pedir permissão a cada ação. Mais janelas é mais coisa acontecendo sem você olhar.
+- **Sem limite:** troque a linha por "Sem limite de janelas: abre quantas o trabalho pedir." Só faz sentido com folga no plano.
+
+O limite é uma regra que o Claude segue, não uma trava no programa: se você pedir 8 janelas na hora, ele abre 8. Sem o bloco no CLAUDE.md, o Claude não passa de 3 por conta própria.
+
+### Limpeza
+
+Depois de 10 lotes ou 14 dias de uso num projeto, o Claude pergunta se você quer limpar os `.md` que as trilhas deixaram por lá. Ele mostra a lista e só apaga o que você confirmar. Se você disser "agora não", ele pergunta de novo em 3 dias; se disser para não perguntar mais, ele para.
+
 ## Requisitos
 
 - **Mac:** Terminal.app e `python3`.

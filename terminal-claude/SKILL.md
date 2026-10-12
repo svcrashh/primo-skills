@@ -19,8 +19,10 @@ arquivo. A janela nasce no perfil da sessão que chamou. Mudou algo? Muda só aq
 T=~/.claude/skills/terminal-claude/scripts/terminais.py
 python3 $T abrir  [pasta ...] [opções]     # abre as janelas
 python3 $T status [--todas]                # em que pé está cada uma
+python3 $T esperar                         # segura até pararem de trabalhar (pra rodar em segundo plano)
 python3 $T ver <id>                        # a última resposta de uma trilha
 python3 $T fechar [id ...]                 # fecha as que esta sessão abriu
+python3 $T limpeza                         # conta de lotes por pasta, pro aviso de limpeza
 ```
 
 ```powershell
@@ -42,8 +44,20 @@ Quando o pedido é dividir um trabalho, antes de abrir:
   paralelo: viram uma só, ou cada uma no seu worktree (`"worktree": true`).
 - **O prompt de cada trilha se basta.** O Claude novo não sabe nada desta conversa (a não ser com
   `--continuar`): diz o objetivo, os arquivos, o que já foi descartado, o que entregar e como
-  conferir. Prompt grande pode apontar para um arquivo ("Leia docs/planos/X.md e faça a trilha A").
+  conferir.
+- **O prompt vai inteiro no lote, do tamanho que for.** Não cria `PROMPT.md`, `HANDOFF.md` nem
+  `prompt-*.md` no projeto pra passar o trabalho: é isso que deixa .md espalhado pelos projetos. Só
+  aponta para um arquivo quando ele já existe e faz parte do projeto.
+- **A trilha não deixa relatório em arquivo.** Pede no prompt que o resultado venha na resposta
+  final dela, que você colhe com `ver`. Nada de `RESUMO.md` ou `RELATORIO.md` no projeto.
 - **Título curto por trilha** ("A · schema"). É o que aparece na janela e no `status`.
+
+**Quantas janelas.** Vale o limite que o CLAUDE.md de quem usa disser (ou "sem limite", se for o
+que ele diz). Se o CLAUDE.md não fala disso e ninguém pediu um número, não passa de 3 abertas ao
+mesmo tempo por conta própria. O que não couber vai em levas: espera uma terminar, colhe, fecha e
+abre a próxima. Cada janela é uma sessão inteira do Claude gastando do mesmo plano, então N janelas
+gastam mais ou menos N vezes. Antes de abrir, diz em uma linha quantas vão subir e o que cada uma
+faz.
 
 Escreve as trilhas num JSON (com o Write, no scratchpad) e abre todas de uma vez:
 
@@ -100,8 +114,15 @@ de um `.code-workspace` aberto no VS Code, as outras pastas dele entram sozinhas
 
 ## 3. Acompanhar e fechar — obrigatório
 
-Janela aberta é responsabilidade de quem abriu. Pedi em 04/10/2026 que nenhuma sessão deixe
-terminal órfão na tela: acompanha o que abriu, colhe o resultado e fecha.
+Quem abriu é o supervisor. Eu converso com você, e você cuida das janelas: abre, fica de olho,
+colhe o resultado de cada uma, fecha e me conta o que cada trilha entregou. Não me manda ir olhar
+janela por janela. Pedi em 04/10/2026 que nenhuma sessão deixe terminal órfão na tela.
+
+**Ficar de olho sem perguntar o estado a toda hora:** logo depois de abrir, roda `esperar` em
+segundo plano (no Bash, `run_in_background`; você é chamado de volta quando ele termina) e segue
+com o que não depende das trilhas. Ele volta quando nenhuma janela está mais trabalhando, quando
+uma delas faz uma pergunta, ou depois de `--minutos` (30 se não disser). Voltou com janela ainda
+trabalhando? Trata o que ele mostrou e roda de novo.
 
 ```
 $ python3 $T status
@@ -113,7 +134,8 @@ $ python3 $T status
   pasta" (pasta que o claude nunca abriu; a home pede toda vez) esperando eu confirmar.
 - `trabalhando` — no meio de um turno.
 - `parada` — terminou o turno e espera o próximo prompt. É a hora de colher.
-- `pergunta` — o Claude de lá me fez uma pergunta e espera a resposta na janela.
+- `pergunta` — o Claude de lá fez uma pergunta e espera a resposta na janela. Me avisa qual
+  janela e qual pergunta; quem responde sou eu, nela.
 - `encerrada` — o claude saiu; sobrou só o shell.
 
 Na própria janela o título mostra o mesmo: `◐ A · schema` girando enquanto trabalha, `✳ A · schema`
@@ -136,7 +158,31 @@ quando para.
 
 `status --todas` e `fechar --todas` alcançam as janelas das outras sessões. Só com pedido meu.
 
-## 4. Responder
+## 4. Limpar as sobras
+
+Com o tempo as trilhas deixam .md pelo projeto (prompts, handoffs, resumos). O `abrir` conta os
+lotes por pasta e, depois de 10 lotes ou 14 dias de uso, solta um `Aviso:` de limpeza. Quando ele
+aparecer, pergunta uma vez, no fim da resposta: "Quer que eu limpe os .md que as trilhas deixaram
+em <pasta>?" e registra o que eu disser:
+
+- **Sim:** limpa (abaixo) e roda `limpeza <pasta> --feita`. A conta zera.
+- **Agora não:** `limpeza <pasta> --adiar`. A skill anota e pergunta de novo em 3 dias.
+- **Não pergunta mais:** `limpeza --nunca`. Vale para todas as pastas; `limpeza --perguntar`
+  desfaz.
+
+Sempre oferece as três saídas na pergunta. `limpeza` sem nada mostra a conta de cada pasta.
+
+Como limpar:
+
+1. Procura as sobras: `PROMPT*.md`, `HANDOFF*.md`, `prompt-*.md`, pastas `prompts/`, `trilhas/` e
+   `_passagem/`, e resumos ou relatórios que uma trilha escreveu. Olha os soltos e os que já estão
+   no git.
+2. Lê cada um antes de julgar. README, CLAUDE.md, documentação do produto e plano que eu pedi pra
+   guardar não são sobra. Na dúvida, fica.
+3. Me mostra a lista, uma linha por arquivo dizendo o que é, e só apaga o que eu confirmar.
+4. Em repositório git, apaga com `git rm` e faz um commit só da limpeza.
+
+## 5. Responder
 
 Uma linha por janela, como a saída do `abrir` (título, pasta, monitor e quadrado), mais os `Aviso:`
 se vieram e o perfil usado. Se falhar por permissão de Automação (erro -1743), repassa a mensagem

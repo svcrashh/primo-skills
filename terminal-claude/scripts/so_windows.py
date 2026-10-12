@@ -54,7 +54,8 @@ def comando_hook(estado):
 def marcar(a):
     """Chamado pelos hooks: grava o estado da trilha. Não escreve no terminal, pra não sujar a tela."""
     if destino := os.environ.get("TERMINAL_CLAUDE_ESTADO"):
-        Path(destino).write_text(a.estado, encoding="utf-8")
+        estado = os.environ.get("TERMINAL_CLAUDE_INICIO", "parada") if a.estado == "inicio" else a.estado
+        Path(destino).write_text(estado, encoding="utf-8")
 
 
 def travar(arquivo):
@@ -116,7 +117,8 @@ def rodar(a):
     if meta["config"]:
         env["CLAUDE_CONFIG_DIR"] = meta["config"]
     win.manter_acordado()
-    subprocess.call(meta["args"], cwd=meta["pasta"], env={**env, "TERMINAL_CLAUDE_ESTADO": a.base + ".estado"})
+    subprocess.call(meta["args"], cwd=meta["pasta"],
+                    env={**env, "TERMINAL_CLAUDE_ESTADO": a.base + ".estado", "TERMINAL_CLAUDE_INICIO": meta["inicio"]})
     win.manter_acordado(False)
     Path(a.base + ".estado").write_text("encerrada", encoding="utf-8")
     subprocess.call([shutil.which("pwsh") or "powershell", "-NoLogo"], cwd=meta["pasta"], env=env)
