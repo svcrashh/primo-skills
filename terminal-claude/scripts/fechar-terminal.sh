@@ -13,10 +13,15 @@
 #   fechar-terminal.sh --todas         fecha as janelas registradas de qualquer sessão
 #   fechar-terminal.sh --listar        só mostra o que seria fechado
 #   fechar-terminal.sh --forcar ...    fecha mesmo segurando servidor (derruba o servidor junto)
+#
+# O registro aqui é só lido. Quem tira dele a janela fechada é o terminais.py, com a trava: o
+# `terminais.py fechar` faz isso logo depois deste script, e qualquer outra chamada dele também.
+# Regravado daqui, sem a trava, sumia a linha da janela que outra sessão abria na mesma hora.
 set -u
 REGISTRO=/private/tmp/claude-terminais-abertos.tsv
 sessao=${CLAUDE_CODE_SESSION_ID:-sem-sessao}
 forcar=0; listar=0; todas=0; ids=()
+typeset -A registrado   # id -> tty, das janelas que vieram do registro
 for a in "$@"; do
   case "$a" in
     --forcar) forcar=1 ;;
@@ -30,7 +35,7 @@ done
 if (( ${#ids} == 0 )) && [[ -f $REGISTRO ]]; then
   while IFS=$'\t' read -r id tty pasta ses resto; do
     [[ -z ${id:-} ]] && continue
-    if (( todas )) || [[ ${ses:-} == $sessao ]]; then ids+=("$id"); fi
+    if (( todas )) || [[ ${ses:-} == $sessao ]]; then ids+=("$id"); registrado[$id]=$tty; fi
   done < $REGISTRO
 fi
 if (( ${#ids} == 0 )); then echo "nenhuma janela registrada para fechar"; exit 0; fi
@@ -44,6 +49,16 @@ ttys=$(/usr/bin/osascript -e 'tell application "Terminal"
   end repeat
   return out
 end tell' 2>/dev/null)
+tty_de() { echo "$ttys" | awk -v i="$1" '$1==i{print $2}' }
+
+# A linha de uma janela que já fechou fica no registro até o terminais.py passar: sai da lista
+# calada, que ela não é novidade para ninguém.
+if (( ${#registrado} )); then
+  abertas=()
+  for id in $ids; do [[ -n $(tty_de $id) ]] && abertas+=("$id"); done
+  ids=($abertas)
+  if (( ${#ids} == 0 )); then echo "nenhuma janela registrada para fechar"; exit 0; fi
+fi
 
 # pid -> porta em LISTEN (uma varredura só) e a árvore pid/ppid da máquina.
 listen=$(lsof -nP -iTCP -sTCP:LISTEN -Fpn 2>/dev/null | awk '/^p/{pid=substr($0,2)} /^n/{print pid" "substr($0,2)}')
@@ -51,8 +66,14 @@ arvore=$(ps -axo pid=,ppid=)
 
 fechar=(); pulou=0
 for id in $ids; do
-  tty=$(echo "$ttys" | awk -v i="$id" '$1==i{print $2}')
+  tty=$(tty_de $id)
   if [[ -z $tty ]]; then echo "janela $id: não existe mais (já fechada)"; continue; fi
+  # O Terminal recomeça a contagem dos ids quando reabre: o id de uma linha velha pode ser hoje o
+  # de outra janela. A do registro é a que tem o tty do registro.
+  if [[ -n ${registrado[$id]:-} && $tty != ${registrado[$id]} ]]; then
+    echo "janela $id: no registro o tty dela é ${registrado[$id]} e agora é $tty (o id passou para outra janela, ou há outra aba na frente) — não fechei."
+    continue
+  fi
   donos=$(ps -axo pid=,tty= | awk -v t="${tty#/dev/}" '$2==t{print $1}')
   servidores=""
   while read -r spid porta; do
@@ -128,7 +149,6 @@ for id in $tentadas; do
   else
     echo "janela $id fechada"
     fechadas=$((fechadas + 1))
-    if [[ -f $REGISTRO ]]; then grep -v "^$id	" $REGISTRO > $REGISTRO.tmp 2>/dev/null; mv $REGISTRO.tmp $REGISTRO 2>/dev/null; fi
   fi
 done
 echo "$fechadas janela(s) fechada(s)$( (( pulou )) && echo ', outras preservadas por segurarem servidor')"

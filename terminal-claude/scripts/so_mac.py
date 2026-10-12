@@ -12,6 +12,7 @@ STORAGES = [
 ]
 # id, tty, pasta, sessão que abriu, data, base dos arquivos da janela. O fechar-terminal.sh lê daqui.
 REGISTRO = Path("/private/tmp/claude-terminais-abertos.tsv")
+FECHAR = Path(__file__).with_name("fechar-terminal.sh")
 # Por janela: <base>.sh (o que ela roda), <base>.estado (gravado pelos hooks), <base>.json e
 # <base>.avisado (a parada que o esperar já contou).
 CACHE = Path.home() / "Library/Caches/terminal-claude"
@@ -163,5 +164,8 @@ def tela(jid):
     return osa("-e", f'tell application "Terminal" to return contents of selected tab of window id {jid}').rstrip()
 
 
-def fechar(args, _registro, _sessao):
-    os.execv("/bin/zsh", ["zsh", str(Path(__file__).with_name("fechar-terminal.sh")), *args])
+def fechar(args, registro, _sessao):
+    codigo = subprocess.run(["/bin/zsh", str(FECHAR), *args]).returncode
+    # O script só lê o registro. A janela que ele fechou sai aqui, com a trava.
+    registro()
+    sys.exit(codigo)

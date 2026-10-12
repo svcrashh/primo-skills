@@ -147,7 +147,7 @@ def registro_vivo():
     agora = "".join("\t".join(c) + "\n" for c in linhas)
     if agora != antes:
         # Troca o arquivo de uma vez: o fechar-terminal.sh lê sem a trava e, pego no meio de uma
-        # escrita, regravaria o registro sem as janelas de todo mundo.
+        # escrita, não acharia as janelas da sessão.
         novo = Path(f"{so.REGISTRO}.novo")
         novo.write_text(agora, encoding="utf-8")
         os.replace(novo, so.REGISTRO)
