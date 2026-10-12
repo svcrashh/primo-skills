@@ -236,7 +236,9 @@ Nos dois sistemas:
   dela são apagados. Só sai com a morte confirmada: a leitura não enxergar a janela não basta (em
   12/10/2026 uma janela foi esquecida assim, com o claude dela rodando). No Mac a prova é o tty:
   outra janela já o usa, ou ele não é mais de aba nenhuma do Terminal. No Windows é o processo da
-  janela: já não roda, ou o número dele passou para outro programa.
+  janela: já não roda, ou o número dele passou para outro programa. Só o `terminais.py` escreve
+  no registro, e com uma trava: várias sessões usam o mesmo arquivo, e regravado sem ela sumia a
+  linha da janela que outra sessão abria na mesma hora.
 - **Grade:** as janelas do lote são planejadas juntas e já nascem cada uma no seu quadrado; enche
   um monitor e passa para o próximo com vaga. As regras (tamanhos, qual monitor, quando reorganiza)
   estão em `~/.claude/skills/terminal-organizar/SKILL.md`, e o motor de lá é importado daqui.
@@ -254,10 +256,16 @@ Nos dois sistemas:
 - O `osascript` roda com ambiente mínimo: se for ele quem abrir o Terminal.app, o app não herda o
   ambiente desta sessão.
 - `scripts/open-terminal.sh` é o nome antigo: a `videostudio-app` ainda chama por ele, e ele só
-  repassa ao `terminais.py`. O `fechar` é o `scripts/fechar-terminal.sh`.
-- `scripts/teste_mac_simulado.py` exercita o registro e o `esperar` com o Terminal simulado, sem
-  abrir janela nem tocar no registro de verdade. Roda depois de mexer no `so_mac.py` ou no
-  `terminais.py`.
+  repassa ao `terminais.py`.
+- O `fechar` é o `scripts/fechar-terminal.sh`, que outros projetos também chamam pelo nome. Ele só
+  lê o registro: a janela que fechou sai de lá pelo `terminais.py`, logo depois do script no
+  `fechar`, ou na próxima chamada dele quando o script foi chamado pelo nome. Sem ids ele pula
+  calado a linha de janela que já fechou, e não fecha a janela cujo tty não é o do registro.
+- A conferência do fim do `fechar` conta a janela como aberta se ela tem aba. Não olha o
+  `visible`: ele é falso também na janela minimizada ou escondida, que continua aberta.
+- `scripts/teste_mac_simulado.py` exercita o registro, o `esperar` e o `fechar` com o Terminal
+  simulado, sem abrir janela nem tocar no registro de verdade. Roda depois de mexer no
+  `so_mac.py`, no `terminais.py` ou no `fechar-terminal.sh`.
 
 ### No Windows
 
