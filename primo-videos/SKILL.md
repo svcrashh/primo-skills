@@ -1,6 +1,6 @@
 ---
 name: primo-videos
-description: Use when someone asks, in Portuguese or English, for a video of their product, project or idea without narration — "faz um vídeo", "vídeo do produto", "vídeo tutorial", "vídeo explicativo", "vídeo sem voz", "só com música", "anima o logo", "vinheta", "corte para Reels", "catálogo de estilos de vídeo", "make a video", "product video", "explainer video", "tutorial video", "motion", "motion design", "motion graphics", "sting", "animate the logo", "logo animation", "video without voice", "music only", "video style catalog", "/primo-videos". The brand comes from the user's own project or site, never from a built-in one. It makes videos without narration, told by on-screen text, an original soundtrack and sound effects. Before producing, it always asks whether the person wants to talk the video through (topics and direction) and approve a prompt; each video varies from the brand's previous ones. It replies in the user's language.
+description: Use when someone asks, in Portuguese or English, for a video of their product, project or idea, with or without narration — "faz um vídeo", "vídeo do produto", "vídeo tutorial", "vídeo explicativo", "vídeo sem voz", "só com música", "vídeo com voz", "vídeo narrado", "locução", "voz em off", "anima o logo", "vinheta", "corte para Reels", "catálogo de estilos de vídeo", "make a video", "product video", "explainer video", "tutorial video", "narrated video", "voiceover", "motion", "motion design", "motion graphics", "sting", "animate the logo", "logo animation", "video without voice", "music only", "video style catalog", "/primo-videos". The brand comes from the user's project or site, never a built-in one. By default nobody speaks: on-screen text, original music and effects tell it; a voiceover (ElevenLabs) and generated images (OpenAI) are optional, paid with the person's own key and approved before any spend. It first asks whether to talk the video through and approve a prompt. Replies in the user's language.
 ---
 
 # /primo-videos
@@ -45,6 +45,11 @@ made in the person's brand**, opened side by side (`catalog.mjs open --direction
 the chat, their table; **(3)** the whole prompt, for the ok. Only produce after the ok. **The only exception:** the
 message itself says the prompt is already approved or asks not to be asked ("just do it").
 
+**With or without narration goes in that same message** when the request does not say it: a second question, with
+your suggestion first (`recipes/prompt.md` §1). A tutorial, an explainer and a video in chapters ask for narration; a
+sting, an animated logo, a teaser and a short cut for Reels are better without it. A voiceover is never an assumption:
+without a yes, the video has no voice and is made exactly as always. The yes turns on the steps in "Voiceover", below.
+
 **"Show me the styles", "the catalog", "what video styles are there?"** is not a video request: run
 `node $SKILL/scripts/catalog.mjs open` (opens the list of the styles the engine can make, with what each one is for and
 what it needs, and prints the path), show in the chat the table from `node $SKILL/scripts/catalog.mjs list --format md`
@@ -67,6 +72,13 @@ when the request seems clear ("mix concept 1 with 3" still gets its stills first
   patch / say → wait`. **Never animate a scene before its "Approve still"**, and never render it final before its
   "Approve preview". If the board cannot open, show the files (`open <file>`; in Copilot, the path and one line on what
   it shows) and ask in the chat.
+- **With a voiceover, the board starts earlier:** the script → "Approve script" → the voice, chosen by ear (the same line
+  read by two or three voices) → then, per scene, the still → animate → the preview with its line and the soundtrack →
+  "Approve preview". **Never generate a line before "Approve script"**: it spends credits. A video without a voice has
+  no `script` and no `narration` on the board, which works as it always did.
+- **The rule covers what is paid too:** the voiceover script, the voice, each line (heard on its scene) and each
+  generated image (marked as generated, with its cost) are shown and approved like a still. The board shows what the
+  video spent on every phase, updated after each paid call ("Paid calls", below).
 - The preview always plays with its sound: the draft with the soundtrack mixed in, never the silent cut. In the
   chapters engine, `out/assembled-*.mp4` is silent; the preview to open comes from
   `node $SKILL/scripts/chapters/assemble.mjs <project> --soundtrack --deliver <folder> --name preview`.
@@ -157,7 +169,8 @@ This skill runs the same in Copilot chat (VS Code, Agent mode) and in Claude Cod
 This skill has **no brand built in**. Every video takes its look, its words and its sound from the product at hand:
 the person's repository, their site, the files and the rules they show. Everything runs on the person's computer
 (motion, 3D, soundtrack, effects, render, refinement); the thesis and the critic are fresh Claude Code conversations
-(`claude -p`). Before any step of the workflow below:
+(`claude -p`). Only a voiceover and a generated image, when the person wants them, call a paid API with their own key
+("Paid calls", below). Before any step of the workflow below:
 
 1. **Read the brand, in writing.** `node $SKILL/scripts/reading.mjs <repository> --out <series or video folder>`
    collects the facts (each color with the place where it is used, fonts, radii, border or shadow, surfaces, brand
@@ -170,7 +183,7 @@ the person's repository, their site, the files and the rules they show. Everythi
    the component that writes the name: font, weight, case), the colors are the tokens with the role each one plays, the
    fonts are the product's (`scripts/fonts.mjs`), the slogan is word for word. A brand still raw, or no brand at all:
    offer two or three provisional identities and say they are provisional (`references/brand.md`, "When there is no
-   brand").
+   brand"). A generated image never stands in for a brand asset (`references/images.md`, "Never generate").
 3. **What the skill remembers about a brand** lives in `~/Documents/VideoStudio/Brands/<brand>/`
    (`VIDEOSTUDIO_BRANDS` changes the root): `kit/` (the product kit, which makes the next video start ready:
    `scripts/kit.mjs`), `profile/` (the reference profile with the approved videos: `scripts/refine.mjs profile`),
@@ -194,14 +207,17 @@ English, from the first question to the delivery report. This skill's references
 instructions and answer in the user's language. The catalog and the directions page follow the same language
 (`--lang pt` for someone who asks in Portuguese).
 
-The video's on-screen language (captions, titles, on-screen text) follows the briefing. Without one, it is the language
-of the product's own screens and site (what the reading finds); when that is unclear, the language the person asked in.
-State the assumption in one line. One language per video, always.
+The video's on-screen language (captions, titles, on-screen text, and the voice when there is one) follows the
+briefing. Without one, it is the language of the product's own screens and site (what the reading finds); when that is
+unclear, the language the person asked in. State the assumption in one line. One language per video, always.
 
-This skill makes videos without narration: the whole product video (motion, 3D, original soundtrack, sound effects,
-refinement, thesis, critic and the templates), and nobody speaks. The music is the lead, the effects land on every cut
-and the caption is the on-screen text. A request with narration, voiceover or a person presenting on camera: say in one
-line that this skill makes videos without narration, and make the video without voice.
+This skill makes the whole product video (motion, 3D, original soundtrack, sound effects, refinement, thesis, critic and
+the templates), **without narration by default**: nobody speaks, the music is the lead, the effects land on every cut
+and the caption is the on-screen text. **With narration, when the person wants it:** a voiceover read by ElevenLabs
+(`scripts/voice.mjs`), written as a script, approved and chosen by ear before any credit is spent; the caption is then
+the speech ("Voiceover", below). Nobody appears on camera: a request for a person presenting (a spokesperson, an
+avatar, someone on camera) gets one line saying this skill does not do that, and the offer of a voiceover or a video
+without voice.
 
 `$SKILL` is this skill's folder, which appears at the top when it loads. The whole engine lives in here, in the usual
 paths: `scripts/`, `assets/`, `references/`.
@@ -225,11 +241,29 @@ Below, `progress` is `node $SKILL/scripts/progress.mjs` (write the whole command
 2. **The texts** (`progress now <folder> script`): in `texts.json` (`abertura` = the title, `p1`…`pN`,
    `fechamento` = the end); the base thesis comes from the kit, only the proof scene changes. Ask the owner only about
    what, if wrong, throws the preview away; everything else is a one-line assumption. `progress done <folder> script`.
+
+   **With a voiceover** (the person said yes): a kit that kept an approved voice already set the folder up with it
+   (`voice/v1/script.json` with the voice, the takes cache, `voz` in `video.mjs` and the `voice` stage on the
+   stopwatch), and the lines go in `voice/v1/script.json` instead of `texts.json`, with the same ids.
+   `node $SKILL/scripts/voice.mjs review <folder>/voice/v1/script.json --seconds <s>` exits with 0 errors; the script
+   stage closes after the approval (step 3). A kit with no voice: the same lines also go in `voice/v1/script.json`, the
+   voice is chosen as in "Voiceover", below, and `video.mjs` gets the `voz` block (`references/voice-tutorial.md` §1).
+   A kit with a voice and a person who wants none this time: take the `voz` line out of `video.mjs` and
+   `progress skip <folder> voice` (the lines in `voice/v1/script.json` stay as the on-screen texts).
+3. **With a voiceover, the one question to the owner:** the script approved in a table (the board's Script phase, or
+   the table in the `preview` of the "Approve" option of `AskUserQuestion`), with the kit's voice already proposed, the
+   estimated seconds and credits, and what this video can still spend. `progress done <folder> script`.
 4. **The journey** in `recording/journey.mjs` (`progress now <folder> recording`), with `g.antes` on the what's-new step
-   (`references/tutorial.md`, the recorder table, when you need the API).
+   (`references/tutorial.md`, the recorder table, when you need the API). **With a voiceover, the voice in parallel**
+   (`progress now <folder> voice`): `node $SKILL/scripts/voice.mjs account` (free: what the account has left, and
+   whether it is active), then `node $SKILL/scripts/voice.mjs generate <folder>/voice/v1/script.json --out
+   <folder>/voice/v1`, saying the cost it prints (a line already in the takes cache costs 0); the board's spend is
+   updated ("Paid calls"); `progress done <folder> voice`.
 5. **The check:** `node <folder>/video.mjs --check` until ✓. It finds at once everything the compositor would refuse
-   (the short scoreboard, the long label, the before, the series, the environment).
+   (the short scoreboard, the long label, the before, the series, the environment; with a voiceover, also the opening
+   and closing lines and the word of each `g.na`, from the script, before the voice exists).
 6. **Record:** `node <folder>/video.mjs` (the barrier with 0 leaks; look at the tap sheet). `progress done <folder> recording`.
+   With a voiceover, record after `generate`: the recorder holds each step for as long as its line.
 7. **The draft:** `progress now <folder> draft`; `node $SKILL/scripts/tutorial/compose.mjs <folder> --mode draft`
    (it prints the `WebGL: …` line: report it); look at the event sheet; open the MP4. `progress done <folder> draft
    --note "preview ready"`. **The preview goes to the owner now**, with the assumptions.
@@ -256,8 +290,9 @@ in the engine goes with the preview.
    gets a short request: goal and inputs (paths), the thesis, the skill's commands, the rules and what to deliver. The
    creative direction, the contact sheet review and the final review stay with you.
 3. **Render, at most 2 at the same time**, counting this conversation and the subagents.
-4. **Nothing here is paid:** the thesis and the critic use the Claude account's quota; soundtrack, effects and render
-   run on the Mac.
+4. **Paid only when the person asks:** the thesis and the critic use the Claude account's quota; soundtrack, effects
+   and render run on the Mac. The voiceover (ElevenLabs) and the generated images (OpenAI) are the only paid calls:
+   the cost is said before, each call stays under the video's cap, and the spend is on the board ("Paid calls").
 5. **A defect in the skill is fixed in the skill folder** (`$SKILL`), and the tests run again
    (`node --test "$SKILL/tests/*.test.mjs"`).
 
@@ -281,17 +316,22 @@ final at 60 fps.
    (`recommend-style.mjs --name`), stated in one line ("From your last video: Rolling list, the series' house track,
    9:16 for Reels; tell me if this one is different."). A first video has none of that: the look is chosen by the
    person, on stills.
-3. **Parallel by default:** recording, series and identity, and soundtrack in background subagents when they do not
-   depend on each other (assembly waits for everything). Render, at most 2 at the same time.
+   **With a voiceover,** the script approval is the question that blocks the preview, because it spends credits, with
+   the voice already proposed in it: the product's approved voice (the kit, the reference profile, the series, the
+   previous video), said in one line. Two or three candidates, heard, only when there is none.
+3. **Parallel by default:** recording, series and identity, soundtrack and voice in background subagents when they do
+   not depend on each other (the voice waits for the approved script; the recording of a narrated tutorial waits for the
+   voice; assembly waits for everything). Render, at most 2 at the same time.
 4. **Progress in %, on two scales** (`node $SKILL/scripts/progress.mjs stages` shows the stages, the weights and the
    minutes):
-   - until the preview: kit and request (or reading and thesis) 10, script 15, recording 30, series and soundtrack 5,
-     draft 25 (the math is over what exists in this video);
+   - until the preview: kit and request (or reading and thesis) 10, script 15, voice 15 (only in a narrated video),
+     recording 30, series and soundtrack 5, draft 25 (the math is over what exists in this video);
    - from the preview to the final: preview refine 10 (what runs alongside it), requested adjustments 15, final render 45,
      final refine and critic 20, delivery 10.
 
-   `kit.mjs new-video` already starts the stopwatch (`start --kit`). Without a kit, start with `node
-   $SKILL/scripts/progress.mjs start <video folder> [--new] [--skip recording]`; parallel stages (voice and recording)
+   `kit.mjs new-video` already starts the stopwatch (`start --kit`, plus `--voice` when the kit has a voice). Without a
+   kit, start with `node $SKILL/scripts/progress.mjs start <video folder> [--new] [--voice] [--skip recording]` (`--voice`
+   only in a narrated video: it puts the `voice` stage on the scale); parallel stages (voice and recording)
    can be in `now` together; for each stage that starts, `now <folder> <stage> [--remaining <min>]`; for each one that
    ends, `done <folder> <stage> --note "<what got done>"`. Each command prints the line, which goes to the chat exactly
    as it came out:
@@ -325,8 +365,8 @@ from `scripts/playwright.cjs`, which on the Mac launches with `--use-angle=metal
 **Off the fast path (product without a kit, new style), read `$SKILL/references/workflow.md` in full and follow it.** It
 is the video's full workflow: the three no-exception rules, the project reading, the triage, the briefing, the series,
 the storyboard, the soundtrack and the delivery. It applies here without changing anything.
-This page says what the workflow does not say: the thesis, the style, the extra rules and how to assemble and prove
-each style without voice.
+This page says what the workflow does not say: the thesis, the style, the extra rules, the paid calls (voiceover and
+generated images) and how to assemble and prove each style, without voice (the default) and with a voiceover.
 
 ## The thesis: what the video has to prove
 
@@ -365,7 +405,8 @@ the opposite of what it sells.
 
    "Explain the product", "present it" or "show the screens" to someone who has not bought yet is `sell`. A real
    screen in a sales video comes in as proof: it comes out of the same recorder, with `legenda.rotulo: "nenhum"` in the
-   series and the caption saying what the product is doing, and whoever appears doing the work is the product.
+   series and the caption (with a voiceover, the line) saying what the product is doing, and whoever appears doing the
+   work is the product.
 5. **The screen-time rule.** In the script, each scene says **who does the work**, in a "Who does the work" column
    (the name `thesis.mjs count` looks for): `proof` (the product, in the proof scene), `product` (the product, in another
    scene), `person` (someone operating, or receiving the work) or `—` (poster card, logo). In a sales video, of the
@@ -393,6 +434,7 @@ template yet). **Read `rules.md` and `choosing.md` before recommending.**
    `public`, what the site plays), in the history (`recommend-style.mjs --name`), whatever they show in the
    conversation ("watch this video"). Found it? Actually watch it: a contact sheet of frames
    (`ffmpeg -vf "fps=1/2,scale=400:-1,tile=6x5"`). It is the benchmark for style and finish (rule 14 of the catalog).
+   A narrated one is also the yardstick for the voice (`references/voice-choice.md` §6).
    Did not find the project that generated the video? Ask once whether it is on another machine before redoing it from
    scratch.
 1. **Look at the product,** during the workflow's reconnaissance (0.1), before asking: the repository and the screens;
@@ -437,6 +479,17 @@ template yet). **Read `rules.md` and `choosing.md` before recommending.**
    and the product's style: `node $SKILL/scripts/recommend-style.mjs record --name "Product" --style <id> --video <folder>`
    and, when the owner approves, `--approved` (the product's next video starts from it).
 
+**Narration and the style.** A voiceover goes only in the styles that take one: the tutorial mode
+(`references/tutorial.md`, the panel tutorial included), `chapters-with-index`, `rolling-list`, `counting-number`,
+`typing-text`, `real-screen-camera`, `drawn-explainer`, `before-after` (the voice alone, no soundtrack under it) and
+`light-trail-teaser` (its own mix). The others do not take one yet: `card-bento`, `card-stack`, `chat-bubbles`,
+`drawn-flow`, `growing-chart`, `infinite-zoom`, `isometric`, `kinetic-typography`, `phone-3d`, `photo-mosaic`,
+`ticking-checklist`, `timeline` and `typing-terminal`. Offer narration only with the first ones. The person wants a voice
+in one of the others: say so in one line and offer the closest style that takes it, as a still (a list of features or
+cards → `rolling-list`; a conversation or a terminal → `typing-text`; a flow or layers → `drawn-explainer`; a chart →
+`counting-number`; a timeline → `chapters-with-index`; an app on the phone → the tutorial with cinema mode), or the
+style they chose without voice.
+
 A real screen shrunk inside a mockup frame, with the caption
 underneath, was rejected in every video that used it: no
 style does that (`references/catalog/rules.md`, rule 2). **Nor a static screenshot of the system inside a panel**
@@ -462,10 +515,143 @@ style does that (`references/catalog/rules.md`, rule 2). **Nor a static screensh
    of the script ("The thesis", above). A sales video carries no "Step N of M" and no instruction card, and
    `thesis.mjs count` has to exit with code 0 before the script goes to the owner.
 
-## Assembling and proving without voice
+## Paid calls: voiceover and generated images
 
-Without narration, the video is image, on-screen text, soundtrack and effects. Three things change compared with a
-narrated video:
+The voiceover (ElevenLabs, `scripts/voice.mjs`) and the generated images (OpenAI, `scripts/images.mjs`) are the only
+calls in this skill that cost money. Both are optional: without the person asking for them, and without a key, the
+video is made exactly as always, on the computer. The rules, no exceptions:
+
+1. **Nothing is spent before the person sees what it is for.**
+   - Voiceover: the script is written, reviewed without the network (`voice.mjs review`) and approved on the board
+     before any line is generated; the voice is chosen by ear, the same line read by two or three voices; right before
+     generating, `voice.mjs account` (free) says what the account has left and whether it is active, and you say whether
+     that covers this video.
+   - Generated image: only after the person agrees that the scene needs one; the options come out in low quality, the
+     chosen one is redone in high and comes back for approval ("Generated images", below).
+2. **The cost is said before, and each video has a cap.** Before each paid step, the estimate in one line
+   (`images.mjs estimate`; the voice's `generate` and `samples` print the credits they are about to spend). The caps
+   live in `<project>/costs.json`: by default **US$ 0.50 of images and 1,500 voice credits per video**. Every paid call
+   checks the cap before calling the API; over it, nothing is called and the script exits with code 5. Then ask the
+   person whether to raise it, and only with their yes: `node $SKILL/scripts/costs.mjs cap <project> --image-usd <n>`
+   or `--voice-credits <n>`.
+3. **The spend is always on the board.** After every paid call (a sample, a line, a check, an image):
+   `node $SKILL/scripts/costs.mjs board <project> [--account-left <credits>]` (the credits are the `left` of
+   `voice.mjs account --json`) and `board.mjs patch <project> '{"costs": <what it printed>}'`.
+   `node $SKILL/scripts/costs.mjs show <project>` lists every call, against the caps.
+4. **The keys never pass through the conversation.** `ELEVENLABS_API_KEY` and `OPENAI_API_KEY`, in the environment or
+   in `~/.claude/secrets/elevenlabs.env` and `~/.claude/secrets/openai.env`, written by the person in their own
+   terminal. You never ask for a key, print it, copy it or write it into the project. Without the ElevenLabs key,
+   `voice.mjs` prints a command that asks for it without showing it on screen: pass it on, for the person to run in
+   their terminal. `node $SKILL/scripts/environment.mjs` says whether each key exists, never its value.
+5. **No key, no credit or an account that is not active means "go on without it", not a failed video.** Say it in one
+   line and continue: without a voice (the video as always) or without a generated image (a photo of theirs, or a
+   style that needs none). Each script says it with its own exit code:
+
+   | Script | 0 | 1 | 2 | 3 | 5 |
+   |---|---|---|---|---|---|
+   | `voice.mjs` | done | a check failed, no key, or ElevenLabs refused (the message says which and what to do) | usage, or a paid command without a project | a writing tic in a new line: nothing spent, change the sentence | over the voice cap: nothing called |
+   | `images.mjs` | done | the API failed, or its safety filter refused the prompt (not charged) | usage | OpenAI not usable now (no key, key refused, no credit): go on without | over the image cap: nothing called |
+
+   The free checks: `voice.mjs account` (plan, credits left, status: `past_due` and the like mean generation may be
+   refused) and `images.mjs models` (0 = the key works, 3 = it does not).
+6. **A real person's voice only with their written authorization**, kept in the video folder
+   (`references/voice-choice.md` §9). A voice "like so-and-so" is a clone too. A synthetic voice never presents itself
+   as a real person.
+7. **You do not listen.** What can be measured is measured (`voice.mjs listen`, `check`, `listen --mix`, `verify.py`);
+   what only the ear can judge goes to the person in so many words.
+
+## Voiceover: what it adds
+
+Only with the person's yes ("First step, always") and a style that takes narration ("Narration and the style"). Without
+it, skip this section: the video is made as always. The references: `references/voice-script.md` (the script),
+`references/voice-choice.md` (the voice, the account, the cost), `references/voice-mix.md` (the mix and its measures),
+`references/voice-tutorial.md` (the tutorial) and `recipes/human-voice.md` (a voice that sounds like a person).
+
+1. **The account, first.** `node $SKILL/scripts/voice.mjs account` (free): the plan, the credits left, the status. No
+   key, an account that is not active, or fewer credits left than the video needs: one line, and the video goes on
+   without voice (or the person settles it and you go on). On the free plan, tell the person what it changes (no
+   commercial use, attribution required, only the account's default voices) before going on.
+2. **The voiceover script**, after the video's script, from the thesis and the reading, in the format of the intent
+   (`references/voice-script.md`): one line per step, chapter or scene, the button's name as it is on screen, the risk
+   words with their pronunciation decided, ~150 words per minute, written to be spoken (`recipes/human-voice.md`). It
+   lives in `<video folder>/voice/<version>/script.json`. The pace goes with it: `calmo` for a tutorial or a help
+   center, `reels` for Reels, TikTok, Shorts and ads (`references/voice-choice.md` §5).
+   - `node $SKILL/scripts/voice.mjs review <script.json> [--seconds <s>]` exits with 0 errors before the person sees it.
+   - **Approval:** on the board, the `script` block with `"state": "draft"` and each scene's `narration.text`. The
+     numbers come from `node $SKILL/scripts/voice.mjs board <script.json>`: its `script.words`, `script.seconds` and
+     `script.creditsToSpend` go in the board's `words`, `seconds` and `credits`, and the voice's `name` in `voice`
+     once there is one. Copy only those fields: the board refuses the others. Its own `state` is for you (`needs-fix`:
+     back to `review`; `stale`: the narration is from older words). The person clicks "Approve script"
+     (`approve-script`). Without the board, the table goes in the `preview` of the "Approve" option of
+     `AskUserQuestion`. Nothing is generated before.
+3. **The voice, chosen by ear.** The product already has an approved voice (the kit, the reference profile, the
+   series): it is that one, said in one line. Otherwise, three different candidates read the first approved line:
+   `voice.mjs search` (free, with the reading's filters) → `voice.mjs samples --script <script.json> --voices a,b,c`
+   (paid: that line's characters × 3) → `voice.mjs board <script.json> --samples <video folder>/voice/<version>/samples`
+   prints the `options` (`name`, `audio`, `seconds`): each becomes a board option `{ "label": "A", "title": <name>,
+   "line": "<why, and the time it takes>", "audio": <audio> }` in a choice with the `id` `voice` → the person listens and
+   picks (`choice`) → the voice goes in `voz` in `script.json`. A reference video, Voice Design and clones:
+   `references/voice-choice.md` §6, §8 and §9.
+4. **Generate and hear it.**
+   ```sh
+   node $SKILL/scripts/voice.mjs account
+   node $SKILL/scripts/voice.mjs generate <video folder>/voice/<version>/script.json --out <video folder>/voice/<version>
+   node $SKILL/scripts/voice.mjs listen <video folder>/voice/<version>/narration.json --words "Name,Acronym"
+   ```
+   - `generate` writes `narration.json` and `lines/<id>.wav`; a line already in the takes cache costs nothing, and
+     `--redo <id>` asks for another take of one line.
+   - On the board: `voice.mjs board <script.json> --narration <narration.json>` lists the `lines`; each one gives its
+     scene's `narration` only its `text`, `audio`, `seconds` and `credits` (`scene` says which scene: 0 the opening, n
+     the step or chapter, 99 the closing). Patch them with `script.voice` and the `costs`.
+   - `listen` (paid, a few credits per line) transcribes each line: a risk word it did not hear means exit code 1 and
+     nothing is assembled; fix the `pronuncia` map and `generate --redo <id>`.
+   - `redo-line` on the board: new words go first into that scene's `narration.text` (the script goes back to
+     `draft` and waits for "Approve script" again); then `generate --redo <id>`.
+5. **Assemble.** The templates never generate a voice: they read the `narration.json` already in the project, and each
+   `TEMPLATE.md` says where. In short:
+   - tutorial: `voz: { locucao: 'voice/<version>/narration.json', roteiro: 'voice/<version>/script.json', perfil:
+     'calmo' }` in `video.mjs` (`references/voice-tutorial.md`);
+   - chapters: the voice before the scenes (`chapters/tempos.mjs`, render, `chapters/assemble.mjs --narration`:
+     "Chapters", below);
+   - `rolling-list`: `"voz"` in the JSON, `render.mjs … --script` writes the voice script, `generate` into
+     `<name>/voice/v1`, then the render; `counting-number`: `"voz"` in the JSON, `prepare.mjs` writes
+     `voice/script.json`, `generate` into `voice/pt`, then `render.sh`; `drawn-explainer`: `voz.locucao` in the
+     `video.json`; `real-screen-camera`: `voz.locucao`; `typing-text`: `voz.trechos`; `before-after`: `--narration`;
+     `light-trail-teaser`: the narration in `project/voice/pt`, one line per item of `falas`, with the same id.
+   - The soundtrack goes down under each line and comes back in the pauses (`references/voice-mix.md`).
+6. **Prove,** besides everything in "Prove", below:
+   - `voice.mjs validate <narration.json>` (no network);
+   - tutorial only: `voice.mjs check <narration.json>` (forced alignment: each word within ±80 ms of its caption; about
+     1 credit per line);
+   - `voice.mjs listen --mix <final mp4> --script <narration.json> --words "…"` on each format (about 0.33 credit per
+     second): below 90% of the words heard, a missing risk word or 3 lost in a row is exit code 1, and the video does
+     not go to the person;
+   - the mix measured (`verify.py`, `finalize.mjs`): the voice at least 12 dB above the soundtrack on every line, −14
+     LUFS, a ceiling of −1 dBTP (`references/voice-mix.md` §6).
+
+## Generated images: the exception
+
+A video is made of the product's real screen first, then the brand's own photos, illustrations and icons, and only then
+a generated image, only for what exists nowhere else: a setting, an object, a scene photo, a backdrop, a texture.
+**Never** the product's screen or interface, the product itself, a logo, a real person, a customer or a testimonial,
+nor text inside the image; `photo-mosaic`, and every style that asks for the brand's photos, takes only real ones.
+Everything else is in `references/images.md`.
+
+1. **Agree first:** the person says the scene needs it (often a plain background, a brand shape or a typographic scene
+   says the same, for nothing).
+2. **The options, cheap:** `node $SKILL/scripts/images.mjs estimate --format 16x9 --n 3 --project <video folder>`
+   (free), then `images.mjs generate --project <video folder> --name scene-02 --n 3 --format 16x9 --prompt @<file>` (low
+   quality, about US$ 0.006 each), shown as a choice on the board with each option's `generated`
+   (`images.mjs board --project <video folder>`).
+3. **The chosen one, in detail:** `images.mjs final --project <video folder> media/generated/scene-02-b.png` (high, about
+   US$ 0.04 to 0.08). It is a new picture, close to the option, so it goes back to the board (`still` and `generated`
+   in the same patch) for the person's ok; then the scene's still with it goes through "Approve still" like any other.
+4. **After each call,** the board's spend ("Paid calls", rule 3).
+
+## Assembling and proving
+
+Without narration (the default), the video is image, on-screen text, soundtrack and effects. Three things change
+compared with a narrated video:
 
 - **timings are fixed:** each scene lasts as long as its text takes to read (references/chapters.md, "without
   voice"), on the soundtrack's bar grid, and nothing waits for a line to be spoken;
@@ -475,6 +661,9 @@ narrated video:
   taps (`references/soundtrack.md`). In the briefing, the music is heard first: 3 excerpts of 18 s in different
   directions (`arrange_series.py` with one identity per direction); on Reels, something upbeat (house 124–128, garage
   132, drum and bass 172).
+
+With a voiceover, the voice sets the timings (each scene lasts its line), the caption is the speech, and the soundtrack
+goes down under each line ("Voiceover", above, and `references/voice-mix.md`).
 
 The format comes from the channel: Reels, TikTok, Shorts → 9:16 only; website → 16:9; both only when the video goes to
 both places.
@@ -490,14 +679,20 @@ video's; no brand is built into the template. Still first, then the draft, conta
 - **Every template runs without narration:** the sound is the skill's soundtrack as the lead (`arrange_series.py`; in
   the teaser, the template's `soundtrack.py`), with effects on the cuts, the taps and the keystrokes, and the on-screen text
   tells the story. Run each one as its `TEMPLATE.md` says.
-- The `falas` (spoken lines) of an example JSON become captions only, timed to the text (Rolling list, teaser, Before
-  and after), or are left out with a warning (Counting number, real screen, Typing text).
+- Without a voiceover, the `falas` (spoken lines) of an example JSON become captions only, timed to the text (Rolling
+  list, teaser, Before and after), or are left out (Counting number, real screen, Typing text).
+- **Seven of them also take a voiceover** (`rolling-list`, `counting-number`, `typing-text`, `real-screen-camera`,
+  `drawn-explainer`, `before-after`, `light-trail-teaser`): the voice turns on only when the template gets a narration
+  generated before (a `voz` in the JSON, `--narration` or the narration's folder, as its `TEMPLATE.md` says;
+  "Voiceover", step 5, above).
 
 **Drawn explainer** (`templates/drawn-explainer/TEMPLATE.md`): another engine, on canvas, ported from an open engine
 (MIT; the credit is in the template's LICENSE). Each scene is a function in `scenes.js` that draws as a function of time;
 each element comes in at an `at` that is a word of the scene's `texto` (`at: 'Instagram'`), a marker (`'#cola'`) or
 seconds, and each entrance becomes a cue in the sync sheet, played by the skill's soundtrack (`arrange_series.py` +
-`sounds.py`). Without narration, each scene moves on by `min` or by the time it takes to read its text.
+`sounds.py`). Without narration, each scene moves on by `min` or by the time it takes to read its text; with a
+voiceover (`voz.locucao` in the `video.json`, the narration generated before), each scene lasts its line, and the
+soundtrack goes down under it (`mix_voz.py`).
 `node $SKILL/templates/drawn-explainer/render.mjs <video.json> --out <folder> [--mode final]`; it prints the
 WebGL renderer (it has to be Metal on the Mac), checks each format and takes the contact sheet. Brand copied from the
 reading; the `papel`, `giz`, `planta`, `noite` textures only go on top of the brand colors.
@@ -517,10 +712,22 @@ node $SKILL/scripts/chapters/render.mjs <video folder> 01-<name> --mode draft
 node $SKILL/scripts/chapters/assemble.mjs <video folder> --soundtrack --deliver <folder>
 ```
 
+With a voiceover, the voice comes before the scenes: the approved script → the voice generated → the timings of each
+scene from the words, then the render, then the assembly with the voice:
+
+```sh
+node $SKILL/scripts/chapters/tempos.mjs <video folder> --narration voice/<version>/narration.json
+node $SKILL/scripts/chapters/assemble.mjs <video folder> --narration voice/<version>/narration.json --profile reels --soundtrack --deliver <folder>
+```
+
+`tempos.mjs` writes each scene's `tempos.js` (`em('word')`, the scene's minimum duration): run it again whenever the
+voice changes, and render the scenes again. `--profile` is the voiceover's pace (`calmo` or `reels`).
+
 The order that worked:
 1. **The script with the timings.** Each chapter has the title (2–3 words), the support line and the stage beat by
    beat; the duration comes from the text that is read (`references/chapters.md`), and each beat comes in at a fixed
-   time in `video.js`.
+   time in `video.js`. With a voiceover, the duration comes from the line, and each beat comes in on its word
+   (`em('word')`, from `tempos.js`).
 2. **The brand copied from the product** into the kit: tokens, the title class (`ESTILO_TITULO = 'italic'` if the site
    is italic), the shape (chamfer, radius, ring), the **logo component** and the site's **slogan**
    (`references/brand.md`).
@@ -534,12 +741,19 @@ The order that worked:
 6. The template's opening and closing already recompose for vertical (the brand starts at the center and rises when
    the index comes in; without true numbers, the closing goes straight to the logo and the slogan).
 7. **`assemble.mjs --soundtrack --deliver`**: joins, composes the soundtrack (`audio/identity.json`, role `protagonista`),
-   measures in `verify.py` and finalizes each format. Then the contact sheet of the whole video, looked at.
+   measures in `verify.py` and finalizes each format. Then the contact sheet of the whole video, looked at. With
+   `--narration`, it also puts the voice in place, ducks the soundtrack under it and writes the `.srt` next to each
+   delivery.
 
 ### Tutorial
 
 The workflow's tutorial mode (`references/tutorial.md`), with no `voz` in `video.mjs`: each step's caption is the
 `g.passo` sentence, and each step stays on screen as long as it takes to read and for the hand to act.
+
+With a voiceover, `video.mjs` gets `voz: { locucao: 'voice/<version>/narration.json', roteiro:
+'voice/<version>/script.json', perfil: 'calmo' }`: the recorder holds each step for its line and the hand acts at the
+end of it, the caption is the line with the spoken word highlighted, and a step with several taps speaks while it taps
+(`g.passo('…', { junto: true })` and a `g.na('word')` before each tap). The rest is in `references/voice-tutorial.md`.
 
 - **the opening already shows the result:** the success screen (`g.sucesso`, or the last frame) appears next to the
   title (16:9) or below it (9:16), so the viewer knows where the tutorial ends up. Every script ends on a
@@ -556,7 +770,7 @@ The workflow's tutorial mode (`references/tutorial.md`), with no `voz` in `video
   turn it off is your call**, by the rule in `references/tutorial.md` → "Cinema mode": a brand piece (Reels, website,
   the app's player) gets cinema; a sober help center, the owner's request or a render without GPU, `"nenhum"`;
 - **UI sounds** on the taps and on the screen change, from the compositor's sync sheet; the soundtrack rises and falls
-  with the sections, with nothing to duck for;
+  with the sections, with nothing to duck for (with a voiceover, it ducks under each line: `references/voice-mix.md`);
 - **web tool on the computer:** when the chosen direction is the tutorial on a 3D panel (`style:
   panel-tutorial`), start from the `assets/example/computer-tutorial-series/` series and one of its variants (recipe
   in `references/tutorial.md` §19; 19:9, panel with zoom, `g.secao`, text never over the screen, closing with only the
@@ -572,9 +786,12 @@ in the background: its warnings go in the preview message. **Before the final**,
    until `PASSED` (`references/refine.md`). It flags, with the frame marked: illegible text, text that disappears on a
    phone (below 16 px at the size the video plays at: on a 390 px player, 79 px in 16:9 and 45 px in 9:16; 16:9 on a
    phone held upright failing in a good share of frames calls for the 9:16), a font outside the kit or on the fallback,
-   frozen or empty frame, something under TikTok's interface. On each format's final MP4, again. Approved by the owner:
-   `refine.mjs profile "<Product>" --from <folder> --video <mp4> --approved` (the kit becomes the benchmark for the next
-   one).
+   frozen or empty frame, something under TikTok's interface; with a voiceover, also the word timings (it fixes them by
+   the real pauses on its own, and trims leftover silence), an animation that lights up before its word and a flat voice
+   against the approved one. Fixed the narration in a chapter video? `chapters/tempos.mjs`, render the scenes and run it
+   again. On each format's final MP4, again. Approved by the owner:
+   `refine.mjs profile "<Product>" --from <folder> --video <mp4> --approved` (the kit, and the voice when there is one,
+   become the benchmark for the next one).
 0b. **Direction: passing the refinement check is not being good.** The refinement check catches defects; it does not
    see a dull video. `refine.mjs` includes the **Direction** section (`references/refine.md`): a hook in the first
    seconds, a long stretch with the same composition, strong moments, variety, closing with sign-off. A `fraco` (weak)
@@ -594,7 +811,8 @@ in the background: its warnings go in the preview message. **Before the final**,
 2. **The contact sheet, looked at:**
    - chapters: the contact sheet of **each format** (`references/chapters.md` §12): nothing empty, nothing illegible,
      nothing cut off in vertical, the same composition in every chapter, the index complete;
-   - tutorial: the event sheet, and the tap lands where the caption says.
+   - tutorial: the event sheet, and the tap lands where the caption says (with a voiceover, the highlighted word is the
+     one being said).
 3. **The independent critic, with the thesis:** `node $SKILL/scripts/critic.mjs <mp4> --request "<what the owner asked for>"`
    on each format (`recipes/critic.md`; when the brand's options differ from the defaults, say so in the request: "no
    opening logo", "the closing carries the slogan '…'"): a fresh Claude conversation, which sees only the finished video, the thesis
@@ -602,10 +820,14 @@ in the background: its warnings go in the preview message. **Before the final**,
    who does the work on screen and whether the format is the one for the intent (R14 to R16). Rejected: fix it and run
    it again, or write in the delivery why you are not fixing it.
 4. In the report, what only the ear can judge: whether the soundtrack fits the brand and whether the effects are
-   pleasant.
+   pleasant. With a voiceover, also: whether the voice fits the brand, the pronunciation of each risk word (the
+   transcription caught the word, not the accent), the intonation of the questions and pauses, breaths, clicks or
+   hiss, and whether the soundtrack works under the voice. The voiceover's own checks are in "Voiceover", step 6.
 
 **Another language is another video:** another `video.mjs` or another template (title, `fimLinhas`, the chapter
-titles, the series' `passo` in that language), and the on-screen text is rewritten, not translated word for word.
+titles, the series' `passo` in that language), and the on-screen text is rewritten, not translated word for word. With
+a voiceover, also another script, approved again, and a voice native to that language (`references/voice-choice.md`
+§11).
 
 
 ## Files
@@ -613,13 +835,13 @@ titles, the series' `passo` in that language), and the on-screen text is rewritt
 | File | When to use it |
 |---|---|
 | `scripts/kit.mjs` + `references/kit.md` | **first, always**: `new-video` starts the ready video from the product's kit (the fast path, at the top); `save` stores the kit of an approved video; `show` and `list` |
-| `scripts/environment.mjs --fix` | once per machine: Playwright and the soundtrack's Python in `~/.videostudio/environment.json` |
+| `scripts/environment.mjs --fix` | once per machine: Playwright and the soundtrack's Python in `~/.videostudio/environment.json`; it also says whether the two optional keys exist (ElevenLabs, OpenAI), never their value |
 | `scripts/reading.mjs` + `references/reading.md` + `references/brand.md` | **a brand without a kit**: collect the facts of the product's brand from its repository, then write the reading (the seven sections) before any image or sound decision |
 | `scripts/brand.mjs` | the brand's options (`show`, `set`, `list`): opening logo, closing logo, slogan, call to action, language |
 | `references/workflow.md` | **off the fast path** (product without a kit, new style): the video's full workflow |
 | `references/catalog/` | **before the briefing**: the rules, the selection guide, one card per style and what does not have a template yet |
 | `scripts/catalog.mjs` + `scripts/styles.mjs` | **in round 2 and when someone asks for the styles**: the list of the styles the engine can make (`list --format md`, `show <style>`), the page with them and the person's own stills and delivered videos (`open --folder … --brand …`) and the proposed directions side by side, each with its still (`open --directions … --folder …`). No sample gallery: a style is shown as a still in the person's brand |
-| `scripts/board.mjs` + `recipes/board.md` | **whenever something is shown**: the local review board, one phase per scene (still → Approve still → animate → preview → Approve preview), the person's own picture pasted into a scene, the conversation per scene; `set`, `open`, `wait`, `patch`, `say`, `status`, `stop` |
+| `scripts/board.mjs` + `recipes/board.md` | **whenever something is shown**: the local review board, one phase per scene (still → Approve still → animate → preview → Approve preview); with a voiceover, first the script (Approve script) and the voice chosen by ear, then each scene's line to listen to; a generated image with its mark and cost; what the video spent, on every phase; the person's own picture pasted into a scene, the conversation per scene; `set`, `open`, `wait`, `patch`, `say`, `status`, `stop` |
 | `scripts/recommend-style.mjs` | the objective × channel × product table: the recommended style, the reason and the alternatives; `record` stores the product's latest style |
 | `templates/<id>/` | the twenty templates, each with `TEMPLATE.md` (how to render) and `example*.json` (format examples with no brand: greys, placeholder texts, placeholder logo) |
 | `assets/example/` | what the format examples use: placeholder logo, symbol, icon and photos, the examples' font (`scripts/example-fonts.mjs`), a neutral sample page for the screen-recording examples (`page.html`), the engine's brand skeleton (`brand.js`) and the example series of the computer tutorial |
@@ -632,10 +854,14 @@ titles, the series' `passo` in that language), and the on-screen text is rewritt
 | `references/refine.md` | the refinement check's checks, the thresholds, fixing until it passes and the reference profile's format |
 | `references/chapters.md` | **Chapters with index style**: the chaptered video with the interface redrawn, index, 16:9 and 9:16, contact sheet |
 | `assets/chapters/` | the sample template of the chaptered video (component kit + opening, chapter and closing), with no brand; `README.md` says how to use it |
-| `scripts/chapters/` | `new.mjs` (creates the project), `render.mjs` (chapter in both formats + contact sheet), `assemble.mjs` (joins, composes the soundtrack, finalizes) |
+| `scripts/chapters/` | `new.mjs` (creates the project), `render.mjs` (chapter in both formats + contact sheet), `assemble.mjs` (joins, composes the soundtrack, finalizes; `--narration` puts the voice in place), `tempos.mjs` (with a voiceover: each scene's `tempos.js` from the words) |
 | `references/tutorial.md` | **tutorial mode**: the real recorded screen, the camera, cinema mode and the series |
 | `references/soundtrack.md` + `assets/audio/` | the original soundtrack and the sound effects: the identity, the sync sheet, the mix and `verify.py`; in `sounds.py`, the Drawn explainer's eight (`pop`, `tique`, `blip`, `rabisco`, `giz`, `brilho`, `baque`, `erro`) and the `sino` switch (`brilho` and `sucesso`): a brand that refuses bells or chimes does not use the marked ones |
-| `recipes/captions/` | **UI sounds** (`scripts/captions/caption.mjs --sounds`), off by default |
+| `recipes/captions/` | **UI sounds** (`scripts/captions/caption.mjs --sounds`), off by default; with a voiceover, the word-by-word caption (`--captions`), also off by default |
+| `scripts/voice.mjs` | **only in a narrated video**: the voiceover through ElevenLabs. Free: `account`, `search`, `review`, `validate`, `board`, `compare`, `measure` (without `--align`). Paid, under the video's cap: `samples`, `generate`, `listen` (and `listen --mix`), `check`, `transcribe`, `design`, `remix`; `save` takes a voice slot of the account. The header of the script explains each one |
+| `references/voice-script.md` · `voice-choice.md` · `voice-mix.md` · `voice-tutorial.md` + `recipes/human-voice.md` | the voiceover script and its approval; choosing the voice, the account, the plan and the cost; the mix and its measures; the voice in the tutorial mode; a voice that sounds like a person |
+| `scripts/images.mjs` + `references/images.md` | **only when a scene needs what exists nowhere else**: generated images through OpenAI (`estimate` and `models` free; `generate`, `final`, `batch` paid, under the video's cap; `board` gives each image's `generated`), when to use one and what never to generate |
+| `scripts/costs.mjs` | the cost notebook of each video (`<project>/costs.jsonl`): `show` (what was spent, against the caps), `cap` (read or raise a cap, only with the person's yes), `board` (the `costs` block for the board) |
 | `scripts/thesis.mjs` + `recipes/thesis.md` | **before the script, always**: the video's thesis. `write` (a fresh Claude conversation reads the repository and writes `thesis.md`), `validate` (the five parts and the five-line summary) and `count` (who does the work in each scene of the script and the screen-time verdict) |
 | `scripts/critic.mjs` + `recipes/critic.md` | **the independent critic**: a fresh Claude conversation that sees only the finished video, the thesis and the rubric, and returns approve/reject with up to 3 defects; it runs at the end of every video, before the owner |
-| `tests/` | `node --test "$SKILL/tests/*.test.mjs"`: the tests of the engine, the refinement check, the thesis, the critic, the captions, `recommend-style.mjs`, the Drawn explainer template and the new sounds (with Python, numpy and scipy), no network |
+| `tests/` | `node --test "$SKILL/tests/*.test.mjs"`: the tests of the engine, the refinement check, the thesis, the critic, the captions, `recommend-style.mjs`, the Drawn explainer template, the new sounds (with Python, numpy and scipy), the board, the voiceover, the generated images and the cost notebook, no network (the voice and the images run against a local fake API) |
