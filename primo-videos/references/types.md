@@ -178,9 +178,9 @@ The sounds come from `assets/audio/sounds.py` and the transitions are in `refere
 - **Image:** the style chosen in `SKILL.md` ("The style"); rolling list or before and after for a few new things, chapters with index (`references/chapters.md`) for 6 to 12 on the website, never twice in a row for the same product. In chapters: an opening with the numbered index, one chapter per new thing with the redrawn interface doing before → now, a closing with the full index and the big numbers. A single new thing, in a short video inside the app, can be the real screen (the tutorial engine) in full screen.
 - **Questions of its own:** what changed (only what is in production), for whom, the date, the authorized sample account whose data appears.
 - **Duration and formats:** one new thing, 15–45 s; patch notes with several, 1:30–3 min. 16:9 and 9:16 recomposed (`references/chapters.md` §8).
-- **Music:** background role in a short update; lead in the chapters video, where it carries the pace without voice (`references/chapters.md` §9). Genre: from the reading; in a series of updates, the same identity as the tutorials.
+- **Music:** background role in a short update; lead in the chapters video, where it carries the pace without voice (`references/chapters.md` §9). With voice (opt-in, `references/voice-script.md`), background in every case: the voice leads and the music makes room for it (`references/voice-mix.md`). Genre: from the reading; in a series of updates, the same identity as the tutorials.
 - **Sounds:** low to medium (flip on the before → now, success at the end); in the chapters video, one whoosh per passage.
-- **Text:** a `01 · AREA` label, a 2–3 word poster-card title with the keyword in color, 1–2 supporting lines, each held long enough to be read.
+- **Text:** a `01 · AREA` label, a 2–3 word poster-card title with the keyword in color, 1–2 supporting lines, each held long enough to be read. With voice, the text is not the line: the title is the poster, the voice says the whole sentence.
 - **QA:** the contact sheet of each format; the redrawn "before" shows what really existed, never a defect invented to make the "now" shine.
 - **Series:** release notes in video, one per release, with a soundtrack per seed.
 

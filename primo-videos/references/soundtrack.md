@@ -74,6 +74,10 @@ What the role changes within each genre, in the series (`arrange_series.py`, ide
 
 Both roles follow the same contract: markers at the exact sample, digital silence where the sheet asks for it and mastering at the sheet's loudness. Even in the background, a video without sync looks sloppy.
 
+**With voice** (opt-in, `references/voice-script.md`), the music is always background: the voice leads. The bed is
+mixed at −18 LUFS, `mix_voz.py` ducks it under each line and masters the whole at −14 LUFS
+(`references/voice-mix.md`). The genre still comes from §1. Without voice, nothing here changes.
+
 ### 2.1 The honest limit of synthesis
 
 The skill's synthesis (numpy, no samples) has a ceiling. It gets the grid, tempo, groove, harmony and mix right. It does not reach the timbre of a track produced with samples, analog synthesizers and hours of mixing. For an audience that does not listen to that genre closely, this almost never matters. For an audience that lives it, it does.
@@ -214,6 +218,8 @@ It lives in `<project>/audio/sheet.json`, created by `new-project.mjs`. Fill it 
 - `silencios` becomes exact digital silence, and `finalize.mjs` checks that it survived AAC.
 - In a background soundtrack, leave `silencios` empty or very short, and mark as `opcional` the accents that sit underneath.
 - A marker with `"efeito": "toque"` (and `nivel`, `dur`, optional parameters) gets a sound from `sounds.py` at the exact sample (§8). Full schema in `API.md`.
+- With voice, `compose.mjs` (tutorial) and `scripts/chapters/assemble.mjs` (chapters) add a `voz` block to this sheet
+  (`references/voice-mix.md` §2). Without that block, the mix is the one on this page.
 
 ## 6. The user's reference or finished track
 
@@ -250,6 +256,8 @@ It lives in `<project>/audio/sheet.json`, created by `new-project.mjs`. Fill it 
 - **A required marker only with a dry-attack sound.** Whoosh (peak) and riser (end) go with `"opcional": true`, or share the instant with an impact or a tap.
 - **The bed makes room on its own.** If the effect will not stand out over what is playing at that instant, `colocar` makes the bed duck by 2 to 10 dB ahead of time (sidechain with lookahead) and logs it.
 - **Verify:** `python sounds.py --verify --out <folder>` and look at `catalog-spectrum.png`.
+- **With voice,** the effects that land under a line follow `references/voice-mix.md` §4: taps, clicks and typing keep
+  their level; transitions, accents and impacts go down 6 dB.
 
 ## 9. Series soundtrack
 

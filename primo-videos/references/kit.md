@@ -35,7 +35,7 @@ kit/
 | `produto`, `slug`, `criado`, `atualizado` | who it is |
 | `leitura`, `tese` | the files above |
 | `series.<id>` | `pasta`, `versao` (the recorder's device), `formato`, `idioma`, `aparelho` (viewport, dsf, touch), `cinema`, `padrao` (the one `new-video` uses without `--series`). One series per format and language: `computer-16x9-pt`, `phone-9x16-en`… |
-| `voz` | the approved voice: `id`, `nome`, `modelo`, `ajustes`, `perfil`, `idioma`, `pronuncia` (the decided map) and `takes` (the cache). Only filled by a video with voice, which this skill does not make: it stays empty |
+| `voz` | the approved voice: `id`, `nome`, `modelo`, `ajustes`, `perfil`, `idioma`, `pronuncia` (the decided map) and `takes` (the cache). Filled by `save` only when the approved video has voice (`voice/<version>/script.json`, `references/voice-script.md`); a kit saved from a video without voice keeps it `null` |
 | `trilha` | the `identidade` (the series' `identity.json`), `genero`, `papel`, `bpm`, the approved `semente`, `sem_sino`, `trocar` |
 | `receita` | the recording (below) and `arquivos` (the `recipe/*.mjs`) |
 | `videos` | the videos that fed the kit (folder and title) |
@@ -71,10 +71,15 @@ node $SKILL/scripts/kit.mjs new-video "<product>" <new folder> --request "<the r
 - **`new-video`** creates the folder and wires everything up:
   - `video.mjs`: the kit's series, the seed, the recipe base, the title and the ending taken from the lines (the opening is the title; the closing, the `fimLinhas`), and `--antes`;
   - `recording/`: the recipe files and the skeleton of `journey.mjs` (the only code of this video);
-  - `texts.json` with the lines in `TODO` (`video.mjs` does not load until they are written). The kit does not carry a voice into the
-    new video: this skill makes videos without narration;
+  - `texts.json` with the lines in `TODO` (`video.mjs` does not load until they are written). That is the video without
+    voice, the default: a kit with no approved voice never adds one;
+  - **with voice** (only when the kit holds an approved voice, saved from a video with voice): `voice/v1/script.json` in
+    place of `texts.json`, with the kit's voice, settings and pronunciation and the lines in `TODO`; `voice/_takes/` with
+    the kit's cache (a line already approved with the same voice and neighbors is not paid for again); and in `video.mjs`
+    the voice (`voice/v1/narration.json`, with the script next to it for `--check`). The voice is generated after the
+    lines are written and approved (`references/voice-script.md`, `references/voice-tutorial.md`);
   - the kit's `reading.md` and `thesis.md`; `REQUEST.md` with the request and the fast path already with the paths;
-  - the stopwatch: `progress.mjs start --kit` (10 min target), with the reading and the soundtrack already done.
+  - the stopwatch: `progress.mjs start --kit` (10 min target; `--voice` too when the video has voice), with the reading and the soundtrack already done.
 
 ## The before (optional)
 

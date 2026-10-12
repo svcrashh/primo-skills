@@ -34,6 +34,11 @@ The script exits with code 1 if anything fails, and then you do not deliver. It 
 - loudness close to the target (-14 LUFS, the standard for social media and streaming) and true peak ≤ -0.5 dBTP;
 - that every silence in `sheet.json` is still silent in the MP4 and that the sound comes back right after. This is the proof that the sync survived AAC.
 
+With voice (a sheet with a `voz` block), it also checks, on the AAC: the true peak against the sheet's ceiling, each
+line's 1st sound within ±1 frame of the sheet, and the voice at least 15 dB above what plays under it
+(`references/voice-mix.md` §6). Then `voice.mjs listen --mix` on the final MP4 of each format, if the person agrees to
+the few credits it costs: it is the only check that hears whether the mix ate a word.
+
 On your own, also:
 
 - extract 6–10 frames from the **final MP4** (`ffmpeg -ss T -i final.mp4 -frames:v 1 x.png`) at the moments of fast motion and look at the motion blur;
@@ -55,6 +60,17 @@ Default: `~/Desktop/<brand>-video/`. On Windows, the user's Desktop. Use another
   fonte/             ← the whole project, without out/ and previas/ (and without audio/.venv)
 ```
 
+With voice, also:
+
+- **next to each MP4, its `.srt`** (`<brand>-<name>-16x9.srt`): the speech as a caption file, for the platforms that
+  take one. The chapter assembly with `--deliver` copies it on its own; the tutorial's `compose.mjs` writes
+  `<id>-<device>.srt` in the video folder, to be copied. `opening.mjs` moves the `.srt` next to the video along with
+  the logo opening.
+- **in the README, the voice:** `voice_id`, name, model, settings (`speed`, `stability`…) and the pronunciation map. The
+  ElevenLabs history belongs to the account: on another machine, nobody finds the voice without this.
+- **in `fonte/`, the whole `voice/` folder,** `_takes/` included: the takes are the source of the sound, and a line that
+  didn't change is not paid for again (`references/voice-script.md` §7).
+
 Do not create anything inside a git repository unless the user asks, and do not commit.
 
 ## What to say at the end
@@ -63,6 +79,7 @@ Do not create anything inside a git repository unless the user asks, and do not 
 - What was verified, with the measured numbers (duration, LUFS, true peak, sync).
 - What you could not verify: you do not watch or listen, so ask for a play, preferably on the device where the video will run.
 - Assumptions made (fictional names, provisional identity, synthesized music) and what the reading marked as a guess or left as a question.
+- With voice or generated images: what the video spent against its cap (`node $SKILL/scripts/costs.mjs show <project>`).
 - 1 or 2 extras worth doing:
   - **15 s cut:** the same soundtrack shortened, hook and sign-off.
   - **Another format.**
