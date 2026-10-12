@@ -23,9 +23,15 @@ function mp3Falso(seg, texto = null) {
     })
     if (ini != null) trechos.push([ini, al.character_end_times_seconds.at(-1)])
   } else trechos.push([INICIO, seg])
+  // 220 Hz com harmônicos até ~4 kHz (1/k): como a voz, tem energia na faixa do alto-falante do celular (300 Hz–8 kHz),
+  // que a garantia do mix mede; um seno puro de 220 Hz quase some ali e reprovaria a voz por engano
+  const H = Array.from({ length: 18 }, (_, k) => k + 1), norma = H.reduce((s, k) => s + 1 / k, 0)
   for (const [a, b] of trechos) {
     const i0 = Math.round(a * SR), i1 = Math.min(n, Math.round(b * SR)), rampa = Math.round(0.005 * SR)
-    for (let i = i0; i < i1; i++) x[i] = Math.round(16000 * Math.min(1, (i - i0) / rampa, (i1 - i) / rampa) * Math.sin(2 * Math.PI * 220 * (i - i0) / SR))
+    for (let i = i0; i < i1; i++) {
+      const t = (i - i0) / SR
+      x[i] = Math.round(16000 * Math.min(1, (i - i0) / rampa, (i1 - i) / rampa) * H.reduce((s, k) => s + Math.sin(2 * Math.PI * 220 * k * t) / k, 0) / norma * 2.2)
+    }
   }
   return execFileSync('ffmpeg', ['-hide_banner', '-v', 'error', '-f', 's16le', '-ar', String(SR), '-ac', '1', '-i', 'pipe:0', '-c:a', 'libmp3lame', '-b:a', '128k', '-f', 'mp3', 'pipe:1'],
     { input: Buffer.from(x.buffer), maxBuffer: 1 << 26 })
