@@ -43,20 +43,28 @@ if ($requisitos) {
     }
     $programas.python = $python
 
-    # A saida dos requisitos tem acento e os sinais de cada item, em UTF-8. Na janela do PowerShell eles aparecem certos
-    # de qualquer jeito; quando a saida vai para outro programa (o Claude rodando este instalador, por exemplo), sem isto
-    # o 5.1 troca os caracteres e o Python pode parar com erro. Tudo volta como estava no fim.
+    # A saida dos requisitos tem acento e os sinais de cada item, em UTF-8. Quando ela vai para outro programa (o Claude
+    # rodando este instalador, por exemplo), sem isto o 5.1 troca os caracteres e o Python pode parar com erro.
+    # Tudo volta como estava no fim.
     $saidaAntes = [Console]::OutputEncoding
     $ioAntes = $env:PYTHONIOENCODING
     try { [Console]::OutputEncoding = New-Object System.Text.UTF8Encoding $false } catch {}
     $env:PYTHONIOENCODING = "utf-8"
+    # Na janela antiga do console (a do Windows 10), as fontes dela (Consolas, Lucida Console) nao tem os sinais de
+    # "tem" e "falta" (U+2714 e U+2716): os dois viram o mesmo quadradinho. Ali, e so ali, eles viram os que essas fontes
+    # tem (U+221A e U+00D7). O Windows Terminal e o VS Code acham o sinal em outra fonte e mostram o original.
+    $consoleAntigo = -not [Console]::IsOutputRedirected -and -not $env:WT_SESSION -and -not $env:TERM_PROGRAM
     $semPrograma = @{ node = @(); python = @() }
     try {
         foreach ($r in $requisitos) {
             $programa = $programas[$r.Programa]
             if (-not $programa) { $semPrograma[$r.Programa] += $r.Skill; continue }
             Write-Host ""
-            & $programa.Source $r.Arquivo
+            if ($consoleAntigo) {
+                & $programa.Source $r.Arquivo | ForEach-Object { $_.Replace([string][char]0x2714, [string][char]0x221A).Replace([string][char]0x2716, [string][char]0x00D7) }
+            } else {
+                & $programa.Source $r.Arquivo
+            }
         }
     } finally {
         try { [Console]::OutputEncoding = $saidaAntes } catch {}
@@ -67,6 +75,7 @@ if ($requisitos) {
         Write-Host ""
         Write-Host "Falta o Node (18 ou mais novo), e sem ele nao da para conferir nem usar: $($semPrograma.node -join ', ')."
         Write-Host "    winget install OpenJS.NodeJS.LTS"
+        Write-Host "    Se o winget perguntar se voce aceita os termos, digite Y e Enter."
         Write-Host "    Depois feche e abra o PowerShell e rode este instalador de novo."
     }
     if ($semPrograma.python) {
@@ -77,6 +86,7 @@ if ($requisitos) {
             Write-Host "Falta o Python 3, e sem ele nao da para conferir nem usar: $($semPrograma.python -join ', ')."
         }
         Write-Host "    winget install Python.Python.3.12"
+        Write-Host "    Se o winget perguntar se voce aceita os termos, digite Y e Enter."
         Write-Host "    Depois feche e abra o PowerShell e rode este instalador de novo."
     }
     Write-Host ""
