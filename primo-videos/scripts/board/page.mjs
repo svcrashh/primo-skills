@@ -1,11 +1,11 @@
 // The review board in the browser: shows one phase at a time, redraws when the board or the conversation changes, and
 // sends every click, message and pasted picture to the local server.
-// It never rebuilds what is already on screen: a message being typed and a video being watched stay as they are.
+// It never rebuilds what is already on screen: a message being typed and a video or a take being played stay as they are.
 import { renderPage, resolvePhase, nextPhase, phaseOfHash, hashOfPhase, lastFromSkill } from './render.mjs'
 
 const page = document.getElementById('page')
 const offline = document.getElementById('offline')
-const ui = { phase: undefined, started: new Set(), uploads: [], dropError: '', seen: null }
+const ui = { phase: undefined, started: new Set(), playing: null, uploads: [], dropError: '', seen: null }
 const drafts = {}         // what is typed and not sent yet, by box: it survives going to another phase and back
 const known = new Map()   // scene id → "state|video", to notice a preview arriving while the page is open
 let view = null
@@ -29,8 +29,9 @@ function keysOf(nodes) {
   })
 }
 
-// Moving a node takes the focus out of it and stops its video: what is being used stays put, the rest moves around it.
-const inUse = (node) => node.nodeType === 1 && (node.contains(document.activeElement) || [...node.querySelectorAll('video')].some((v) => !v.paused))
+// Moving a node takes the focus out of it and stops what it plays: what is being used stays put, the rest moves around it.
+const playing = (node) => (node.matches('audio, video') && !node.paused) || [...node.querySelectorAll('audio, video')].some((m) => !m.paused)
+const inUse = (node) => node.nodeType === 1 && (node.contains(document.activeElement) || playing(node))
 
 function syncChildren(from, to) {
   const wanted = [...to.childNodes], keys = keysOf(wanted), needed = new Set(keys)
@@ -154,15 +155,21 @@ page.addEventListener('click', async (e) => {
   if (!button || button.disabled) return
   const data = { ...button.dataset }   // a copy: the button itself is redrawn while the click is being answered
 
-  if (data.act === 'replace-still') {
-    const box = button.closest('.compare').querySelector('textarea'), draft = box.dataset.draft
-    if (await act({ type: 'replace-still', scene: data.scene, file: data.file, text: box.value.trim() || undefined })) { delete drafts[draft]; draw() }
+  if (data.act === 'replace-still' || data.act === 'redo-line') {
+    const box = button.closest('.compare, .voice').querySelector('textarea'), draft = box.dataset.draft
+    if (await act({ type: data.act, scene: data.scene, file: data.file, text: box.value.trim() || undefined })) { delete drafts[draft]; draw() }
   } else if (data.act) {
     if (button.getAttribute('aria-pressed') === 'true') return
     const from = phaseNow()
     const ok = await act({ type: data.act, scene: data.scene, choice: data.choice, option: data.option })
-    // an approved preview closes its phase: on to the next one
-    if (ok && data.act === 'approve-preview' && phaseNow() === from) location.hash = hashOfPhase(nextPhase(view, from))
+    // an approved preview or script closes its phase: on to the next one
+    if (ok && (data.act === 'approve-preview' || data.act === 'approve-script') && phaseNow() === from) location.hash = hashOfPhase(nextPhase(view, from))
+  } else if (data.listen) {
+    const sound = document.getElementById(data.listen)
+    if (!sound) return
+    if (!sound.paused) return sound.pause()
+    if (sound.ended) sound.currentTime = 0
+    sound.play().catch(() => { ui.playing = null; draw() })
   } else if ('say' in data) {
     await say(button)
   } else if (data.write) {
@@ -212,8 +219,19 @@ window.addEventListener('drop', (e) => {
   if (files.length) upload(files, { scene: sceneNow() })
 })
 
+// One sound at a time: a take, a voice sample or a preview that starts stops the one that was playing.
+document.addEventListener('play', (e) => {
+  for (const m of page.querySelectorAll('audio, video')) if (m !== e.target && !m.paused) m.pause()
+  if (e.target.tagName === 'AUDIO') { ui.playing = e.target.id; draw() }
+}, true)
+for (const type of ['pause', 'ended', 'emptied']) {
+  document.addEventListener(type, (e) => { if (e.target.id && e.target.id === ui.playing) { ui.playing = null; draw() } }, true)
+}
+
 // The address says which phase is on screen, so back, forward and reload keep the place.
 function goToHash() {
+  for (const m of page.querySelectorAll('audio')) m.pause()
+  ui.playing = null
   ui.phase = location.hash.length > 1 ? phaseOfHash(location.hash) : undefined
   draw()
   const bar = page.querySelector('.phases'), main = page.querySelector('main')
