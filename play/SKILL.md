@@ -126,8 +126,8 @@ quem nunca fez isso; repassa à pessoa como estão.
 
 - **Node 18 ou mais novo:** `brew install node` no Mac, `winget install OpenJS.NodeJS.LTS` no Windows.
 - **ffmpeg** (o ffprobe vem junto): `brew install ffmpeg` no Mac, `winget install ffmpeg` no Windows (e depois fecha e
-  abre o PowerShell). Na primeira vez, o winget pergunta se a pessoa aceita os termos: é responder Y. Sem o ffmpeg
-  nada funciona.
+  abre o PowerShell). Na primeira vez, o winget pode perguntar se a pessoa aceita os termos: é responder Y. Sem o
+  ffmpeg nada funciona.
 - **Chave da OpenAI:** é ela que transcreve. A API da OpenAI é paga por uso e é separada da assinatura do ChatGPT. A
   chave se cria em platform.openai.com, em "API keys", e precisa de crédito na conta da API, em "Billing". Ela vale
   como a variável de ambiente `OPENAI_API_KEY` ou como uma linha `OPENAI_API_KEY=...` no arquivo
