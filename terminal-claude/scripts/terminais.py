@@ -48,7 +48,7 @@ LIMPEZA_LOTES, LIMPEZA_DIAS, LIMPEZA_ADIA = 10, 14, 3
 MARCAS = {"abrindo": "🕓", "trabalhando": "⏳", "parada": "✅", "pergunta": "❓", "encerrada": "⏹"}
 
 def hook(estado):
-    return [{"type": "command", "command": so.comando_hook(estado)}]
+    return [so.hook(estado)]
 
 
 # Vai no --settings de cada janela: é daqui que o status sabe em que pé está cada trilha.
@@ -248,7 +248,7 @@ def args_claude(t, claude, modo, continuar):
 def cmd_abrir(a):
     trilhas = montar_trilhas(a)
     cfg = os.environ.get("CLAUDE_CONFIG_DIR")
-    claude = shutil.which("claude") or "claude"
+    claude = so.achar_claude() or "claude"
     with trava():
         registro_vivo()
         destinos, outras, ondes, avisos = organizar.plano_novas(len(trilhas), a.monitor)
@@ -265,7 +265,8 @@ def cmd_abrir(a):
             if t["extras"]:
                 resumo += f" · +{len(t['extras'])} pasta(s) do workspace"
             if a.dry_run:
-                print(f"[simulação] {resumo}\n    {' '.join(map(shlex.quote, args))}")
+                linha = subprocess.list2cmdline(args) if sys.platform == "win32" else " ".join(map(shlex.quote, args))
+                print(f"[simulação] {resumo}\n    {linha}")
                 continue
             base = str(so.CACHE / f"{carimbo}-{k}")
             Path(base + ".estado").write_text("abrindo", encoding="utf-8")

@@ -2,6 +2,7 @@
 import fcntl
 import os
 import shlex
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -75,15 +76,21 @@ def subcomandos(sub):
     pass
 
 
-def comando_hook(estado):
+def hook(estado):
     # Só grava o arquivo. Escrever no terminal daqui (a marca no título, por exemplo) cai no meio do
     # desenho da tela do claude e suja a janela.
     valor = '"${TERMINAL_CLAUDE_INICIO:-parada}"' if estado == "inicio" else estado
-    return f'[ -n "$TERMINAL_CLAUDE_ESTADO" ] && printf %s {valor} > "$TERMINAL_CLAUDE_ESTADO"; true'
+    return {"type": "command",
+            "command": f'[ -n "$TERMINAL_CLAUDE_ESTADO" ] && printf %s {valor} > "$TERMINAL_CLAUDE_ESTADO"; true'}
 
 
 def travar(arquivo):
     fcntl.flock(arquivo, fcntl.LOCK_EX)
+
+
+def achar_claude():
+    # Sem ele no PATH desta sessão, a janela chama "claude" e o zsh dela acha pelo PATH de lá.
+    return shutil.which("claude")
 
 
 def osa(*args):

@@ -43,13 +43,11 @@ def subcomandos(sub):
     marcar_.set_defaults(func=marcar)
 
 
-def comando_hook(estado):
-    # O hook pode rodar em bash, cmd ou PowerShell. Caminho sem aspas vale nos três; com aspas o
-    # PowerShell não chama, então elas só entram quando há espaço no caminho.
-    def q(caminho):
-        caminho = Path(caminho).as_posix()
-        return f'"{caminho}"' if " " in caminho else caminho
-    return f"{q(sys.executable)} {q(MOTOR)} marcar {estado}"
+def hook(estado):
+    # Com "args" o Claude Code chama o programa direto, sem shell. Sem eles o comando iria para o Git
+    # Bash ou, sem ele, para o PowerShell, e não há jeito de escrever um caminho com espaço que valha
+    # nos dois: o Git Bash come a barra invertida e o PowerShell não chama caminho entre aspas.
+    return {"type": "command", "command": sys.executable, "args": [str(MOTOR), "marcar", estado]}
 
 
 def marcar(a):
@@ -57,6 +55,25 @@ def marcar(a):
     if destino := os.environ.get("TERMINAL_CLAUDE_ESTADO"):
         estado = os.environ.get("TERMINAL_CLAUDE_INICIO", "parada") if a.estado == "inicio" else a.estado
         Path(destino).write_text(estado, encoding="utf-8")
+
+
+def achar_claude():
+    """O claude que a janela chama: o do PATH ou o do instalador oficial, que fica em
+    %USERPROFILE%\\.local\\bin e não entra no PATH sozinho."""
+    achado = shutil.which("claude")
+    nativo = Path.home() / ".local/bin/claude.exe"
+    if achado and not achado.lower().endswith((".cmd", ".bat")):
+        return achado
+    if nativo.exists():
+        return str(nativo)
+    if achado:
+        # O do npm é um claude.cmd: tudo que vai para ele passa pelo cmd, e o prompt de várias linhas
+        # chega cortado na primeira (as aspas e o % também se perdem).
+        sys.exit("O claude deste computador é o do npm (claude.cmd), e por ele o prompt não chega inteiro "
+                 "na janela. Instale o claude nativo no PowerShell:\n"
+                 "    irm https://claude.ai/install.ps1 | iex\n"
+                 "e rode de novo (o do npm pode ficar).")
+    return None
 
 
 def travar(arquivo):
@@ -73,10 +90,17 @@ def vivas():
     return None
 
 
+def powershell(script):
+    # Na saída padrão do console o acento de um caminho vinha trocado, e a linha de comando da janela
+    # não batia mais com a do registro: em UTF-8 dos dois lados.
+    r = subprocess.run(["powershell", "-NoProfile", "-Command",
+                        "[Console]::OutputEncoding = [Text.Encoding]::UTF8; " + script], capture_output=True)
+    return r.stdout.decode("utf-8", "replace")
+
+
 def linha_de_comando(pid):
     """Como o processo foi chamado; vazio se não der pra saber."""
-    ps = f"(Get-CimInstance Win32_Process -Filter 'ProcessId={pid}').CommandLine"
-    return subprocess.run(["powershell", "-NoProfile", "-Command", ps], capture_output=True, text=True).stdout
+    return powershell(f"(Get-CimInstance Win32_Process -Filter 'ProcessId={pid}').CommandLine")
 
 
 def viva(_abertas, linha):
@@ -107,7 +131,8 @@ def abrir(t, base, cfg, args, destino):
     # Se for este o primeiro Windows Terminal aberto, as janelas que o dono abrir depois na mão
     # herdam o ambiente daqui: vai sem os marcadores desta sessão.
     limpo = {k: v for k, v in os.environ.items() if not marcador(k)}
-    subprocess.Popen([wt, "-w", "new", "nt", "--title", t["titulo"], "-d", str(t["pasta"]),
+    # O wt separa comandos por ";": sem o escape, o título "A; B" virava dois comandos.
+    subprocess.Popen([wt, "-w", "new", "nt", "--title", t["titulo"].replace(";", "\\;"), "-d", str(t["pasta"]),
                       sys.executable, str(MOTOR), "rodar", base], env=limpo)
     hwnd = esperar(lambda: next(iter({j[0] for j in win.janelas()} - antes), None), "a janela nova")
     pid = esperar(lambda: (Path(base + ".pid").read_text().strip() or None)
@@ -129,8 +154,14 @@ def rodar(a):
     if meta["config"]:
         env["CLAUDE_CONFIG_DIR"] = meta["config"]
     win.manter_acordado()
-    subprocess.call(meta["args"], cwd=meta["pasta"],
-                    env={**env, "TERMINAL_CLAUDE_ESTADO": a.base + ".estado", "TERMINAL_CLAUDE_INICIO": meta["inicio"]})
+    try:
+        subprocess.call(meta["args"], cwd=meta["pasta"],
+                        env={**env, "TERMINAL_CLAUDE_ESTADO": a.base + ".estado", "TERMINAL_CLAUDE_INICIO": meta["inicio"]})
+    except OSError as erro:
+        print(f"Não consegui abrir o claude ({meta['args'][0]}): {erro}\n"
+              "Confira no PowerShell com  claude --version . Se ele não existir, instale com:\n"
+              "    irm https://claude.ai/install.ps1 | iex\n"
+              "Depois feche esta janela e abra de novo pelo Claude.")
     win.manter_acordado(False)
     Path(a.base + ".estado").write_text("encerrada", encoding="utf-8")
     subprocess.call([shutil.which("pwsh") or "powershell", "-NoLogo"], cwd=meta["pasta"], env=env)
@@ -147,10 +178,9 @@ def tela(_jid):
 
 def processos():
     """(pai de cada processo, [(processo, porta em escuta)]), numa consulta só."""
-    ps = ('Get-CimInstance Win32_Process | ForEach-Object { "p $($_.ProcessId) $($_.ParentProcessId)" }; '
-          'Get-NetTCPConnection -State Listen -ErrorAction SilentlyContinue | '
-          'ForEach-Object { "l $($_.OwningProcess) $($_.LocalPort)" }')
-    saida = subprocess.run(["powershell", "-NoProfile", "-Command", ps], capture_output=True, text=True).stdout
+    saida = powershell('Get-CimInstance Win32_Process | ForEach-Object { "p $($_.ProcessId) $($_.ParentProcessId)" }; '
+                       'Get-NetTCPConnection -State Listen -ErrorAction SilentlyContinue | '
+                       'ForEach-Object { "l $($_.OwningProcess) $($_.LocalPort)" }')
     pai, escuta = {}, []
     for c in (linha.split() for linha in saida.splitlines()):
         if len(c) == 3 and c[0] == "p":
@@ -203,3 +233,4 @@ def fechar(args, registro, sessao):
             fechadas += not win.existe(hwnd)
     if "--listar" not in opcoes:
         print(f"{fechadas} janela(s) fechada(s)")
+        registro()  # a que fechou sai do registro já, como no Mac
