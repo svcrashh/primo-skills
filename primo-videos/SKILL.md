@@ -545,7 +545,9 @@ video is made exactly as always, on the computer. The rules, no exceptions:
    in `~/.claude/secrets/elevenlabs.env` and `~/.claude/secrets/openai.env`, written by the person in their own
    terminal. You never ask for a key, print it, copy it or write it into the project. Without the ElevenLabs key,
    `voice.mjs` prints a command that asks for it without showing it on screen: pass it on, for the person to run in
-   their terminal. `node $SKILL/scripts/environment.mjs` says whether each key exists, never its value.
+   their terminal. `node $SKILL/scripts/environment.mjs` says whether each key exists, never its value. For a key the
+   person wants and does not have, `node $SKILL/scripts/requisitos.mjs` (`--lang en`) prints where to create it and the
+   steps to store it: pass those steps on, for them to do in their own terminal and editor.
 5. **No key, no credit or an account that is not active means "go on without it", not a failed video.** Say it in one
    line and continue: without a voice (the video as always) or without a generated image (a photo of theirs, or a
    style that needs none). Each script says it with its own exit code:
@@ -839,6 +841,7 @@ a voiceover, also another script, approved again, and a voice native to that lan
 |---|---|
 | `scripts/kit.mjs` + `references/kit.md` | **first, always**: `new-video` starts the ready video from the product's kit (the fast path, at the top; `--voice` when the video has a voiceover); `save` stores the kit of an approved video; `show` and `list` |
 | `scripts/environment.mjs --fix` | once per machine: Playwright and the soundtrack's Python in `~/.videostudio/environment.json`; it also says whether the two optional keys exist (ElevenLabs, OpenAI), never their value |
+| `scripts/requisitos.mjs` | what the machine has and lacks, light (no Chromium, writes nothing), in Portuguese or with `--lang en`; the installer runs it. For a missing key, where to create it and how to store it |
 | `scripts/reading.mjs` + `references/reading.md` + `references/brand.md` | **a brand without a kit**: collect the facts of the product's brand from its repository, then write the reading (the seven sections) before any image or sound decision |
 | `scripts/brand.mjs` | the brand's options (`show`, `set`, `list`): opening logo, closing logo, slogan, call to action, language |
 | `references/workflow.md` | **off the fast path** (product without a kit, new style): the video's full workflow |
