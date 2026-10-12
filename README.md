@@ -1,11 +1,12 @@
 # primo-skills
 
-Minhas skills do Claude Code, uma pasta por skill. As de terminal valem no Mac e no Windows; a `primo-videos`, por enquanto, só no Mac.
+Minhas skills do Claude Code, uma pasta por skill. As de terminal e a `play` valem no Mac e no Windows; a `primo-videos`, por enquanto, só no Mac.
 
 | Skill | O que faz |
 |---|---|
 | `terminal-claude` | Abre várias janelas de terminal, cada uma com um Claude e o seu prompt, acompanha em que pé está cada uma e fecha cada uma quando termina. |
 | `terminal-organizar` | Arruma as janelas de terminal em grade, cada monitor com a sua. |
+| `play` | Você cola o caminho de um áudio ou de um vídeo (áudio do WhatsApp, vídeo do celular, gravação de tela) e o Claude passa a saber o que é dito nele e, em vídeo, o que aparece. A transcrição usa a API da OpenAI, com a sua chave. |
 | `primo-videos` | Faz vídeo do seu produto, com ou sem narração: lê o projeto, pergunta o que falta, mostra cada cena como imagem parada antes de animar e entrega o MP4 com trilha original. A marca e as ideias são suas. A voz em off (ElevenLabs) e as imagens geradas (OpenAI) são opcionais, com a sua chave. Só Mac por enquanto. [Como usar](primo-videos/README.md). |
 
 As duas de terminal andam juntas: a `terminal-claude` usa a grade da `terminal-organizar`.
@@ -31,6 +32,8 @@ powershell -ExecutionPolicy Bypass -File $HOME\Documents\GitHub\primo-skills\ins
 Para outro perfil do Claude (outra pasta de configuração), passe a pasta de skills dele: `instalar.sh ~/.claude-insiders/skills`.
 
 Se já existir uma pasta de verdade com o nome da skill, o instalador não mexe nela e avisa.
+
+No fim, o instalador mostra o que cada skill precisa nesta máquina e o que falta (chave de API, ffmpeg, Node), com o passo a passo para resolver. Rodar de novo não desfaz nada: serve para conferir depois de arrumar. Para ver só o de uma skill: `node ~/.claude/skills/play/scripts/requisitos.mjs`.
 
 Depois de instalar, não mova nem apague esta pasta: as skills apontam para ela.
 
@@ -71,14 +74,41 @@ O limite é uma regra que o Claude segue, não uma trava no programa: se você p
 
 Depois de 10 lotes ou 14 dias de uso num projeto, o Claude pergunta se você quer limpar os `.md` que as trilhas deixaram por lá. Ele mostra a lista e só apaga o que você confirmar. Se você disser "agora não", ele pergunta de novo em 3 dias; se disser para não perguntar mais, ele para.
 
+## Chaves de API
+
+Duas skills usam serviços pagos, cada um com a sua chave. Você cria a chave na sua conta e paga o que usar; nada passa por mim.
+
+| Skill | Para quê | Chave | Sem a chave |
+|---|---|---|---|
+| `play` | transcrever o que é dito no áudio ou no vídeo | OpenAI | em vídeo, ela ainda mostra o que aparece; a fala fica de fora |
+| `primo-videos` | imagem gerada, quando a cena precisa | OpenAI | funciona inteira; só não gera imagem |
+| `primo-videos` | voz em off | ElevenLabs | funciona inteira; o vídeo sai sem narração |
+
+- **OpenAI:** a chave se cria em [platform.openai.com](https://platform.openai.com), em "API keys". A API é paga por uso e é separada da assinatura do ChatGPT: precisa de crédito na conta da API, em "Billing". Na `play`, a cobrança é pela duração do áudio enviado.
+- **ElevenLabs:** a chave se cria em [elevenlabs.io](https://elevenlabs.io/app/settings/api-keys), no menu da esquerda, em "Developers" → "API Keys". Ela gasta os créditos do plano da sua conta.
+
+Onde guardar, no Mac (no Windows a pasta é `%USERPROFILE%\.claude\secrets`):
+
+```sh
+mkdir -p ~/.claude/secrets && chmod 700 ~/.claude/secrets
+touch ~/.claude/secrets/openai.env && chmod 600 ~/.claude/secrets/openai.env
+open -e ~/.claude/secrets/openai.env
+```
+
+No arquivo, uma linha só: `OPENAI_API_KEY=` seguido da chave. Para a ElevenLabs, o arquivo é `elevenlabs.env` e a linha começa com `ELEVENLABS_API_KEY=`. A variável de ambiente com o mesmo nome também vale, no lugar do arquivo.
+
+A chave fica só nesse arquivo: não cole na conversa com o Claude e não ponha no git. As skills nunca a imprimem.
+
 ## Requisitos
 
 - **Mac:** Terminal.app e `python3`.
 - **`primo-videos` (Mac):** Node 18 ou mais novo, ffmpeg (`brew install ffmpeg`) e, uma vez por máquina, `node ~/.claude/skills/primo-videos/scripts/environment.mjs --fix` (acha o Playwright e cria o Python da trilha). A voz em off e as imagens geradas são opcionais e pedem a chave de cada serviço (`ELEVENLABS_API_KEY`, `OPENAI_API_KEY`); sem elas, roda tudo na máquina. O resto está no [README dela](primo-videos/README.md).
+- **`play` (Mac e Windows):** Node 18 ou mais novo, ffmpeg (`brew install ffmpeg` no Mac, `winget install ffmpeg` no Windows) e a chave da OpenAI (acima).
 - **Windows:** Python (`python`), Windows Terminal (`wt`) e o `claude` no PATH. O lado Windows foi escrito no Mac e ainda não rodou num Windows de verdade; o `SKILL.md` de cada skill diz o que conferir na primeira vez.
 
 ## Acrescentar uma skill
 
 1. Crie uma pasta com o nome da skill e um `SKILL.md` dentro.
-2. Rode o instalador de novo.
-3. Commit e push.
+2. Se ela precisa de algo na máquina (um programa, uma chave), ponha um `scripts/requisitos.mjs` que diga o que tem, o que falta e como resolver: `✔` tem, `✖` falta e é obrigatório, `○` falta e é opcional, com saída 1 quando falta algo obrigatório. É ele que o instalador roda no fim. O da `play` serve de modelo.
+3. Rode o instalador de novo.
+4. Commit e push.

@@ -79,6 +79,10 @@ A saída é para você ler, nesta ordem:
 
 Para ligar fala e imagem, cruza os tempos: o que é dito em [00:12] está na célula de tempo mais perto.
 
+**Vídeo com legenda ou texto na tela:** confere a transcrição contra o que está escrito nos quadros. Para nome próprio,
+marca e número, vale o que está escrito. Num vídeo de 33 s, em 12/10/2026, a fala saiu com o nome do produto trocado em
+três frases, e a legenda do próprio vídeo trazia o nome certo. Quando corrigir assim, diz que corrigiu.
+
 **Um detalhe da tela importa** (texto pequeno, número, mensagem de erro, nome de botão): puxa o quadro inteiro naquele
 tempo.
 
@@ -151,8 +155,8 @@ Sem a chave, o vídeo ainda mostra o que aparece; só a fala fica de fora.
   vai num pedido. Na emenda, o tempo de cada trecho é somado ao começo da parte dele.
 - **O que aparece:** quadros espaçados por igual (um a cada 5 s, entre 6 e 24; `--quadros` muda), cada um no meio do
   seu pedaço do vídeo, montados em folhas de até 9 quadros, com no máximo 2.000 px no lado maior e as células no formato
-  do vídeo. O ffmpeg desta máquina não tem o filtro `drawtext`, por isso o tempo de cada célula vai na legenda de texto,
-  não na imagem.
+  do vídeo. Nem todo ffmpeg tem o filtro `drawtext` (o do Homebrew não tem), por isso o tempo de cada célula vai na
+  legenda de texto, não na imagem.
 - **Cache:** em `~/Library/Caches/play` no Mac, `%LOCALAPPDATA%\play` no Windows, `~/.cache/play` nos outros; uma
   pasta por arquivo, pelo caminho, tamanho e data dele. O mesmo arquivo de novo não chama a API; outro `--modelo` ou
   `--idioma` transcreve de novo. `--refazer` ignora o cache, `limpar` apaga.
