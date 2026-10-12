@@ -28,6 +28,10 @@ O terceiro comando confere o ambiente uma vez por máquina: acha o Playwright e 
 Chromium do Playwright se não houver (~150 MB). O ffmpeg você instala pelo sistema (`brew install ffmpeg`). Para
 atualizar depois: `git pull` na pasta do primo-skills (é ligação, não cópia).
 
+Logo depois de ligar a skill, o `instalar.sh` mostra o que ela precisa e o que falta nesta máquina (Node, ffmpeg, a
+conferência do ambiente e as duas chaves opcionais), com o comando ou os passos de cada coisa. Para ver de novo quando
+quiser: `node ~/.claude/skills/primo-videos/scripts/requisitos.mjs` (com `--lang en`, em inglês).
+
 ## Como pedir
 
 Abra o Claude Code no projeto do seu produto e peça `/primo-videos`, ou em português mesmo:
@@ -65,13 +69,39 @@ antes, inteira na sua máquina.
   ouvindo a mesma frase em duas ou três vozes.
 - **Imagem gerada,** pela OpenAI, só para o que não existe no produto nem na marca: um cenário, um objeto, um fundo.
   Nunca a tela do produto, o logo, uma pessoa real ou texto dentro da imagem.
-- **As chaves:** `ELEVENLABS_API_KEY` e `OPENAI_API_KEY`, no ambiente ou em `~/.claude/secrets/elevenlabs.env` e
-  `~/.claude/secrets/openai.env`. Você mesmo escreve, no seu terminal, nunca colando no chat; a skill nunca as
-  imprime. O `environment.mjs` diz se cada uma existe, sem mostrar o valor.
+- **As chaves:** `ELEVENLABS_API_KEY` e `OPENAI_API_KEY`. Como conseguir e guardar cada uma está logo abaixo; o
+  `requisitos.mjs` e o `environment.mjs` dizem se cada uma existe, sem mostrar o valor.
 - **Quanto custa, por alto:** as opções de uma imagem saem em qualidade baixa, ~US$ 0,006 cada; a escolhida, refeita em
   alta, ~US$ 0,04 a 0,08. A locução gasta até uns 900 créditos da ElevenLabs por minuto.
 - **Teto por vídeo:** US$ 0,50 em imagem (umas quatro cenas geradas) e 1.500 créditos de voz. Para passar disso, ela
   pergunta antes. O gasto fica à vista no quadro de revisão, atualizado a cada chamada paga.
+
+### Como conseguir e guardar cada chave
+
+Só a do que você for usar; uma não depende da outra.
+
+| | Voz em off | Imagem gerada |
+|---|---|---|
+| Serviço | ElevenLabs | OpenAI |
+| Onde se cria | [elevenlabs.io](https://elevenlabs.io), no menu da conta, em "API Keys" | [platform.openai.com](https://platform.openai.com), em "API keys" |
+| O que gasta | os créditos do plano da sua própria conta | a API é paga por uso e é separada da assinatura do ChatGPT: precisa de crédito na conta da API (em "Billing") |
+| Arquivo | `~/.claude/secrets/elevenlabs.env` | `~/.claude/secrets/openai.env` |
+| A linha | `ELEVENLABS_API_KEY=` e a chave | `OPENAI_API_KEY=` e a chave |
+
+1. Crie a chave no serviço (a tabela diz onde).
+2. No Terminal, crie a pasta e o arquivo, fechados só para você, e abra o arquivo no TextEdit. Para a OpenAI:
+   ```sh
+   mkdir -p ~/.claude/secrets && chmod 700 ~/.claude/secrets
+   touch ~/.claude/secrets/openai.env && chmod 600 ~/.claude/secrets/openai.env
+   open -e ~/.claude/secrets/openai.env
+   ```
+   Para a ElevenLabs, os mesmos três comandos com `elevenlabs.env` no lugar de `openai.env`.
+3. No arquivo, escreva uma linha só, a da tabela, com a chave logo depois do `=` (sem espaço nem aspas), e salve.
+4. Confira: `node ~/.claude/skills/primo-videos/scripts/requisitos.mjs`. A linha da chave passa a ✔, sem mostrar o
+   valor.
+
+A chave nunca é colada na conversa com o Claude, nunca vai para o git e nunca é impressa: quem a põe no arquivo é você,
+com o seu editor. Em vez do arquivo, também vale a variável de ambiente de mesmo nome.
 
 ## O que precisa ter na máquina
 
@@ -79,7 +109,8 @@ antes, inteira na sua máquina.
 - o Chromium do Playwright (o comando de ambiente resolve);
 - macOS (Windows vem depois);
 - Claude Code, que a skill também usa para escrever a tese do vídeo e para a crítica (`claude -p`);
-- opcional: a conta e a chave da ElevenLabs (voz) e da OpenAI (imagens geradas).
+- opcional: a conta e a chave da ElevenLabs (voz) e da OpenAI (imagens geradas), em
+  [Como conseguir e guardar cada chave](#como-conseguir-e-guardar-cada-chave).
 
 O render final é pesado (alguns minutos por vídeo): em notebook, deixe na tomada.
 
@@ -121,6 +152,10 @@ Python (numpy and scipy, in a venv under `~/.videostudio`) and says what is miss
 `--yes` it downloads Playwright's Chromium when there is none (~150 MB). ffmpeg comes from your system
 (`brew install ffmpeg`). To update later: `git pull` in the primo-skills folder (it is a link, not a copy).
 
+Right after linking the skill, `instalar.sh` shows what it needs and what this machine is missing (Node, ffmpeg, the
+environment check and the two optional keys), with the command or the steps for each one. To see it again any time:
+`node ~/.claude/skills/primo-videos/scripts/requisitos.mjs --lang en` (without `--lang en`, in Portuguese).
+
 ### How to ask
 
 Open Claude Code in your product's project and ask for `/primo-videos`, or in plain words:
@@ -158,13 +193,40 @@ before, entirely on your machine.
   by hearing the same sentence read by two or three voices.
 - **Generated image,** from OpenAI, only for what neither the product nor the brand has: a setting, an object, a
   backdrop. Never the product's screen, the logo, a real person or text inside the image.
-- **The keys:** `ELEVENLABS_API_KEY` and `OPENAI_API_KEY`, in the environment or in `~/.claude/secrets/elevenlabs.env`
-  and `~/.claude/secrets/openai.env`. You write them yourself, in your own terminal, never pasted into the chat; the
-  skill never prints them. `environment.mjs` says whether each one exists, without showing it.
+- **The keys:** `ELEVENLABS_API_KEY` and `OPENAI_API_KEY`. How to get and store each one is right below;
+  `requisitos.mjs` and `environment.mjs` say whether each one exists, without showing it.
 - **What it costs, roughly:** an image's options come out in low quality, ~US$ 0.006 each; the chosen one, redone in
   high quality, ~US$ 0.04 to 0.08. A voiceover spends up to about 900 ElevenLabs credits per minute.
 - **Cap per video:** US$ 0.50 of images (about four generated scenes) and 1,500 voice credits. To go past them, it
   asks first. The spending stays in view on the review board, updated after every paid call.
+
+#### How to get and store each key
+
+Only the one for what you will use; neither depends on the other.
+
+| | Voiceover | Generated images |
+|---|---|---|
+| Service | ElevenLabs | OpenAI |
+| Where it is created | [elevenlabs.io](https://elevenlabs.io), in the account menu, under "API Keys" | [platform.openai.com](https://platform.openai.com), under "API keys" |
+| What it spends | the credits of your own account's plan | the API is paid per use and is separate from the ChatGPT subscription: it needs credit on the API account (under "Billing") |
+| File | `~/.claude/secrets/elevenlabs.env` | `~/.claude/secrets/openai.env` |
+| The line | `ELEVENLABS_API_KEY=` and the key | `OPENAI_API_KEY=` and the key |
+
+1. Create the key at the service (the table says where).
+2. In Terminal, create the folder and the file, closed to anyone but you, and open the file in TextEdit. For OpenAI:
+   ```sh
+   mkdir -p ~/.claude/secrets && chmod 700 ~/.claude/secrets
+   touch ~/.claude/secrets/openai.env && chmod 600 ~/.claude/secrets/openai.env
+   open -e ~/.claude/secrets/openai.env
+   ```
+   For ElevenLabs, the same three commands with `elevenlabs.env` in place of `openai.env`.
+3. In the file, write a single line, the one from the table, with the key right after the `=` (no spaces, no quotes),
+   and save.
+4. Check it: `node ~/.claude/skills/primo-videos/scripts/requisitos.mjs --lang en`. The key's line turns into ✔,
+   without showing the value.
+
+The key is never pasted into the conversation with Claude, never goes into git and is never printed: you put it in the
+file yourself, with your own editor. Instead of the file, the environment variable of the same name works too.
 
 ### What your machine needs
 
@@ -172,7 +234,8 @@ before, entirely on your machine.
 - Playwright's Chromium (the environment command takes care of it);
 - macOS (Windows comes later);
 - Claude Code, which the skill also uses to write the video's thesis and for the critique (`claude -p`);
-- optional: an ElevenLabs account and key (voiceover) and an OpenAI one (generated images).
+- optional: an ElevenLabs account and key (voiceover) and an OpenAI one (generated images), in
+  [How to get and store each key](#how-to-get-and-store-each-key).
 
 The final render is heavy (a few minutes per video): on a laptop, keep it plugged in.
 
