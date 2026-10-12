@@ -9,7 +9,7 @@ caption at the bottom. It is part of product type 4 (`references/product.md`).
 - API or library with no screen (`curl` + JSON; an example running), as a type 5 proposal.
 
 ## When not to use
-- Interactive program (TUI, questions and answers): the recorder has no keyboard. Record the Terminal window (type 3).
+- Interactive program (TUI, questions and answers): the recorder has no keyboard. Record a terminal window (type 3).
 - Output with secrets or real data: change the environment before recording.
 
 ## How to do it
@@ -17,6 +17,10 @@ caption at the bottom. It is part of product type 4 (`references/product.md`).
 node scripts/product/record-terminal.mjs --commands commands.json --out terminal.json --folder <repo>
 node templates/typing-terminal/render.mjs video.json --out <folder> [--mode draft|final] [--formats 16x9,9x16] [--no-sound]
 ```
+`record-terminal.mjs` really runs each command: in `/bin/sh` on macOS and Linux, and in Git Bash on Windows (it comes
+with Git for Windows, which Claude Code on Windows also uses; `CLAUDE_CODE_GIT_BASH_PATH` points to another `bash.exe`).
+Without Git Bash it stops and says `winget install Git.Git`.
+
 Formats: `16x9`, `9x16`, `1x1`, `4x5`, `19x9` (2280×1080) and `21x9` (2520×1080). In the two wide ones the window is
 the 16:9 one stretched in width (side margin of 110 px × width/1920; same type size) and 12 px shorter, so the caption
 fits within the bottom 5%.

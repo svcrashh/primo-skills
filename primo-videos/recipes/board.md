@@ -34,7 +34,10 @@ A video without a voice has no `script` and no `narration`, and the board works 
 - `say` without `--scene` goes to the thread about the whole video. `status … working "<what>"` shows "Skill is
   working…" in that thread until your next `say` there, or `status … idle`.
 - `agent <project>` prints this loop with the commands for the project, for the session that will serve the board;
-  `agent <project> --terminal` opens Terminal.app with Claude Code on it (macOS; elsewhere it prints the loop).
+  `agent <project> --terminal` opens a terminal in the project folder with Claude Code on it, starting from the prompt
+  in `board/agent-prompt.txt`: Terminal.app on macOS; Windows Terminal (`wt.exe`) on Windows or, without it, a console
+  window through PowerShell, with the hint `winget install Microsoft.WindowsTerminal`. On any other system, or with no
+  `claude` found, it says why and prints the loop instead.
 - `open` again reuses the running board. If it fails, show the files and ask in the chat instead.
 
 ## board.json

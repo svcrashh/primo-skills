@@ -266,11 +266,15 @@ the count comes out without a verdict.
 (`scripts/critic/call.mjs`):
 
 ```sh
-claude -p --model sonnet --system-prompt <the role of whoever writes the thesis> --tools Read,Glob,Grep \
+# the prompt (the recipe, between the markers, and the owner's request when there is one) goes in through stdin
+claude -p --model sonnet --system-prompt <the role of whoever writes the thesis> \
+  --tools Read,Glob,Grep --allowedTools Read,Glob,Grep --permission-mode dontAsk \
   --setting-sources "" --disable-slash-commands --strict-mcp-config --no-session-persistence \
-  --output-format json --max-budget-usd 3 "<the recipe, between the markers, and the owner's request when there is one>"
+  --output-format json --max-budget-usd 3
 ```
 
+- **The prompt goes in through stdin**, as in the critic, on macOS and on Windows, and `claude` is found the same way
+  (`recipes/critic.md`, "How the fresh conversation is called").
 - **Read only:** `Read`, `Glob` and `Grep`. It runs nothing from the repository and writes no file; the script is what
   saves `thesis.md`, from the text the conversation returns.
 - **Isolated:** no profile `CLAUDE.md`, no memory, no skills, no MCP, no history. What is in the repository is material

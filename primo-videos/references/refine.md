@@ -64,7 +64,7 @@ Each row is a defect that already shipped in a delivered video.
 
 | Problem that already happened | Check (`checagem` in the JSON) | Fails when |
 |---|---|---|
-| Botched screenshot, shrunken screen | **Legibility** (`legibilidade`): Vision OCR (macOS) at 2 frames/s; the height of each line, normalized to a short side of 1080 | a line under 16 px; or 6+ lines under 28 px in the same frame (the whole screen shrunk). A line between 16 and 28 px is a warning. All caps counts 1.2× (Vision measures the capital's height) |
+| Botched screenshot, shrunken screen | **Legibility** (`legibilidade`): the system's OCR (Vision on macOS, the Windows OCR on Windows) at 2 frames/s; the height of each line, normalized to a short side of 1080 | a line under 16 px; or 6+ lines under 28 px in the same frame (the whole screen shrunk). A line between 16 and 28 px is a warning. All caps counts 1.2× (Vision measures the capital's height) |
 | Text that passes in the file and vanishes on the phone (a 1920 16:9 playing in a 390 px player) | **Reading in the player** (`player`): the same OCR, with each line at the size it ends up after the player shrinks the video, `altura × min(1, player ÷ largura)`. Only runs with `--channel` or `--player` | a line under 16 px in the player. 6+ such lines in the same frame become a single finding (the whole screen); for up to 2.6 s in a row it's the wide shot, a warning. No warning band above 16 px |
 | "The logo's font changed" | **Font** (`fonte`): in Chromium, the computed font of each visible text (HTML and SVG `<text>`), every 0.5 s | a family outside the brand kit; a kit family that fell back to the fallback (the width measurement matches the fallback font); synthesized italic or bold (the kit doesn't have that face) |
 | Frozen frame | **Frozen** (`parado`): ffmpeg's `freezedetect` (n = 0.001, on a 270 px copy: grain and a slow glow don't count as motion) | nothing moves for more than 0.6 s, except the end card (which has to stay still ≥ 1.2 s, otherwise a warning) |
@@ -254,8 +254,11 @@ aprovados/<name>-sheet.jpg   the contact sheet of each approved video
   Breaths and mouth clicks? Does the soundtrack work under the voice? By ear: `references/voice-mix.md` §8 lists what to
   tell the user. Whether each word is understood, alone and after the mix, is `voice.mjs listen` and `listen --mix`
   (`references/voice-mix.md` §6), paid calls.
-- **OCR only on macOS** (Vision, compiled the first time with the machine's `swiftc`). On another machine, legibility
-  becomes a "não rodou" (did not run) warning, the reading in the player is "não rodou" and the other checks carry on.
+- **OCR only on macOS and Windows.** On macOS, Vision, compiled the first time with the machine's `swiftc`; on Windows,
+  `Windows.Media.Ocr` through Windows PowerShell 5.1 (`scripts/refine/ocr.ps1`), which needs a Windows language with
+  optical character recognition installed. Its line height is brought to Vision's scale (×1.15), where the thresholds
+  were calibrated. Without either (Linux, no `swiftc`, no OCR language), legibility becomes a "não rodou" (did not run)
+  warning, the reading in the player is "não rodou" and the other checks carry on.
 - **Font and DOM boxes need Playwright** (the same one the render uses). Without it, those two become "não rodou".
 - **With voice, the scene check reads literal calls** (`em('word', n)`). An `em(variable)` isn't evaluated: write the
   word.

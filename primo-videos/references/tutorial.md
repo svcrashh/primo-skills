@@ -369,7 +369,7 @@ node <skill>/scripts/tutorial/copy.mjs docs/videos/_motor
 - Writes `MOTOR.md` with the date of the copy.
 - **Do not edit the copy.** Improve it in the skill and copy again.
 - The `video.mjs` files import from `../_motor/scripts/tutorial/record.mjs`.
-- **Windows:** Node 18+, ffmpeg (`winget install --id Gyan.FFmpeg -e`), `npx playwright install chromium` and `py -3 -m venv .venv; .venv\Scripts\pip install numpy scipy`. The scripts use nothing from the Unix shell.
+- **Windows:** Node 18+, ffmpeg (`winget install ffmpeg`, then a new terminal), `npx playwright install chromium` and `py -3 -m venv .venv; .venv\Scripts\pip install numpy scipy`. The scripts use nothing from the Unix shell.
 - **.gitignore:** `*/output/`, `*.mp4`, `*-sheet.png`, `.venv/`.
 - **With voice:** the copy also takes `scripts/tutorial/locucao.mjs` (it is among the tutorial scripts),
   `assets/audio/mix_voz.py`, `references/voice-tutorial.md` and `references/voice-mix.md`. It does not take
@@ -696,10 +696,10 @@ pessoa: {
 The 3D canvas is transparent (the series background shows behind it) and does not enter the collision check: an invisible marker
 in place of the app's text (opening) and of the logo (closing) is what the check measures. It needs the GPU in the render: every Chromium
 of the video comes from `scripts/playwright.cjs`, which on the Mac opens with `--use-angle=metal --enable-gpu --ignore-gpu-blocklist`.
-`node $SKILL/scripts/playwright.cjs --gpu` prints the `UNMASKED_RENDERER_WEBGL` and exits with code 1 if it is SwiftShader;
+`node $SKILL/scripts/playwright.cjs --gpu` prints the `UNMASKED_RENDERER_WEBGL` and, on the Mac, exits with code 1 if it is SwiftShader;
 `render.cjs` prints the renderer at the start of each render and, on the Mac, stops with the warning `3D ON CPU` if it falls back to
 SwiftShader. Before the draft and the final, the renderer has to be the GPU (on the Mac, something like
-`ANGLE (Apple, ANGLE Metal Renderer: Apple M5)`). Only `VIDEOSTUDIO_NO_GPU=1` lets the render go on on the CPU.
+`ANGLE (Apple, ANGLE Metal Renderer: Apple M5)`). Only `VIDEOSTUDIO_NO_GPU=1` lets the render go on on the CPU. On Windows the video is drawn on the CPU (SwiftShader) on purpose: report the line and go on (SKILL.md, "On Windows").
 
 ### fechamento: the brand at the end
 
@@ -1047,7 +1047,7 @@ After the video is approved, record its direction (`variety.mjs record --brand <
    ```sh
    node 01-<task>/video.mjs --check                   # until ✓ (taps, series, fonts, logo, contrast)
    node 01-<task>/video.mjs                           # records; LOOK at output/computer/taps-sheet.png
-   node $SKILL/scripts/playwright.cjs --gpu           # report the WebGL line (on the Mac, Metal)
+   node $SKILL/scripts/playwright.cjs --gpu           # report the WebGL line (on the Mac, Metal; on Windows, SwiftShader)
    node $SKILL/scripts/tutorial/compose.mjs 01-<task> --mode draft          # 19:9; LOOK at the event sheet
    node $SKILL/scripts/refine.mjs 01-<task> --channel site                    # until PASSED; DIRECTION not "weak"
    node $SKILL/scripts/tutorial/compose.mjs 01-<task> --mode draft --format 16x9     # other formats, if they ask

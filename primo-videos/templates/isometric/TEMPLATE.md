@@ -143,8 +143,8 @@ WebGL, so each face of a landed block is also an invisible rectangle it reads) �
 `assets/audio/arrange_series.py` (lead: the thud of each layer that lands, a blip that rises with each layer that is
 named, a whoosh on the transition, an accent on the logo), measured by `verify.py` → `scripts/render.cjs` →
 `scripts/finalize.mjs` → the contact sheet.
-The render prints a `WebGL:` line: it must be the GPU (on a Mac, `ANGLE Metal Renderer: Apple …`), never
-SwiftShader (on a Mac, `render.cjs` stops with code 5 if it falls back to the CPU).
+The render prints a `WebGL:` line: on a Mac it must be the GPU (`ANGLE Metal Renderer: Apple …`), never
+SwiftShader (`render.cjs` stops with code 5 if it falls back to the CPU). On Windows it is SwiftShader: the same image, slower.
 Out come `<output>/<name>-<format>[-draft].mp4` and `…-sheet.jpg`: **look at the sheet**.
 
 Refinement check of the rendered video: `node scripts/refine.mjs <output>/<name>-16x9.mp4 --project <output>/.work-<name> --format 16x9 --channel site`.

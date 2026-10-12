@@ -97,7 +97,7 @@ removed and why.
      `--line <id>` reads another line of the script.
    - Running it again costs nothing: it comes from the cache.
 3. Show the three to the user. The review board plays `samples.json` (`recipes/board.md`); in the chat, open the
-   files (`open` on macOS) and ask with `AskUserQuestion`:
+   files (`open` on macOS, `start "" "<file>"` on Windows) and ask with `AskUserQuestion`:
    - one option per voice, with the recommended one first;
    - in each one's description, the why and the measured time ("speaks slowly: the video gets ~20% longer").
 4. After the choice, put the voice in `voz` in `script.json` (`id`, `nome`) and move on to `generate`
@@ -148,7 +148,7 @@ voice came from measuring against the approved video:
 
    Run `compare` on that folder: now the text is the same, and the duration measures the pace (in that project, the
    chosen voice read it in 4.50 s, the same 4.50 s as the reference).
-4. The top 3 go to the user side by side with the reference's excerpt (`open -a "QuickTime Player"` on macOS).
+4. The top 3 go to the user side by side with the reference's excerpt (`open -a "QuickTime Player"` on macOS, `start "" "<file>"` on Windows).
 5. Cloning the reference's voice: no. It's a person (§9).
 
 ## 7. A livelier voice on v3 and v4 (opt-in)

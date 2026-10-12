@@ -191,7 +191,7 @@ alignments and transcriptions).
 ## 8. The owner judges
 
 Send **2–4 readings of the same sentence** in one round, with the "before" one in the middle. Show them on the review
-board (it plays `samples.json`), or open the audio files (`open -a "QuickTime Player" <readings>` on macOS) and ask
+board (it plays `samples.json`), or open the audio files (`open -a "QuickTime Player" <readings>` on macOS, `start "" "<reading>"` on Windows) and ask
 with `AskUserQuestion` ("Which reading sounds most like a person?"), with one line per option saying what changes.
 Recommend one (the v4), first and marked "(Recommended)", and say it may still need a pause adjustment (`[pause]` to
 lengthen, remove the "…" to shorten).

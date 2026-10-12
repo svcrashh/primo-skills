@@ -131,8 +131,8 @@ node templates/drawn-explainer/render.mjs <video.json> \
   through `scripts/render.cjs`; ~3–4 min per 20 s format on the M5. `--from/--to` renders only a segment
   (the sound is cut along with it; `finalize.mjs` only checks the whole video).
 - Chromium is the one from `scripts/playwright.cjs`: on a Mac, drawing on the GPU (`--use-angle=metal --enable-gpu
-  --ignore-gpu-blocklist`). The script prints `GPU (UNMASKED_RENDERER_WEBGL): …`; it must say Apple/Metal. If it says
-  SwiftShader, the render comes out the same, just slower. Playwright not found: `PLAYWRIGHT_PATH=<folder>/node_modules/playwright`.
+  --ignore-gpu-blocklist`). The script prints `GPU (UNMASKED_RENDERER_WEBGL): …`; it must say Apple/Metal on a Mac. If it says
+  SwiftShader (always, on Windows), the render comes out the same, just slower. Playwright not found: `PLAYWRIGHT_PATH=<folder>/node_modules/playwright`.
 - **The refinement check runs on the build:** `node $SKILL/scripts/refine.mjs <output>/.work-<name> --channel <channel>` finds the MP4 with
   sound in the folder above (the newest between the final and the draft), takes the formats and the platform from the build
   (`out/assembly.json`, `params.js`) and, with voice, measures the build's voice-over (`voice/obra/narration.json`, the segments of each

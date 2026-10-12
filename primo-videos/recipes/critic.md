@@ -193,11 +193,19 @@ voice, the voice over the soundtrack is measured by `finalize.mjs` (the voice at
 this:
 
 ```sh
-claude -p --model sonnet --system-prompt <the critic's role> --tools Read \
+# the prompt (the rubric, the request and what to read) goes in through stdin
+claude -p --model sonnet --system-prompt <the critic's role> --tools Read --allowedTools Read --permission-mode dontAsk \
   --setting-sources "" --disable-slash-commands --strict-mcp-config --no-session-persistence \
-  --output-format json --max-budget-usd 1.5 "<the rubric, the request and what to read>"
+  --output-format json --max-budget-usd 1.5
 ```
 
+- **The prompt goes in through stdin**, never as the last argument, on macOS and on Windows: the rubric plus the
+  request has no size limit, and the Windows command line does (32,767 characters).
+- **Finds `claude` on its own:** in the PATH and, when the PATH does not have it, where the installers put it
+  (`~/.local/bin/claude`, `~/.claude/local/claude`, `/opt/homebrew/bin`, `/usr/local/bin`). On Windows: `claude.exe` or
+  `claude.cmd` in the PATH, `%USERPROFILE%\.local\bin\claude.exe` (the native installer) or `%APPDATA%\npm\claude.cmd`
+  (npm). For npm's `claude.cmd`, it runs the program the `.cmd` points to directly, without `cmd.exe`, which does not
+  pass an argument with line breaks or quotes intact. `CRITIC_CLAUDE` points to another one.
 - **Isolated:** no profile `CLAUDE.md`, no project memory, no skills, no MCP, no history. Only the `Read` tool, and only
   inside the package folder.
 - **Uses the account already logged in** to `claude` (the subscription): it does not ask for an API key and does not

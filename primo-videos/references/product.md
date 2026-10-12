@@ -90,10 +90,13 @@ The video shows what was typed and what the program **really** answered, in the 
   ```
   It runs each command (20 s at most) and stores the lines and the time of each one. An exit code ≠ 0 is shown as it came out; check
   whether the owner wants that on screen. `alias` makes the name that appears in the video run the project's program, without installing anything.
+  The commands are written in `sh` and run in `/bin/sh` on macOS and Linux. On Windows they run in **Git Bash** (it comes with Git for Windows,
+  which Claude Code on Windows also uses; `CLAUDE_CODE_GIT_BASH_PATH` points to another `bash.exe`), never in PowerShell or `cmd.exe`, so `&&`,
+  `VAR=x`, `printf`, `curl` and the `alias` behave as on the Mac. Without Git Bash, the recorder stops and says `winget install Git.Git`.
 - **Template:** `templates/typing-terminal/` (`TEMPLATE.md`). `node templates/typing-terminal/render.mjs video.json --out <folder>`;
   16:9, 9:16 and 1:1 recomposed. Typing with a seeded human rhythm, cursor, a short caption below. No soundtrack in the draft.
 - **Ask:** which commands, in order; does any of them change things or spend resources; does the output have real data or secrets (never show them).
-- An interactive program (TUI, `inquirer`) does not fit: the recorder has no keyboard. For those, record the Terminal window through type 3.
+- An interactive program (TUI, `inquirer`) does not fit: the recorder has no keyboard. For those, record a terminal window through type 3.
 
 ## 5 · Product with no screen (library, API, bot, service)
 **There is no screen to record, and the skill does not invent one.** Tell the owner that and propose:
