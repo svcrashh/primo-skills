@@ -6,7 +6,7 @@ Minhas skills do Claude Code, uma pasta por skill. As de terminal valem no Mac e
 |---|---|
 | `terminal-claude` | Abre várias janelas de terminal, cada uma com um Claude e o seu prompt, acompanha em que pé está cada uma e fecha no fim. |
 | `terminal-organizar` | Arruma as janelas de terminal em grade, cada monitor com a sua. |
-| `primo-videos` | Faz vídeo do seu produto, sem narração: lê o projeto, pergunta o que falta, mostra cada cena como imagem parada antes de animar e entrega o MP4 com trilha original. A marca e as ideias são suas. Só Mac por enquanto. [Como usar](primo-videos/README.md). |
+| `primo-videos` | Faz vídeo do seu produto, com ou sem narração: lê o projeto, pergunta o que falta, mostra cada cena como imagem parada antes de animar e entrega o MP4 com trilha original. A marca e as ideias são suas. A voz em off (ElevenLabs) e as imagens geradas (OpenAI) são opcionais, com a sua chave. Só Mac por enquanto. [Como usar](primo-videos/README.md). |
 
 As duas de terminal andam juntas: a `terminal-claude` usa a grade da `terminal-organizar`.
 
@@ -74,7 +74,7 @@ Depois de 10 lotes ou 14 dias de uso num projeto, o Claude pergunta se você que
 ## Requisitos
 
 - **Mac:** Terminal.app e `python3`.
-- **`primo-videos` (Mac):** Node 18 ou mais novo, ffmpeg (`brew install ffmpeg`) e, uma vez por máquina, `node ~/.claude/skills/primo-videos/scripts/environment.mjs --fix` (acha o Playwright e cria o Python da trilha). O resto está no [README dela](primo-videos/README.md).
+- **`primo-videos` (Mac):** Node 18 ou mais novo, ffmpeg (`brew install ffmpeg`) e, uma vez por máquina, `node ~/.claude/skills/primo-videos/scripts/environment.mjs --fix` (acha o Playwright e cria o Python da trilha). A voz em off e as imagens geradas são opcionais e pedem a chave de cada serviço (`ELEVENLABS_API_KEY`, `OPENAI_API_KEY`); sem elas, roda tudo na máquina. O resto está no [README dela](primo-videos/README.md).
 - **Windows:** Python (`python`), Windows Terminal (`wt`) e o `claude` no PATH. O lado Windows foi escrito no Mac e ainda não rodou num Windows de verdade; o `SKILL.md` de cada skill diz o que conferir na primeira vez.
 
 ## Acrescentar uma skill

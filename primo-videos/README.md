@@ -2,11 +2,13 @@
 
 **Português** · [English](#english)
 
-Uma skill do Claude Code que faz vídeo do seu produto, sem narração: tutorial com a tela real, lançamento, novidades,
-explicação desenhada, número que conta, vinheta, corte para Reels. Ela **não traz marca nem visual pronto**: a marca,
-o contexto e as ideias são seus. Ela lê o seu projeto, pergunta o que falta, mostra cada cena como imagem parada antes
-de animar e entrega o MP4 (16:9, 19:9, 21:9, 9:16, 4:5 ou 1:1) com trilha original. Tudo roda na sua máquina, sem API
-externa.
+Uma skill do Claude Code que faz vídeo do seu produto, com ou sem narração: tutorial com a tela real, lançamento,
+novidades, explicação desenhada, número que conta, vinheta, corte para Reels. Sem narração, que é o padrão, o vídeo é
+contado pelo texto na tela, pela trilha original e pelos efeitos; com narração, ganha uma voz em off. Ela **não traz
+marca nem visual pronto**: a marca, o contexto e as ideias são seus. Ela lê o seu projeto, pergunta o que falta, mostra
+cada cena como imagem parada antes de animar e entrega o MP4 (16:9, 19:9, 21:9, 9:16, 4:5 ou 1:1) com trilha original.
+Sem voz e sem imagem gerada, tudo roda na sua máquina, sem API externa; a voz em off (ElevenLabs) e as imagens geradas
+(OpenAI) são opcionais e pagas, com a sua chave.
 
 ## Instalar
 
@@ -32,6 +34,7 @@ Abra o Claude Code no projeto do seu produto e peça `/primo-videos`, ou em port
 
 - "faz um vídeo de 20 segundos mostrando a novidade X"
 - "faz um vídeo tutorial de como cadastrar um cliente"
+- "faz um vídeo tutorial narrado de como cadastrar um cliente"
 - "mostra os estilos de vídeo"
 
 Ela responde na sua língua. Antes de produzir, pergunta se você quer conversar sobre o vídeo (os assuntos e a direção)
@@ -45,18 +48,38 @@ e aprovar um roteiro. Você pode trazer a ideia pronta, uma referência que gost
    (`node ~/.claude/skills/primo-videos/scripts/catalog.mjs list`); você também pode propor um que não está na lista.
 3. **Quadro de revisão no navegador:** uma fase por cena. Você aprova a imagem parada, só então ela anima; você
    aprova a prévia com som, só então sai o final. Dá para colar a sua própria imagem numa cena e escrever em cada uma.
+   Com voz, você aprova o roteiro de locução antes de qualquer gasto e escolhe a voz ouvindo; o que o vídeo já gastou
+   aparece no quadro.
 4. **O vídeo final** em cada formato, com a folha de quadros, a conferência de legibilidade e uma crítica independente,
    e a pasta do projeto para refazer.
 
 Cada marca fica guardada em `~/Documents/VideoStudio/Brands/<marca>/` (o kit do produto, as opções de logo e slogan e
 o histórico), para o próximo vídeo começar pronto e não sair igual ao anterior.
 
+## Voz e imagens (opcionais)
+
+Duas coisas pagas, que só entram quando você pede e tem a chave do serviço. Sem elas, a skill funciona exatamente como
+antes, inteira na sua máquina.
+
+- **Voz em off,** lida pela ElevenLabs: o roteiro de locução é aprovado antes de qualquer gasto, e a voz você escolhe
+  ouvindo a mesma frase em duas ou três vozes.
+- **Imagem gerada,** pela OpenAI, só para o que não existe no produto nem na marca: um cenário, um objeto, um fundo.
+  Nunca a tela do produto, o logo, uma pessoa real ou texto dentro da imagem.
+- **As chaves:** `ELEVENLABS_API_KEY` e `OPENAI_API_KEY`, no ambiente ou em `~/.claude/secrets/elevenlabs.env` e
+  `~/.claude/secrets/openai.env`. Você mesmo escreve, no seu terminal, nunca colando no chat; a skill nunca as
+  imprime. O `environment.mjs` diz se cada uma existe, sem mostrar o valor.
+- **Quanto custa, por alto:** as opções de uma imagem saem em qualidade baixa, ~US$ 0,006 cada; a escolhida, refeita em
+  alta, ~US$ 0,04 a 0,08. A locução gasta até uns 900 créditos da ElevenLabs por minuto.
+- **Teto por vídeo:** US$ 0,50 em imagem (umas quatro cenas geradas) e 1.500 créditos de voz. Para passar disso, ela
+  pergunta antes. O gasto fica à vista no quadro de revisão, atualizado a cada chamada paga.
+
 ## O que precisa ter na máquina
 
 - Node.js 18 ou mais novo, Python 3 e ffmpeg;
 - o Chromium do Playwright (o comando de ambiente resolve);
 - macOS (Windows vem depois);
-- Claude Code, que a skill também usa para escrever a tese do vídeo e para a crítica (`claude -p`).
+- Claude Code, que a skill também usa para escrever a tese do vídeo e para a crítica (`claude -p`);
+- opcional: a conta e a chave da ElevenLabs (voz) e da OpenAI (imagens geradas).
 
 O render final é pesado (alguns minutos por vídeo): em notebook, deixe na tomada.
 
@@ -71,11 +94,14 @@ Lucide (ISC); o 3D usa three.js (MIT); os exemplos usam a fonte Inter (SIL Open 
 
 ## English
 
-A Claude Code skill that makes a video of your product, without narration: a tutorial on the real screen, a launch,
-what's new, a drawn explainer, a counting number, a logo sting, a cut for Reels. It **ships no brand and no ready-made
-look**: the brand, the context and the ideas are yours. It reads your project, asks for what is missing, shows every
-scene as a still before animating it and delivers the MP4 (16:9, 19:9, 21:9, 9:16, 4:5 or 1:1) with an original
-soundtrack. Everything runs on your machine, with no external API.
+A Claude Code skill that makes a video of your product, with or without narration: a tutorial on the real screen, a
+launch, what's new, a drawn explainer, a counting number, a logo sting, a cut for Reels. Without narration, the
+default, the video is told by on-screen text, an original soundtrack and sound effects; with narration, it gets a
+voiceover. It **ships no brand and no ready-made look**: the brand, the context and the ideas are yours. It reads your
+project, asks for what is missing, shows every scene as a still before animating it and delivers the MP4 (16:9, 19:9,
+21:9, 9:16, 4:5 or 1:1) with an original soundtrack. Without a voiceover and without generated images, everything runs
+on your machine, with no external API; the voiceover (ElevenLabs) and the generated images (OpenAI) are optional and
+paid, with your own key.
 
 ### Install
 
@@ -101,6 +127,7 @@ Open Claude Code in your product's project and ask for `/primo-videos`, or in pl
 
 - "make a 20-second video showing the new feature X"
 - "make a tutorial video on how to register a customer"
+- "make a narrated tutorial video on how to register a customer"
 - "show me the video styles"
 
 It answers in your language. Before producing, it asks whether you want to talk the video through (the topics and the
@@ -114,19 +141,38 @@ direction) and approve a script. You can bring a finished idea, a reference you 
    (`node ~/.claude/skills/primo-videos/scripts/catalog.mjs list`); you can also propose one that is not on the list.
 3. **A review board in the browser:** one phase per scene. You approve the still, and only then it animates; you
    approve the preview with sound, and only then the final is rendered. You can paste your own picture into a scene
-   and write on each one.
+   and write on each one. With a voiceover, you approve the voiceover script before anything is spent and pick the
+   voice by ear; what the video has spent shows on the board.
 4. **The final video** in each format, with its contact sheet, the legibility check and an independent critique, and
    the project folder to redo it.
 
 Each brand is kept in `~/Documents/VideoStudio/Brands/<brand>/` (the product kit, the logo and slogan options and the
 history), so the next video starts ready and does not come out the same as the previous one.
 
+### Voice and images (optional)
+
+Two paid extras, used only when you ask for them and have the service's key. Without them, the skill works exactly as
+before, entirely on your machine.
+
+- **Voiceover,** read by ElevenLabs: the voiceover script is approved before anything is spent, and you pick the voice
+  by hearing the same sentence read by two or three voices.
+- **Generated image,** from OpenAI, only for what neither the product nor the brand has: a setting, an object, a
+  backdrop. Never the product's screen, the logo, a real person or text inside the image.
+- **The keys:** `ELEVENLABS_API_KEY` and `OPENAI_API_KEY`, in the environment or in `~/.claude/secrets/elevenlabs.env`
+  and `~/.claude/secrets/openai.env`. You write them yourself, in your own terminal, never pasted into the chat; the
+  skill never prints them. `environment.mjs` says whether each one exists, without showing it.
+- **What it costs, roughly:** an image's options come out in low quality, ~US$ 0.006 each; the chosen one, redone in
+  high quality, ~US$ 0.04 to 0.08. A voiceover spends up to about 900 ElevenLabs credits per minute.
+- **Cap per video:** US$ 0.50 of images (about four generated scenes) and 1,500 voice credits. To go past them, it
+  asks first. The spending stays in view on the review board, updated after every paid call.
+
 ### What your machine needs
 
 - Node.js 18 or newer, Python 3 and ffmpeg;
 - Playwright's Chromium (the environment command takes care of it);
 - macOS (Windows comes later);
-- Claude Code, which the skill also uses to write the video's thesis and for the critique (`claude -p`).
+- Claude Code, which the skill also uses to write the video's thesis and for the critique (`claude -p`);
+- optional: an ElevenLabs account and key (voiceover) and an OpenAI one (generated images).
 
 The final render is heavy (a few minutes per video): on a laptop, keep it plugged in.
 
