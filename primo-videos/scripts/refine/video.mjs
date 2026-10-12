@@ -1,10 +1,11 @@
 // Refino do vídeo pronto: olha o MP4 como quem assiste no celular e acusa o que o motor não vê.
-//   legibilidade  OCR do Vision (macOS) nos quadros amostrados: letra pequena demais, tela encolhida
+//   legibilidade  OCR do sistema (o Vision no macOS, o Windows.Media.Ocr no Windows) nos quadros amostrados: letra
+//                 pequena demais, tela encolhida
 //   player        o mesmo OCR, com a letra no tamanho em que fica depois de o player encolher o vídeo (opcoes.player)
 //   parado       freezedetect do ffmpeg: nada se mexe por mais de 0,6 s (o cartão final é a exceção)
 //   vazio         quadro sem objeto, ou metade da área segura vazia enquanto a voz fala
 //   area-segura   texto fora do retângulo seguro e conteúdo sob a interface da rede (tudo o que aparece)
-// Só Node e ffmpeg; o OCR é um Swift pequeno compilado uma vez num cache.
+// Só Node e ffmpeg; o OCR é um Swift pequeno compilado uma vez num cache (Mac) ou um script do PowerShell (Windows).
 //   import { checarVideo } from './refine/video.mjs'
 //   const { achados, medidas } = await checarVideo('out/final-9x16.mp4', { plataforma: 'tiktok', saidaQuadros: 'out/refine' })
 import fs from 'node:fs'
@@ -16,6 +17,9 @@ import { fileURLToPath } from 'node:url'
 
 const AQUI = path.dirname(fileURLToPath(import.meta.url))
 const FONTE_OCR = path.join(AQUI, 'ocr.swift')
+const FONTE_OCR_WIN = path.join(AQUI, 'ocr.ps1')
+// o Windows PowerShell 5.1, que vem em todo Windows (o pwsh 7 não carrega os tipos do WinRT que o OCR usa)
+const POWERSHELL = ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File']
 
 export const FORMATOS = { '16x9': [1920, 1080], '19x9': [2280, 1080], '21x9': [2520, 1080], '9x16': [1080, 1920], '1x1': [1080, 1080], '4x5': [1080, 1350] }
 export const CHECAGENS = ['legibilidade', 'player', 'parado', 'vazio', 'area-segura']
@@ -596,38 +600,68 @@ function extrairPng(mp4, { de, dur, passo, pasta }) {
 
 // ── OCR ──────────────────────────────────────────────────────────────────────────────────────────
 let _ocr = null
-/** Caminho do binário do OCR (compila uma vez no cache) ou { erro }. */
+/** O OCR desta máquina: { bin, args, motor } (o Swift compila uma vez no cache) ou { erro }. */
 export function binarioOcr() {
   if (_ocr) return _ocr
-  if (process.platform !== 'darwin') return (_ocr = { erro: 'the OCR uses macOS Vision and this machine is not a Mac' })
+  if (process.platform === 'win32') return (_ocr = ocrDoWindows())
+  if (process.platform !== 'darwin') return (_ocr = { erro: 'there is no OCR for this system (the refine reads text with macOS Vision or the Windows OCR)' })
   const fonte = fs.readFileSync(FONTE_OCR)
   const hash = crypto.createHash('sha1').update(fonte).digest('hex').slice(0, 12)
   const cache = path.join(os.homedir(), '.cache', 'videostudio')
   const bin = path.join(cache, `ocr-${hash}`)
-  if (fs.existsSync(bin)) return (_ocr = { bin })
+  if (fs.existsSync(bin)) return (_ocr = { bin, args: [], motor: 'vision' })
   fs.mkdirSync(cache, { recursive: true })
   const tmp = `${bin}.${process.pid}`
   const r = spawnSync('swiftc', ['-O', FONTE_OCR, '-o', tmp], { encoding: 'utf8' })
   if (r.error) return (_ocr = { erro: 'swiftc not found (install the Command Line Tools: xcode-select --install)' })
   if (r.status !== 0) return (_ocr = { erro: 'swiftc could not compile ocr.swift: ' + (r.stderr || '').trim().split('\n').slice(-3).join(' ') })
   fs.renameSync(tmp, bin)
-  return (_ocr = { bin })
+  return (_ocr = { bin, args: [], motor: 'vision' })
 }
 
-function rodarOcr(bin, imagens) {
+const jsonDoPowershell = (txt) => { try { return JSON.parse(String(txt).replace(/^\uFEFF/, '').trim().split(/\r?\n/).pop()) } catch { return null } }
+
+/** O OCR do próprio Windows, pelo ocr.ps1: confere uma vez se há motor (um idioma com OCR instalado). */
+function ocrDoWindows() {
+  const r = spawnSync('powershell.exe', [...POWERSHELL, FONTE_OCR_WIN, '--check'], { encoding: 'utf8', timeout: 60000, windowsHide: true })
+  if (r.error) return { erro: `could not run Windows PowerShell, which reads the text with the Windows OCR (${r.error.code || r.error.message})` }
+  const j = jsonDoPowershell(r.stdout)
+  if (!j) return { erro: 'the Windows OCR did not answer: ' + `${r.stderr || ''} ${r.stdout || ''}`.trim().split(/\r?\n/).slice(-2).join(' ') }
+  if (j.erro) return { erro: j.erro }
+  return { bin: 'powershell.exe', args: [...POWERSHELL, FONTE_OCR_WIN], motor: 'windows', idioma: j.idioma }
+}
+
+function rodarOcr(o, imagens) {
   return new Promise((resolve, reject) => {
-    const p = spawn(bin, imagens)
+    const p = spawn(o.bin, [...o.args, ...imagens], { windowsHide: true })
     let out = '', err = ''
     p.stdout.on('data', (d) => (out += d)); p.stderr.on('data', (d) => (err += d))
     p.on('error', reject)
     p.on('close', (c) => {
       if (c !== 0) return reject(new Error('the OCR failed: ' + err.slice(-300)))
-      resolve(out.split('\n').filter(Boolean).map((l) => JSON.parse(l)))
+      resolve(out.replace(/^\uFEFF/, '').split(/\r?\n/).filter(Boolean).map((l) => JSON.parse(l)))
     })
   })
 }
 
-/** OCR do Vision: [{arquivo, w, h, linhas:[{texto, conf, x, y, w, h}]}], px com origem no topo. */
+/** Luminância 8 bits da imagem, linha 0 em cima (o cinza do ffmpeg é de 0 a 255, como o do ocr.swift). */
+function cinza(png, W, H) {
+  const r = spawnSync('ffmpeg', ['-v', 'error', '-i', png, '-f', 'rawvideo', '-pix_fmt', 'gray', '-'], { maxBuffer: W * H + 4096, windowsHide: true })
+  return r.status === 0 && r.stdout.length === W * H ? r.stdout : null
+}
+
+/** p95 − p5 da luminância na caixa: a mesma medida do ocr.swift (texto esmaecido de propósito fica abaixo de ~80). */
+export function contrasteNaCaixa(px, W, H, { x, y, w, h }) {
+  const x0 = Math.max(0, Math.round(x)), y0 = Math.max(0, Math.round(y)), x1 = Math.min(W, Math.round(x + w)), y1 = Math.min(H, Math.round(y + h))
+  if (x1 - x0 < 2 || y1 - y0 < 2) return null
+  const hist = new Uint32Array(256)
+  for (let yy = y0; yy < y1; yy++) for (let xx = x0; xx < x1; xx++) hist[px[yy * W + xx]]++
+  const n = (x1 - x0) * (y1 - y0)
+  const p = (f) => { let s = 0; for (let v = 0; v < 256; v++) { s += hist[v]; if (s >= f * n) return v } return 255 }
+  return p(0.95) - p(0.05)
+}
+
+/** OCR do sistema: [{arquivo, w, h, linhas:[{texto, x, y, w, h, contraste}]}], px com origem no topo. */
 export async function ocr(imagens) {
   const o = binarioOcr()
   if (o.erro) throw new Error(o.erro)
@@ -635,8 +669,13 @@ export async function ocr(imagens) {
   for (let i = 0; i < imagens.length; i += 24) lotes.push(imagens.slice(i, i + 24))
   const res = []
   // dois processos de cada vez: o Vision já usa o Neural Engine, mais que isso só disputa memória
-  for (let i = 0; i < lotes.length; i += 2) res.push(...(await Promise.all(lotes.slice(i, i + 2).map((l) => rodarOcr(o.bin, l)))).flat())
-  return res.map((r) => ({ ...r, linhas: r.linhas || [] }))
+  for (let i = 0; i < lotes.length; i += 2) res.push(...(await Promise.all(lotes.slice(i, i + 2).map((l) => rodarOcr(o, l)))).flat())
+  return res.map((r) => {
+    const linhas = r.linhas || []
+    // o OCR do Windows não mede o contraste: sai dos pixels da mesma imagem
+    const px = o.motor === 'windows' && linhas.length ? cinza(r.arquivo, r.w, r.h) : null
+    return { ...r, linhas: px ? linhas.map((l) => ({ ...l, contraste: contrasteNaCaixa(px, r.w, r.h, l) ?? undefined })) : linhas }
+  })
 }
 
 // ── quadros marcados ─────────────────────────────────────────────────────────────────────────────
@@ -838,7 +877,9 @@ export async function checarVideo(mp4, opcoes = {}) {
       achados.push({
         checagem: 'legibilidade', nivel: 'aviso', t: null,
         msg: `the OCR did not run (${ocrOk.erro}): legibility${player ? ', player readability' : ''} and text outside the safe area were not checked`,
-        oque_fazer: 'Run the refine on a Mac with the Command Line Tools (swiftc), or check the text on the contact sheet.',
+        oque_fazer: process.platform === 'win32' ? 'Check the text on the contact sheet yourself; to have the OCR, fix what the message above says (the refine reads text with the Windows OCR, through Windows PowerShell).'
+          : process.platform === 'darwin' ? 'Run the refine on a Mac with the Command Line Tools (swiftc), or check the text on the contact sheet.'
+            : 'Run the refine on a Mac or on Windows, or check the text on the contact sheet.',
       })
       medidas.ocr = 'did not run: ' + ocrOk.erro
       if (player) medidas.player = 'did not run: ' + ocrOk.erro
@@ -850,7 +891,7 @@ export async function checarVideo(mp4, opcoes = {}) {
         const i = +path.basename(r.arquivo).match(/\d+/)[0]
         return { i, t: de + (i * passo) / fps, linhas: r.linhas }
       })
-      medidas.ocr = 'vision'
+      medidas.ocr = ocrOk.motor
       medidas.quadrosOcr = quadros.length
       medidas.linhasOcr = quadros.reduce((s, q) => s + q.linhas.length, 0)
       const sp = passo / fps

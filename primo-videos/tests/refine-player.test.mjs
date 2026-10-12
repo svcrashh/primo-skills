@@ -1,6 +1,7 @@
 // A leitura no player: a letra medida no tamanho em que fica depois de o player encolher o vídeo (references/refine.md,
-// "A leitura no player"). node --test tests/refine-player.test.mjs (sem rede; ffmpeg. Os vídeos com OCR só rodam no
-// macOS, com swiftc, e o texto sai do Playwright: sem um deles, esses são pulados)
+// "A leitura no player"). node --test tests/refine-player.test.mjs (sem rede; ffmpeg. Os vídeos com OCR precisam do OCR
+// do sistema — o Vision no macOS, com swiftc; o do Windows, pelo PowerShell — e o texto sai do Playwright: sem um deles,
+// esses são pulados)
 import { test, describe, before, after } from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs'

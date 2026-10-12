@@ -1,5 +1,6 @@
-// node --test tests/refine-video.test.mjs   (sem rede; precisa do ffmpeg. O OCR só roda no macOS, com swiftc, e o
-// texto das fixtures sai do Playwright: sem um deles, os testes de texto são pulados)
+// node --test tests/refine-video.test.mjs   (sem rede; precisa do ffmpeg. O OCR é o do sistema — o Vision no macOS, com
+// swiftc; o do Windows, pelo PowerShell — e o texto das fixtures sai do Playwright: sem um deles, os testes de texto
+// são pulados)
 import { test, describe, before, after } from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
@@ -10,7 +11,7 @@ import { createRequire } from 'node:module'
 import { fileURLToPath } from 'node:url'
 import {
   checarVideo, zonasDaInterface, areaSeguraDe, formatoDe, trechosParados, lerFreezedetect, juntarTrechos,
-  agruparNoTempo, classificarLegibilidade, textoForaDaArea, alturaDoCorpo, binarioOcr,
+  agruparNoTempo, classificarLegibilidade, textoForaDaArea, alturaDoCorpo, binarioOcr, contrasteNaCaixa,
 } from '../scripts/refine/video.mjs'
 
 const AQUI = path.dirname(fileURLToPath(import.meta.url))
@@ -208,7 +209,17 @@ describe('vídeo: parado e vazio', () => {
   })
 })
 
-describe('vídeo: texto (OCR do macOS)', () => {
+test('contraste na caixa: p95 − p5 da luminância, só dentro da caixa (a medida do ocr.swift, usada com o OCR do Windows)', () => {
+  const W = 40, H = 20, px = new Uint8Array(W * H).fill(20)
+  // texto claro (230) em 30% de uma caixa de 20×10; fora dela, um branco que não pode contar
+  for (let y = 5; y < 15; y++) for (let x = 10; x < 30; x++) if ((x + y) % 10 < 3) px[y * W + x] = 230
+  for (let x = 0; x < 5; x++) px[x] = 255
+  assert.equal(contrasteNaCaixa(px, W, H, { x: 10, y: 5, w: 20, h: 10 }), 210)
+  assert.equal(contrasteNaCaixa(px, W, H, { x: 0, y: 10, w: 8, h: 8 }), 0, 'fundo liso')
+  assert.equal(contrasteNaCaixa(px, W, H, { x: 39, y: 5, w: 20, h: 10 }), null, 'caixa que sai do quadro sem 2 px dentro')
+})
+
+describe('vídeo: texto (OCR do sistema)', () => {
   let navegador = null, motivo = null
   before(async () => {
     if (binarioOcr().erro) { motivo = binarioOcr().erro; return }
@@ -258,15 +269,23 @@ describe('vídeo: texto (OCR do macOS)', () => {
   })
 })
 
-test('sem swiftc nem cache, o OCR vira um aviso e as outras checagens seguem', (t) => {
-  const ff = spawnSync('which', ['ffmpeg'], { encoding: 'utf8' }).stdout.trim()
+const noPath = (nome) => {
+  for (const d of (process.env.PATH || '').split(path.delimiter).filter(Boolean)) {
+    for (const e of process.platform === 'win32' ? ['.exe', ''] : ['']) { try { if (fs.statSync(path.join(d, nome + e)).isFile()) return path.join(d, nome + e) } catch {} }
+  }
+  return null
+}
+
+test('sem o OCR do sistema (sem swiftc nem cache no Mac, sem o PowerShell no Windows), o OCR vira um aviso e as outras checagens seguem', (t) => {
+  const ff = noPath('ffmpeg')
   if (!ff) return t.skip('sem ffmpeg')
   const dir = path.dirname(ff)
-  if (fs.existsSync(path.join(dir, 'swiftc'))) return t.skip('o swiftc mora na mesma pasta do ffmpeg')
+  if (['swiftc', 'powershell.exe'].some((p) => fs.existsSync(path.join(dir, p)))) return t.skip('o OCR do sistema mora na mesma pasta do ffmpeg')
   const mp4 = path.join(pasta, 'sem-ocr.mp4')
   ffmpeg(['-f', 'lavfi', '-i', 'testsrc2=s=270x480:r=30:d=2,loop=loop=45:size=1:start=59', ...h264, mp4])
   const casa = fs.mkdtempSync(path.join(os.tmpdir(), 'refino-casa-'))
-  const r = spawnSync(process.execPath, [VIDEO, mp4, '--json', '--checks', 'legibilidade,parado'], { encoding: 'utf8', env: { PATH: dir, HOME: casa } })
+  const env = { PATH: dir, HOME: casa, USERPROFILE: casa, ...(process.env.SystemRoot ? { SystemRoot: process.env.SystemRoot } : {}) }
+  const r = spawnSync(process.execPath, [VIDEO, mp4, '--json', '--checks', 'legibilidade,parado'], { encoding: 'utf8', env })
   fs.rmSync(casa, { recursive: true, force: true })
   assert.equal(r.status, 0, r.stderr)
   const { achados, medidas } = JSON.parse(r.stdout)
