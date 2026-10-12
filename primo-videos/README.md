@@ -83,7 +83,7 @@ Só a do que você for usar; uma não depende da outra.
 | | Voz em off | Imagem gerada |
 |---|---|---|
 | Serviço | ElevenLabs | OpenAI |
-| Onde se cria | [elevenlabs.io](https://elevenlabs.io), no menu da conta, em "API Keys" | [platform.openai.com](https://platform.openai.com), em "API keys" |
+| Onde se cria | [elevenlabs.io](https://elevenlabs.io/app/settings/api-keys), no menu da esquerda, em "Developers" → "API Keys" | [platform.openai.com](https://platform.openai.com), em "API keys" |
 | O que gasta | os créditos do plano da sua própria conta | a API é paga por uso e é separada da assinatura do ChatGPT: precisa de crédito na conta da API (em "Billing") |
 | Arquivo | `~/.claude/secrets/elevenlabs.env` | `~/.claude/secrets/openai.env` |
 | A linha | `ELEVENLABS_API_KEY=` e a chave | `OPENAI_API_KEY=` e a chave |
@@ -207,7 +207,7 @@ Only the one for what you will use; neither depends on the other.
 | | Voiceover | Generated images |
 |---|---|---|
 | Service | ElevenLabs | OpenAI |
-| Where it is created | [elevenlabs.io](https://elevenlabs.io), in the account menu, under "API Keys" | [platform.openai.com](https://platform.openai.com), under "API keys" |
+| Where it is created | [elevenlabs.io](https://elevenlabs.io/app/settings/api-keys), in the left menu, under "Developers" → "API Keys" | [platform.openai.com](https://platform.openai.com), under "API keys" |
 | What it spends | the credits of your own account's plan | the API is paid per use and is separate from the ChatGPT subscription: it needs credit on the API account (under "Billing") |
 | File | `~/.claude/secrets/elevenlabs.env` | `~/.claude/secrets/openai.env` |
 | The line | `ELEVENLABS_API_KEY=` and the key | `OPENAI_API_KEY=` and the key |

@@ -77,7 +77,7 @@ test('primeira vez na máquina: falta o ffmpeg e a conferência (código 1), e c
 
   const voz = bloco(r.stdout, '○ Voz em off: chave da ElevenLabs (ELEVENLABS_API_KEY), opcional e paga')
   assert.match(voz, /só a voz em off fica desligada; o resto funciona/)
-  assert.match(voz, /1\. Crie a chave em elevenlabs\.io, no menu da conta, em "API Keys"\. Ela gasta os créditos do plano/)
+  assert.match(voz, /1\. Crie a chave em elevenlabs\.io, no menu da esquerda, em "Developers" → "API Keys" \(elevenlabs\.io\/app\/settings\/api-keys\)\. Ela gasta os créditos do plano/)
   assert.match(voz, /\n {9}mkdir -p ~\/\.claude\/secrets && chmod 700 ~\/\.claude\/secrets\n/)
   assert.match(voz, /\n {9}touch ~\/\.claude\/secrets\/elevenlabs\.env && chmod 600 ~\/\.claude\/secrets\/elevenlabs\.env\n/)
   assert.match(voz, /3\. Abra o arquivo no seu editor \(open -e ~\/\.claude\/secrets\/elevenlabs\.env[^\n]*ELEVENLABS_API_KEY=/)

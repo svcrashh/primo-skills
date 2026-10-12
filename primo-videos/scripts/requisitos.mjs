@@ -74,8 +74,8 @@ function principal(args) {
   const op = opcionais()
   const CHAVES = [
     ['voz', 'ElevenLabs', t('Voz em off', 'Voiceover'), t('a voz em off', 'the voiceover'), t(
-      'Crie a chave em elevenlabs.io, no menu da conta, em "API Keys". Ela gasta os créditos do plano da sua própria conta.',
-      'Create the key at elevenlabs.io, in the account menu, under "API Keys". It spends the credits of your own account\'s plan.')],
+      'Crie a chave em elevenlabs.io, no menu da esquerda, em "Developers" → "API Keys" (elevenlabs.io/app/settings/api-keys). Ela gasta os créditos do plano da sua própria conta.',
+      'Create the key at elevenlabs.io, in the left menu, under "Developers" → "API Keys" (elevenlabs.io/app/settings/api-keys). It spends the credits of your own account\'s plan.')],
     ['imagens', 'OpenAI', t('Imagem gerada', 'Generated images'), t('a imagem gerada', 'generated images'), t(
       'Crie a chave em platform.openai.com, em "API keys". A API é paga por uso e é separada da assinatura do ChatGPT: precisa de crédito na conta da API (em "Billing").',
       'Create the key at platform.openai.com, under "API keys". The API is paid per use and is separate from the ChatGPT subscription: it needs credit on the API account (under "Billing").')],
