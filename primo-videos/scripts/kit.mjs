@@ -212,7 +212,7 @@ const modeloVideo = ({ gravar, id, serie, semente, origem, inicio, versao, cinem
   id, produto, data: agoraIso().slice(0, 10), pedido140: pedido.replace(/\n/g, ' ').slice(0, 140),
   arquivoTextos: NARRACAO ? 'voice/v1/script.json (the lines)' : 'texts.json (the texts)', arquivoFalas: NARRACAO ? 'voice/v1/script.json' : 'texts.json',
   checkVoz: NARRACAO ? ' (before the voice, from the script)' : '', gravaVoz: NARRACAO ? ' (with the generated voice: voice/v1/narration.json)' : '',
-  caminhoTextos: NARRACAO ? "'voz', 'v1', 'script.json'" : "'texts.json'", gravar, serie, cinema, semente: semente == null ? 'undefined' : semente,
+  caminhoTextos: NARRACAO ? "'voice', 'v1', 'script.json'" : "'texts.json'", gravar, serie, cinema, semente: semente == null ? 'undefined' : semente,
   origem, inicio, versao, antesPorta,
   linhaVoz: NARRACAO ? `  ...(ANTES ? {} : { voz: { locucao: 'voice/v1/narration.json', roteiro: 'voice/v1/script.json', perfil: '${perfil}' } }),\n` : '',
 })
