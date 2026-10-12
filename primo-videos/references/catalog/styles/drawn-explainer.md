@@ -74,4 +74,5 @@ Two styles from the "without a template" list are this one: [Concept before the 
 and 9:16), `example-counts.json` (counting numbers, split layout, push between the scenes) and
 `example-pull-back.json` (a single frame; the camera starts close and pulls back). Soundtrack and sounds are the skill's. Draft at 30 fps; final at
 60 fps with motion blur.
-Without narration, each scene advances by the reading time of its text.
+Without narration, each scene advances by the reading time of its text. With voice, the voice comes from
+`scripts/voice.mjs` (`narration.json` gives the time of each word), and each spoken scene advances by its line.
