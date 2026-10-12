@@ -8,6 +8,9 @@ price, deadline), `attention`; channels `whatsapp`, `feed`, `big-screen`, `reels
 `game` (balancing), `finance`, `creator`.
 **When not to use:** a new product with no number of its own; a small or invented number (it sounds like an excuse); a sensitive
 subject (health, the customer's money) where counting sounds like bragging. **The number has to be true.**
+**Voice:** optional (opt-in, paid; `references/voice-script.md`). Each block's `fala` becomes the voiceover: the block
+grows to fit its line, the caption lights up the spoken word and the soundtrack ducks under it. How:
+`templates/counting-number/TEMPLATE.md`, "With voice (optional)".
 
 ## Structure (6–20 s)
 - **0–2 s:** the giant number on its own, counting up to the final value ("+" or "%" already in place). No label yet: that's

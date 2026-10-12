@@ -32,7 +32,9 @@ the passage from one to the next does not flicker: the block leaves rising and b
 The sounds are automatic: each block marks its own keystrokes, the paste or send click, a whoosh on the
 passages and a "success" sound when the answer closes. Without voice, these sounds become markers in the skill's
 soundtrack (`assets/audio/arrange_series.py`), which is the protagonist: it opens up until the first request writes
-itself and resolves when the closing logo comes in.
+itself and resolves when the closing logo comes in. With voice (optional, see "With voice (optional)" below), the
+caption comes in on its own at the bottom, in a pill, each word lighting up when it's spoken; the sound is voice +
+effects, the voice on top and the effects ducking while it speaks.
 
 ## Parameters (`example*.json`)
 Nothing of the brand is in the code. A file has:
@@ -61,7 +63,9 @@ Nothing of the brand is in the code. A file has:
   `example-phrases.json` (sentences only, do's and don'ts, whip).
 - The three `example*.json` are format examples, with no brand: greys, placeholder texts and the placeholder logo
   stand for the person's brand and content.
-- `voz`: belongs to narration; here it is left out (the render warns), and the video comes out with the soundtrack.
+- `voz` (optional, opt-in and paid; off by default): without it, the video comes out with the soundtrack. With it,
+  `voz.locucao` (a `narration.json` already generated) and `voz.trechos[]` (`{ fala, de, ate, em }`) put pieces of
+  those lines in the video: see "With voice (optional)" below.
 - `trilha` (without voice): `semente` and `identidade` (the audience's genre, v2 schema from `assets/audio/API.md`).
   Without `identidade`, a neutral one comes out (epiano/piano, 100–112 BPM): declare the brand's.
 - `cenas`: the blocks above.
@@ -79,7 +83,7 @@ node templates/typing-text/render.mjs meu.json \
 - The sound needs a Python with numpy and scipy (the one from `scripts/environment.mjs --fix`, found automatically).
   Without it, the video comes out silent and the script warns. Without voice, the delivery is muxed and checked by
   `scripts/finalize.mjs` (duration, loudness, peak); `--no-soundtrack` leaves only the keystrokes and the effects, with no
-  music.
+  music. With voice, the sound is mixed by `mix.py` (voice + effects) and joined to the video in AAC.
 - An error in the scene console (unknown block, font that did not load) stops the render with code 3.
 
 ## Variations that already come out with parameters alone
@@ -91,6 +95,44 @@ node templates/typing-text/render.mjs meu.json \
 - **Journey in requests**: several `pergunta` blocks in a row, each with its own request and its own answer (each
   block 2.5–4 s), and a turning-point `frase` before the `fecho`.
 
+## With voice (optional)
+
+Only when the person asks for a voiceover and the ElevenLabs key is set up (`references/voice-choice.md` §12): it is
+paid, up to about 900 credits per minute of narration, checked against the video's cap before any call. Without
+`voz` in the JSON, nothing below runs and the video is the one above.
+
+```json
+"voz": {
+  "locucao": "voice/v1/narration.json",
+  "trechos": [
+    { "fala": "p1", "em": 0.8 },
+    { "fala": "p2", "de": 0, "ate": 1.6, "em": 4.2 }
+  ]
+}
+```
+
+- **The template only reads a narration already generated:** it writes no script. Write `script.json`
+  (`references/voice-script.md` §6) next to the parameters JSON, in `voice/`, with each line's `onde` as
+  `"abertura"`, `{ "passo": n }` or `"fechamento"`, each place once (the template only uses the `id`). Show the
+  approval table (§5) and choose the voice (`references/voice-choice.md`) before spending, then:
+  `node $SKILL/scripts/voice.mjs generate <folder>/voice/script.json --out <folder>/voice/v1` and
+  `node $SKILL/scripts/voice.mjs listen <folder>/voice/v1/narration.json --words "<risk words>"`.
+- **`voz.locucao`** is that `narration.json`, relative to the parameters JSON. A `trechos[]` item can carry its own
+  `locucao`: a line from another video's narration, in another order, without spending credits.
+- **`trechos[]`:** `fala` is the line's `id`; `de`/`ate` cut it, in seconds of the line (default: the whole line; cut
+  between words, from one silence to the next: only the words entirely inside go to the caption); `em` is when the
+  excerpt starts, in seconds from the start of the video.
+- **The voice doesn't stretch the blocks:** each block keeps its `dur`. The render refuses an excerpt that ends less
+  than 0.3 s before the end of the video: move `em` earlier or lengthen a block. It doesn't compare one excerpt with
+  another: space the `em` values so two excerpts don't overlap.
+- **The caption is the speech:** a pill at the bottom, each word lighting up at its time in `narration.json`, wrapping
+  to at most two lines.
+- **Sound:** voice + effects, no music. `mix.py` puts the voice on top, lowers the effects 6 dB while it speaks and
+  masters at −16 LUFS; the render joins it to the video in AAC (`finalize.mjs` doesn't run here). `--no-soundtrack`
+  changes nothing with voice; `--no-sound` outputs a silent video.
+- A `locucao` that doesn't exist stops the render with what to do; remove `voz` from the JSON to output with the
+  soundtrack.
+
 ## Limits
 - Two boxes side by side with a number (the A/B) and the final grid of many results (v0) do not have a
   block yet: they were left for the second version.
@@ -99,3 +141,5 @@ node templates/typing-text/render.mjs meu.json \
 - A field with text longer than the box scrolls left, like a real field. Below 70% of the type size the
   text does not shrink any further: prefer requests of 2 to 8 words.
 - Without voice there are no captions: the on-screen text (field, answer, sentence, closing) tells the story.
+- With voice there is no music: the sound is voice + effects. The skill's soundtrack only plays in the video without
+  voice.

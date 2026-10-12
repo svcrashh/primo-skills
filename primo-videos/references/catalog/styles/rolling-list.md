@@ -11,6 +11,9 @@ know what the product is (it becomes noise).
 **And also not when the person asking wants an explanation** ("give me a quick rundown") or has already approved a chapters video
 of the same product: with a still screenshot as proof inside the panel and the same composition for every item, the video looks all
 the same and has no thread. If you use it, the proof is a redesigned interface that moves (rule 13), never the still screenshot.
+**Voice:** optional (opt-in, paid; `references/voice-script.md`). The `falas` become the voiceover: each one starts in
+its part, the caption lights up the spoken word and the soundtrack ducks under it. How:
+`templates/rolling-list/TEMPLATE.md`, "With voice (optional)".
 
 ## Structure (15–60 s)
 - **0–2 s:** the promise with the number or the version name ("12 new features in October", "Version 3").

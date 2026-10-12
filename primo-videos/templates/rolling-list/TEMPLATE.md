@@ -24,7 +24,7 @@ or Counting number), or for people who have never seen the product (the burst tu
 | Items | panel with the proof in the same place on every item (the hard cut doesn't jump); in the corner, **always the same**, the item number on a colored tag + the short name; the sentence beside it (16:9) or below it (portrait) | 1.1 / 2.4 / 4.4 s per item |
 | Wall | the total counting, the names of **all** the new features in pills (the ones shown get highlighted) | 2.4–2.6 s |
 | Closing | phrase cards (optional) → brand, catchphrase and address, still for ≥ 1.2 s | 2.2 s (+0.9 per card) |
-| Caption | the line, word by word, with the current word in the highlight color | whenever a line plays |
+| Caption | the line, word by word, with the current word in the highlight color (with voice, the word being spoken) | whenever a line plays |
 
 Background: the brand color with a light spot in the highlight color that moves with each part (and a fine grid, if
 `gradeFundo`).
@@ -71,8 +71,11 @@ Background: the brand color with a light spot in the highlight color that moves 
 - `fecho`: `bordao`, `endereco`, `cartoes` (a sentence split into 2–3 cards) and `cartoesEm` (at which speeds).
 - `falas[]`: `id`, `onde` (`abertura`, `muro`, `fecho` or `{ "item": n }`), `atraso` (s after the start of the
   part), `texto`.
-- Without narration, the `falas` show up only as captions, at the time estimated from the text, and the JSON's `voz`
-  block is left out: this skill makes videos without narration.
+- Without narration (the default: no `voz` block in the JSON), the `falas` show up only as captions, at the time
+  estimated from the text, and the soundtrack is the lead.
+- `voz` (optional, opt-in and paid): turns the `falas` into a voiceover. `perfil` (`calmo` or `reels`; default
+  `reels`), `voz` (`id`, `nome`, and `modelo` if not the default), `ajustes`, `pronuncia`; with the top-level `idioma`
+  (default `en-US`), they go to `voice/script.json`. See "With voice (optional)" below.
 - `trilha`: `semente` (one per video; without it, the JSON's `semente` applies) and `identidade` (the audience's genre,
   in the v2 schema of `assets/audio/API.md`: `genero`, `bpm`, `modos`, `tons`, `instrumentos`…). Without `identidade`,
   a neutral one comes out (epiano/piano, BPM set by the speed): declare the brand's (`house` in `example.json`, `acustico` in `example-list.json`).
@@ -113,7 +116,7 @@ sentence wraps into 2 lines below the tag and the wall sits above and below the 
 
 ```sh
 node templates/rolling-list/render.mjs <params.json> --out <folder> [--name x] [--formats 16x9,19x9,21x9,9x16,1x1,4x5]
-     [--mode draft|final] [--sub 2] [--speed rajada|lista|cartaz] [--items 1,2,3] [--no-voice] [--no-soundtrack]
+     [--mode draft|final] [--sub 2] [--speed rajada|lista|cartaz] [--items 1,2,3] [--script] [--no-voice] [--no-soundtrack]
 ```
 Example (quick draft, ~15 s; the examples' Inter first, so it runs with no network):
 ```sh
@@ -136,6 +139,47 @@ node templates/rolling-list/render.mjs templates/rolling-list/example.json \
 - Without Python, or with `--no-soundtrack`, the video comes out silent (and the render warns about it).
 - Preview: `<proj>/index.html?f=9x16&t=5.2`.
 - Playwright is found as in the rest of the skill (`node_modules` of the folder or its parents, `PLAYWRIGHT_PATH`).
+
+## With voice (optional)
+
+Only when the person asks for a voiceover and the ElevenLabs key is set up (`references/voice-choice.md` §12): it is
+paid, up to about 900 credits per minute of narration, checked against the video's cap before any call. Without
+`voz` in the JSON, nothing below runs and the video is the one above.
+
+```json
+"idioma": "en-US",
+"voz": { "perfil": "reels", "voz": { "id": "<voice_id>", "nome": "<its name>" }, "pronuncia": { "Vyrta": "Veerta" } },
+"falas": [
+  { "id": "abertura", "onde": "abertura", "texto": "Four new features." },
+  { "id": "i1", "onde": { "item": 1 }, "atraso": 0.2, "texto": "Pick a layout." },
+  { "id": "fecho", "onde": "fecho", "texto": "Live today." }
+]
+```
+
+- **The voice comes before the render** (the template doesn't generate voice). First the lines approved (the approval
+  table, `references/voice-script.md` §5) and the voice chosen (`references/voice-choice.md`): `--script` needs
+  `voz.voz.id`. Then `--script` writes `<output>/<name>/voice/script.json` from the `falas` and exits, and:
+  `node $SKILL/scripts/voice.mjs generate <output>/<name>/voice/script.json --out <output>/<name>/voice/v1` and
+  `node $SKILL/scripts/voice.mjs listen <output>/<name>/voice/v1/narration.json --words "<risk words>"`.
+- **Where each line goes in the script:** `abertura` → the opening, `{ "item": n }` → `{ "passo": n }`, and `muro`
+  and `fecho` both → the closing. The script has one line per place, so one line per item, and a single line between
+  the wall and the closing.
+- **The render reads `<output>/<name>/voice/v1/narration.json`.** With `voz` and no narration, it stops and says what
+  to do; `--no-voice` outputs without voice (the lines become captions only). A narration left in the project while
+  the JSON has no `voz` also stops the render: put `voz` back, or use `--no-voice`.
+- **The narration lives in the project folder.** Rendering the final into another `--out` or `--name`, copy the
+  `voice/` folder from the draft's project: the takes in `voice/_takes` are not paid for again.
+- **The voice doesn't stretch the parts.** Each line starts `atraso` s (default 0.3) after its part starts. The render
+  refuses a line that runs into the next one or past the end of the video: shorten the sentence, or lengthen the part
+  with `ritmo` or `itens[n].dur`.
+- **The caption is the speech:** each word lights up at its time in `narration.json`.
+- **Sound:** the sync sheet gets the `voz` block, and `audio/voz.wav` and `legenda.srt` come out in the project; the
+  soundtrack ducks under the voice (`mix_voz.py`, `references/voice-mix.md`). It aims at −14 LUFS; if `verify.py`
+  fails (little voice over a sparse bed can make the master limiter squeeze one line more than another), it recomposes
+  at −16. `finalize.mjs` also checks each line on time and the voice ≥ 15 dB above what plays under it. Without the
+  Python, or with `--no-soundtrack`, the video comes out with the voice only, at −16 LUFS, instead of silent.
+- With the final MP4: `node $SKILL/scripts/voice.mjs listen --mix <mp4> --script <output>/<name>/voice/v1/narration.json`
+  (`references/voice-mix.md` §6).
 
 ## Limits
 

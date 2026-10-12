@@ -8,6 +8,9 @@ product at work. It meets rule 1 on its own and it's the engine's cheapest style
 sign-up). Works without sound.
 **When not to use:** a product whose appeal is visual and doesn't fit in a sentence (action games, camera, fashion); listing many
 new features; a where-to-click tutorial (the text takes the place of the screen).
+**Voice:** optional (opt-in, paid; `references/voice-script.md`). Excerpts of a generated narration come in at set
+times: the caption lights up the spoken word, and the sound becomes voice + effects, with no music. How:
+`templates/typing-text/TEMPLATE.md`, "With voice (optional)".
 
 ## Structure (15–60 s)
 - **0–2 s:** plain background, a big field or cursor, and the first word already being typed (never a cursor blinking
