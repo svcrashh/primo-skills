@@ -30,8 +30,10 @@ jobs:
       - name: Os pacotes que o requisitos.mjs manda instalar existem no winget
         run: |
           foreach ($id in 'OpenJS.NodeJS.LTS', 'ffmpeg', 'Python.Python.3.12', 'Microsoft.WindowsTerminal') {
-            winget show $id --accept-source-agreements --disable-interactivity | Select-Object -First 2
-            if ($LASTEXITCODE) { throw "winget show $id falhou ($LASTEXITCODE)" }
+            $saida = winget show $id --accept-source-agreements --disable-interactivity
+            $codigo = $LASTEXITCODE
+            $saida | Where-Object { $_ -match '^(Found|Version|Encontrado|Vers)' }
+            if ($codigo) { throw "winget show $id falhou ($codigo)" }
           }
       - name: requisitos.mjs numa máquina sem ffmpeg e sem a conferência
         run: |
@@ -165,6 +167,50 @@ jobs:
           set -euo pipefail
           node "$SK/scripts/refine/video.mjs" "$RUNNER_TEMP/e2e/entrega/demo-16x9.mp4" --json --checks legibilidade,area-segura > "$RUNNER_TEMP/e2e/entrega/refino.json" || true
           node -e "const j = require(process.argv[1]); console.log(JSON.stringify({ ocr: j.medidas.ocr, quadros: j.medidas.quadrosOcr, linhas: j.medidas.linhasOcr, achados: j.achados.map((a) => a.nivel + ' ' + a.msg) }, null, 1)); if (j.medidas.ocr !== 'windows' || !(j.medidas.linhasOcr > 0)) process.exit(1)" "$RUNNER_TEMP/e2e/entrega/refino.json"
+      - name: Medição do OCR do Windows contra o tamanho da letra (temporário)
+        run: |
+          set -euo pipefail
+          cat > "$RUNNER_TEMP/calib.mjs" <<'EOF'
+          import path from 'node:path'
+          import fs from 'node:fs'
+          import { createRequire } from 'node:module'
+          import { pathToFileURL } from 'node:url'
+          const SK = process.env.SK, OUT = process.argv[2]
+          const { abrirNavegador } = createRequire(import.meta.url)(path.join(SK, 'scripts', 'playwright.cjs'))
+          const { ocr } = await import(pathToFileURL(path.join(SK, 'scripts', 'refine', 'video.mjs')).href)
+          const TEXTOS = ['Pronto em um minuto', 'Abra o menu e toque em salvar', 'SIGA AGORA', 'seu app novo', 'Vídeo de fundo grátis', 'Instagram oficial']
+          const TAM = [14, 20, 28, 40, 56, 72, 96, 120]
+          fs.mkdirSync(OUT, { recursive: true })
+          const { browser } = await abrirNavegador()
+          const imgs = []
+          for (const px of TAM) {
+            const pg = await browser.newPage({ viewport: { width: 1920, height: 1080 } })
+            const linhas = TEXTOS.map((t, i) => `<div style="position:absolute;left:80px;top:${40 + i * Math.max(px * 1.6, 60)}px;font-size:${px}px;line-height:1.2;font-family:Helvetica,Arial,sans-serif">${t}</div>`).join('')
+            await pg.setContent(`<html><body style="margin:0;width:1920px;height:1080px;background:#0d1117;color:#fff">${linhas}</body></html>`)
+            const arq = path.join(OUT, `px${px}.png`)
+            await pg.screenshot({ path: arq })
+            await pg.close()
+            imgs.push(arq)
+          }
+          await browser.close()
+          for (const r of await ocr(imgs)) {
+            const px = +path.basename(r.arquivo).match(/\d+/)[0]
+            for (const l of r.linhas) console.log(px, l.h, (l.h / px).toFixed(3), l.contraste, l.texto)
+          }
+          EOF
+          node "$RUNNER_TEMP/calib.mjs" "$RUNNER_TEMP/calib" | sort -n -k1 -k4
+      - name: Os moldes counting-number e light-trail-teaser, do exemplo ao MP4 (render.mjs)
+        run: |
+          set -euo pipefail
+          O="$RUNNER_TEMP/e2e"
+          node "$SK/scripts/example-fonts.mjs" "$O/numeros"
+          node "$SK/templates/counting-number/render.mjs" "$SK/templates/counting-number/example.json" "$O/numeros" 16x9 draft
+          ffprobe -v error -show_entries stream=codec_type,codec_name,width,height:format=duration -of compact "$O/numeros/delivery/numeros-16x9.mp4"
+          cp "$O/numeros/delivery/numeros-16x9.mp4" "$O/numeros/delivery/sheet-16x9.png" "$O/entrega/"
+          node "$SK/scripts/example-fonts.mjs" "$O/teaser/project"
+          MODO=draft node "$SK/templates/light-trail-teaser/render.mjs" "$SK/templates/light-trail-teaser/example.json" "$O/teaser" 16x9
+          ffprobe -v error -show_entries stream=codec_type,codec_name,width,height:format=duration -of compact "$O/teaser/example-16x9.mp4"
+          cp "$O/teaser/example-16x9.mp4" "$O/teaser/sheet-example-16x9.png" "$O/entrega/"
       - name: O painel de revisão sobe, responde e ouve o clique (pelo Playwright)
         run: |
           set -euo pipefail
