@@ -266,6 +266,32 @@ jobs:
           node "$SK/scripts/board.mjs" events "$P" | tee "$RUNNER_TEMP/e2e/entrega/eventos.jsonl"
           grep -q '"approve-still"' "$RUNNER_TEMP/e2e/entrega/eventos.jsonl"
           node "$SK/scripts/board.mjs" stop "$P"
+      - name: Abrir de verdade - a página do catálogo, o painel no navegador e o Windows Terminal do board agent
+        run: |
+          set -euo pipefail
+          P="$RUNNER_TEMP/e2e/demo"
+          janelas() { powershell.exe -NoProfile -Command "Get-Process $1 -ErrorAction SilentlyContinue | Where-Object MainWindowTitle | ForEach-Object { \$_.MainWindowTitle }"; }
+          # o catálogo abre a página pelo explorer.exe, no navegador padrão
+          node "$SK/scripts/catalog.mjs" open --out "$RUNNER_TEMP/estilos.html"
+          for i in $(seq 1 20); do [ -n "$(janelas msedge)" ] && break; sleep 1; done
+          echo "navegador depois do catálogo: $(janelas msedge)"
+          [ -n "$(janelas msedge)" ]
+          # o painel abre a URL dele no navegador padrão (sem --no-open)
+          node "$SK/scripts/board.mjs" open "$P"
+          sleep 5
+          echo "navegador depois do painel: $(janelas msedge)"
+          node "$SK/scripts/board.mjs" stop "$P"
+          # board agent --terminal: o Windows Terminal abre na pasta do projeto e roda o claude (aqui um falso, que só
+          # anota como foi chamado) com o prompt do painel
+          mkdir -p "$RUNNER_TEMP/claude-falso"
+          cat > "$RUNNER_TEMP/claude-falso/claude.js" <<'EOF'
+          require('fs').writeFileSync(require('path').join(__dirname, 'chamado.json'), JSON.stringify({ argumentos: process.argv.slice(2), pasta: process.cwd() }, null, 1))
+          EOF
+          CRITIC_CLAUDE="$RUNNER_TEMP\\claude-falso\\claude.js" node "$SK/scripts/board.mjs" agent "$P" --terminal
+          for i in $(seq 1 30); do [ -f "$RUNNER_TEMP/claude-falso/chamado.json" ] && break; sleep 1; done
+          cat "$RUNNER_TEMP/claude-falso/chamado.json"
+          grep -q 'Serve the review board' "$RUNNER_TEMP/claude-falso/chamado.json"
+          echo "janelas do Windows Terminal: $(janelas WindowsTerminal)"
       - name: Sobe o vídeo, as folhas e o painel
         if: always()
         uses: actions/upload-artifact@v7
