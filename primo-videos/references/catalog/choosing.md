@@ -58,10 +58,12 @@ When product and channel disagree, the product removes (the "Avoid" column) and 
 
 - **The owner already approved a video of this product, or shows one as a reference** → that style, at that level
   (`--approved <style>`; `registrar … --approved` remembers it on its own). It beats the rule of not repeating chapters.
-  Watch the video first (frames and sound): it's the benchmark for finish.
+  Watch the video first (frames and sound): it's the benchmark for finish. With voice, frames and transcription: it is
+  the benchmark for the voice too (`references/voice-choice.md` §6).
 - **The request asks for an explanation** ("give a quick overview", "show what changed") → a style that builds up beat
-  by beat on the soundtrack's timing: `chapters-with-index` (news) or `real-screen-camera` (teaching), in 9:16 too
-  (`--explain`). The list of panels with a static proof, in that case, looks like "all the same thing". If the
+  by beat on the soundtrack's timing (with voice, on the word the voice says): `chapters-with-index` (news) or
+  `real-screen-camera` (teaching), in 9:16 too (`--explain`). The list of panels with a static proof, in that case,
+  looks like "all the same thing". If the
   explanation is of a concept (an idea, not where to click), the alternative is `drawn-explainer`; with
   `--concept` too, it becomes the recommended one.
 - **The video explains an idea, a flow or how something works inside** (not where to click) → `drawn-explainer`

@@ -4,8 +4,8 @@ Each one showed up on its own in several groups of the videos studied. They appl
 
 1. **The promise or the question is written on screen at frame 0.** No seconds of empty screen, blinking cursor
    or logo before saying what it's about.
-2. **Never the whole screen shrunk.** Every line that matters reaches ~3% of the frame height or more: crop,
-   camera zoom, floating window or redesigned interface.
+2. **Never the whole screen shrunk.** Every line that matters (with voice, every line the voice mentions) reaches ~3%
+   of the frame height or more: crop, camera zoom, floating window or redesigned interface.
 3. **Highlight = dark scrim + blur on the rest**, not an arrow or a red circle.
 4. **Captions always.** Half the people watch without sound. Even better if the caption is made with a component of
    the product itself (its card, its bubble, its tag).
@@ -13,7 +13,8 @@ Each one showed up on its own in several groups of the videos studied. They appl
 6. **Before and after in the same framing:** the same screen, in the same place, in two states.
 7. **A 2–3 word intertitle** between blocks organizes any video longer than 30 s.
 8. **The text doesn't take up the whole video.** New text from start to finish is tiring; leave breathers where only
-   the image and the soundtrack do the work.
+   the image and the soundtrack do the work. With voice, the same goes for the voice: it speaks about half the time.
+   A voice in 93–100% of the video is tiring; leave breathers with the soundtrack.
 9. **Length:** what worked stayed between 6 and 60 s. Above 90 s it loses the thread, except a tutorial the person
    follows along with.
 10. **The product is the rule of the game, not decoration.** The video people remember is the one where the app is the
@@ -26,11 +27,16 @@ Each one showed up on its own in several groups of the videos studied. They appl
 
 13. **The scene builds up beat by beat, on the soundtrack's timing.** "It starts doing one thing, then does another,
     and keeps adding": the card comes in simple, gets the icon, then the photo, and the highlight changes style at each
-    beat, each entrance on a beat of the bar. A static proof looks like "all the same thing, very random".
+    beat, each entrance on a beat of the bar. A static proof looks like "all the same thing, very random". With voice,
+    each beat lands on the word that names it: the card gets the icon when the voice says "icon", the photo when it
+    says "photo". A static proof with the voice talking over it looks just as random. The timings come from the
+    narration's words (`voice/<version>/narration.json`), never from copied numbers (`references/chapters.md`).
 14. **The video the owner already approved is the benchmark.** If the product has an approved video (in the repository,
     on the site, in whatever they show: "I want something at this level"), watch it before recommending a style: the
     frames and the sound. It decides the style (`recommend-style.mjs --approved`) and the level of finish. Recommend
-    something else only with a stated reason.
+    something else only with a stated reason. With voice, it is also the benchmark for the voice: what it says comes
+    from `voice.mjs transcribe` (paid, a few credits) and its timbre and pace are measured with `voice.mjs compare`
+    (free; `references/voice-choice.md` §6).
 15. **A system screenshot never becomes the video.** The static screenshot inside a panel, or the whole screen shrunk,
     comes out "grotesque" and repetitive. What works: the interface **redesigned**, big and animated, with the **real**
     media and data (avatar, icons, photos, the background video playing, the numbers from the public API), collected
@@ -46,7 +52,8 @@ Each one showed up on its own in several groups of the videos studied. They appl
 The engine doesn't film people (actor, presenter, hand holding a phone), doesn't do 3D (rotating device, glass,
 particles with volume), doesn't animate rigged characters or hand-drawn animation, doesn't sing jingles and doesn't do
 real time-lapse. Hand-drawn strokes for shapes (boxes, arrows, annotations) do exist: they're the `drawn-explainer` ones.
-**The idea stays, the image changes:** people become a first-person quote card; 3D becomes a 2D mockup frame and an
-abstract background; a jingle becomes a refrain in the soundtrack (never a written catchphrase); time-lapse becomes
+**The idea stays, the image changes:** people become a first-person quote card (with voice, also a first-person
+voiceover); 3D becomes a 2D mockup frame and an abstract background; a jingle becomes a refrain in the soundtrack (never
+a written catchphrase; with voice, a spoken one over the refrain); time-lapse becomes
 captures per day ("DAY 01 … DAY 34"); gameplay and mascots only come in if the client delivers the recording or the
 layered SVG. Tell the user about the swap.

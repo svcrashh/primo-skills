@@ -178,4 +178,5 @@ What comes after the 8 templates:
   the short-humor kit for Reels. Until then: `typing-text` or `before-after`.
 - **Chapters, version 2:** the composition changing every 3–4 chapters and the index off the right side.
 - **2D SVG mascot:** only when the request brings the mascot in layers: a 5 s sting, gesture and expression only.
+  With voice, a second step after the sting: speech with 4–5 mouth shapes timed from the voice's word alignment.
   A mascot that's only a PNG doesn't get started (splitting it into parts is an illustrator's job).
