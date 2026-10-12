@@ -1,0 +1,91 @@
+name: windows-play
+
+on:
+  push:
+    branches: [main, 'windows-**']
+    paths: ['play/**', 'instalar.ps1', 'instalar.sh', '.github/workflows/windows-play.yml']
+  pull_request:
+    paths: ['play/**', 'instalar.ps1', 'instalar.sh', '.github/workflows/windows-play.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  testes:
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: ['18', 'lts/*']
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: ${{ matrix.node }}
+      - name: ffmpeg pelo winget
+        shell: pwsh
+        run: |
+          Get-Command ffmpeg -ErrorAction SilentlyContinue | Format-List Source
+          $t = Measure-Command { winget install ffmpeg --accept-source-agreements --accept-package-agreements --disable-interactivity | Out-Host }
+          "winget levou $([int]$t.TotalSeconds) s, saiu com $LASTEXITCODE"
+          $novo = @([Environment]::GetEnvironmentVariable('Path', 'Machine'), [Environment]::GetEnvironmentVariable('Path', 'User')) -join ';' -split ';' | Where-Object { $_ -and ($env:Path -split ';') -notcontains $_ }
+          "no PATH do registro e nao no desta sessao:"; $novo
+          $novo | Add-Content $env:GITHUB_PATH
+      - name: o que o PATH acha
+        shell: pwsh
+        run: |
+          Get-Command ffmpeg, ffprobe | Format-List Name, Source
+          Get-Item (Get-Command ffmpeg).Source | Format-List FullName, LinkType, Target, Length
+          ffmpeg -hide_banner -version | Select-Object -First 1
+          node --version
+      - name: testes da play
+        shell: pwsh
+        run: node --test play/tests/play.test.mjs play/tests/requisitos.test.mjs
+
+  explorar:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: sistema
+        shell: pwsh
+        run: |
+          [Environment]::OSVersion.VersionString
+          $PSVersionTable.PSVersion.ToString()
+          winget --version
+          Get-Command node, python, python3, py -ErrorAction SilentlyContinue | Format-Table Name, Source
+          Get-ChildItem "$env:LOCALAPPDATA\Microsoft\WindowsApps" -ErrorAction SilentlyContinue | Select-Object Name, Length, LinkType
+          "TEMP=$env:TEMP"; "USERPROFILE=$env:USERPROFILE"; "LOCALAPPDATA=$env:LOCALAPPDATA"
+      - name: os ids do winget
+        shell: pwsh
+        run: |
+          winget show ffmpeg --accept-source-agreements --disable-interactivity
+          winget show OpenJS.NodeJS.LTS --disable-interactivity | Select-Object -First 12
+          winget show Python.Python.3.12 --disable-interactivity | Select-Object -First 12
+          winget show Microsoft.WindowsTerminal --disable-interactivity | Select-Object -First 6
+      - name: python pelo winget
+        shell: pwsh
+        run: |
+          $antes = [Environment]::GetEnvironmentVariable('Path', 'User') + ';' + [Environment]::GetEnvironmentVariable('Path', 'Machine')
+          winget install Python.Python.3.12 --accept-source-agreements --accept-package-agreements --disable-interactivity | Out-Host
+          "saiu com $LASTEXITCODE"
+          $depois = [Environment]::GetEnvironmentVariable('Path', 'User') + ';' + [Environment]::GetEnvironmentVariable('Path', 'Machine')
+          "entrou no PATH:"; ($depois -split ';') | Where-Object { $_ -and ($antes -split ';') -notcontains $_ }
+      - name: console no 5.1
+        shell: powershell
+        run: |
+          $PSVersionTable.PSVersion.ToString()
+          "OutputEncoding=$([Console]::OutputEncoding.WebName) OEM=$([Console]::OutputEncoding.CodePage)"
+          try { [Console]::OutputEncoding = [System.Text.Encoding]::UTF8; "trocou para $([Console]::OutputEncoding.WebName)" } catch { "nao deu: $_" }
+          & node -e "console.log('node direto: áudio ✔ ✖ ○')"
+          Add-Type -AssemblyName PresentationCore
+          foreach ($f in 'consola.ttf', 'lucon.ttf', 'CascadiaMono.ttf', 'CascadiaCode.ttf', 'seguisym.ttf') {
+            $p = Join-Path $env:WINDIR "Fonts\$f"
+            if (-not (Test-Path $p)) { "$f nao existe"; continue }
+            $g = New-Object System.Windows.Media.GlyphTypeface ([uri]$p)
+            "$f " + ((0x2714, 0x2716, 0x25CB, 0x2014, 0xE1) | ForEach-Object { '{0:X4}={1}' -f $_, $g.CharacterToGlyphMap.ContainsKey($_) }) -join ' '
+          }
