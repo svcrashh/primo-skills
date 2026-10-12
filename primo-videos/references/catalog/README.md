@@ -27,8 +27,8 @@ Order of use:
 
 **With voice** (opt-in and paid, only when the person asks: `references/voice-script.md`), the choice narrows: the
 styles that take narration are the panel tutorial, `chapters-with-index`, `drawn-explainer`, `rolling-list`,
-`counting-number`, `typing-text`, `light-trail-teaser`, and `real-screen-camera` and `before-after` (in these two, the
-voice alone, with no soundtrack under it). The others have no narration; the **Voice:** line of each card names the closest style that takes
+`counting-number`, `light-trail-teaser`, and `real-screen-camera`, `before-after` and `typing-text` (in these three,
+with voice there is no music: the voice alone, or the voice and the effects in `typing-text`). The others have no narration; the **Voice:** line of each card names the closest style that takes
 it. Without voice, every style stays as it is.
 
 The cards: [`real-screen-camera`](styles/real-screen-camera.md) · [`typing-text`](styles/typing-text.md) ·
