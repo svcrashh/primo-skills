@@ -1,6 +1,6 @@
 ---
 name: terminal-claude
-description: Abre uma ou várias janelas de terminal (Terminal.app no Mac, Windows Terminal no Windows), cada uma com o Claude em bypass (--dangerously-skip-permissions) e sem deixar a máquina dormir, para dividir o trabalho em trilhas paralelas — um prompt por janela, todas numa chamada só —, acompanha em que pé está cada uma e fecha no fim. Use quando eu digitar "/terminal-claude" ou pedir "abre um terminal com o claude", "abre N terminais", "divide isso em terminais", "abre as trilhas", "abre as sessões com os prompts", "claude em bypass no terminal", "abre o claude no notebook/no monitor". Vale igual no Mac e no Windows e nos perfis ~/.claude (VS Code e claude no terminal), ~/.claude-devin e ~/.claude-insiders.
+description: Abre uma ou várias janelas de terminal (Terminal.app no Mac, Windows Terminal no Windows), cada uma com o Claude em bypass (--dangerously-skip-permissions) e sem deixar a máquina dormir, para dividir o trabalho em trilhas paralelas — um prompt por janela, todas numa chamada só —, acompanha em que pé está cada uma e fecha cada uma quando termina. Use quando eu digitar "/terminal-claude" ou pedir "abre um terminal com o claude", "abre N terminais", "divide isso em terminais", "abre as trilhas", "abre as sessões com os prompts", "claude em bypass no terminal", "abre o claude no notebook/no monitor". Vale igual no Mac e no Windows e nos perfis ~/.claude (VS Code e claude no terminal), ~/.claude-devin e ~/.claude-insiders.
 ---
 
 # terminal-claude
@@ -19,7 +19,7 @@ arquivo. A janela nasce no perfil da sessão que chamou. Mudou algo? Muda só aq
 T=~/.claude/skills/terminal-claude/scripts/terminais.py
 python3 $T abrir  [pasta ...] [opções]     # abre as janelas
 python3 $T status [--todas]                # em que pé está cada uma
-python3 $T esperar                         # segura até pararem de trabalhar (pra rodar em segundo plano)
+python3 $T esperar                         # segura até uma janela parar, e diz qual (pra rodar em segundo plano)
 python3 $T ver <id>                        # a última resposta de uma trilha
 python3 $T fechar [id ...]                 # fecha as que esta sessão abriu
 python3 $T limpeza                         # conta de lotes por pasta, pro aviso de limpeza
@@ -118,11 +118,36 @@ Quem abriu é o supervisor. Eu converso com você, e você cuida das janelas: ab
 colhe o resultado de cada uma, fecha e me conta o que cada trilha entregou. Não me manda ir olhar
 janela por janela. Pedi em 04/10/2026 que nenhuma sessão deixe terminal órfão na tela.
 
-**Ficar de olho sem perguntar o estado a toda hora:** logo depois de abrir, roda `esperar` em
-segundo plano (no Bash, `run_in_background`; você é chamado de volta quando ele termina) e segue
-com o que não depende das trilhas. Ele volta quando nenhuma janela está mais trabalhando, quando
-uma delas faz uma pergunta, ou depois de `--minutos` (30 se não disser). Voltou com janela ainda
-trabalhando? Trata o que ele mostrou e roda de novo.
+**O ciclo: colher e fechar cada janela assim que ela termina, sem esperar o lote inteiro.** Logo
+depois de abrir, roda `esperar` em segundo plano (no Bash, `run_in_background`; você é chamado de
+volta quando ele termina) e segue com o que não depende das trilhas. Ele volta assim que **uma**
+janela para, faz uma pergunta, encerra ou é fechada, e diz qual:
+
+```
+$ python3 $T esperar
+23748  ✅ parada há 2 s  ·  A · schema  ·  /Users/…/repo
+23753  ⏳ trabalhando há 14 min  ·  B · docs  ·  /Users/…/repo
+A janela 23748 (A · schema) parou: colhe com `ver 23748` e, se a trilha terminou, fecha com `fechar 23748`.
+Ainda há janela trabalhando (1): trata o que voltou e roda o esperar de novo para as restantes.
+```
+
+A cada volta:
+
+1. `ver <id>` na janela que ele apontou.
+2. **A trilha terminou?** `fechar <id>` na hora. Pedi em 12/10/2026 que janela que acabou não fique
+   aberta por causa do resto do lote: num lote de 3, uma terminou em 14 minutos e ficou na tela
+   esperando as outras duas.
+3. **Não terminou?** Deixa aberta. Parar não é terminar: a trilha que pôs um comando em segundo
+   plano encerra o turno dizendo que está aguardando e retoma sozinha quando ele acaba; a que me
+   perguntou algo espera a resposta nela (me diz qual janela e o que ela perguntou).
+4. **Sobrou janela aberta?** `esperar` de novo, em segundo plano. Cada parada é avisada uma vez só:
+   a janela que ficou aberta não faz ele voltar na hora, só quando parar outra vez. Sem janela
+   trabalhando ele segura do mesmo jeito, até `--minutos` (30 se não disser), e aí volta dizendo
+   que nada mudou.
+
+O ciclo acaba quando o `esperar` responde "Nenhuma janela aberta por esta sessão".
+
+O `status` mostra em que pé está cada uma, sem esperar:
 
 ```
 $ python3 $T status
@@ -133,7 +158,8 @@ $ python3 $T status
 - `abrindo` — o claude ainda não começou. Se não sai disso, a janela está na tela "confiar nesta
   pasta" (pasta que o claude nunca abriu; a home pede toda vez) esperando eu confirmar.
 - `trabalhando` — no meio de um turno.
-- `parada` — terminou o turno e espera o próximo prompt. É a hora de colher.
+- `parada` — terminou o turno e espera o próximo prompt. É a hora de colher, e de fechar se a
+  trilha terminou.
 - `pergunta` — o Claude de lá fez uma pergunta e espera a resposta na janela. Me avisa qual
   janela e qual pergunta; quem responde sou eu, nela.
 - `encerrada` — o claude saiu; sobrou só o shell.
@@ -141,20 +167,20 @@ $ python3 $T status
 Na própria janela o título mostra o mesmo: `◐ A · schema` girando enquanto trabalha, `✳ A · schema`
 quando para.
 
-1. **Colher:** `ver <id>` imprime a última resposta da trilha, lida do transcript dela. Faz isso
-   antes de fechar, que depois o registro esquece a janela (a conversa continua salva e abre de novo
-   com `claude --resume`).
-2. **Fechar:** `fechar` fecha as que esta sessão abriu; `fechar <id> …` fecha as escolhidas;
-   `fechar --listar` só mostra. No Mac ele encerra o claude da janela, manda o shell sair e só
-   então fecha, e assim **não aparece o diálogo "finalizar os processos em execução?"**. Fechar com
-   `close` direto abre esse diálogo e trava: a preferência do Mac é "sempre perguntar".
-3. **Servidor na janela:** antes de fechar ele confere se a janela segura um servidor (dev server,
-   proxy, watcher) e recusa, porque o processo nasce dentro da janela e morre com ela. Isso mordeu
-   em 04/10/2026: as duas versões do site estavam em janelas de trilha e teriam caído junto. Quando
-   o servidor precisa sobreviver, relança fora da janela antes (`nohup cmd > log 2>&1 &`, confere
-   que o pai virou `launchd`) e só então fecha; `--forcar` fecha derrubando o servidor junto.
-4. Precisou de mais trabalho depois de fechar? Abre janela nova. Não deixa janela parada "para o
-   caso de".
+- **Colher:** `ver <id>` imprime a última resposta da trilha, lida do transcript dela. Faz isso
+  antes de fechar, que depois o registro esquece a janela (a conversa continua salva e abre de novo
+  com `claude --resume`).
+- **Fechar:** `fechar <id> …` fecha as escolhidas; `fechar` sem id fecha todas as que esta sessão
+  abriu; `fechar --listar` só mostra. No Mac ele encerra o claude da janela, manda o shell sair e só
+  então fecha, e assim **não aparece o diálogo "finalizar os processos em execução?"**. Fechar com
+  `close` direto abre esse diálogo e trava: a preferência do Mac é "sempre perguntar".
+- **Servidor na janela:** antes de fechar ele confere se a janela segura um servidor (dev server,
+  proxy, watcher) e recusa, porque o processo nasce dentro da janela e morre com ela. Isso mordeu
+  em 04/10/2026: as duas versões do site estavam em janelas de trilha e teriam caído junto. Quando
+  o servidor precisa sobreviver, relança fora da janela antes (`nohup cmd > log 2>&1 &`, confere
+  que o pai virou `launchd`) e só então fecha; `--forcar` fecha derrubando o servidor junto.
+- Precisou de mais trabalho depois de fechar? Abre janela nova. Não deixa janela parada "para o
+  caso de".
 
 `status --todas` e `fechar --todas` alcançam as janelas das outras sessões. Só com pedido meu.
 
@@ -207,7 +233,10 @@ Nos dois sistemas:
   claude e sujava a janela.
 - **Registro** das janelas abertas (id, marca da janela, pasta, sessão, data, arquivos). É por ele
   que o `fechar` sabe o que é desta sessão. Janela fechada à mão sai dele sozinha, e os arquivos
-  dela são apagados.
+  dela são apagados. Só sai com a morte confirmada: a leitura não enxergar a janela não basta (em
+  12/10/2026 uma janela foi esquecida assim, com o claude dela rodando). No Mac a prova é o tty:
+  outra janela já o usa, ou ele não é mais de aba nenhuma do Terminal. No Windows é o processo da
+  janela: já não roda, ou o número dele passou para outro programa.
 - **Grade:** as janelas do lote são planejadas juntas e já nascem cada uma no seu quadrado; enche
   um monitor e passa para o próximo com vaga. As regras (tamanhos, qual monitor, quando reorganiza)
   estão em `~/.claude/skills/terminal-organizar/SKILL.md`, e o motor de lá é importado daqui.
@@ -226,6 +255,9 @@ Nos dois sistemas:
   ambiente desta sessão.
 - `scripts/open-terminal.sh` é o nome antigo: a `videostudio-app` ainda chama por ele, e ele só
   repassa ao `terminais.py`. O `fechar` é o `scripts/fechar-terminal.sh`.
+- `scripts/teste_mac_simulado.py` exercita o registro e o `esperar` com o Terminal simulado, sem
+  abrir janela nem tocar no registro de verdade. Roda depois de mexer no `so_mac.py` ou no
+  `terminais.py`.
 
 ### No Windows
 
@@ -257,6 +289,7 @@ ou `janelas_win.py` no terminal-organizar) e, quando tudo rodar, tira este pará
 - Não rodar `claude` dentro da própria sessão nem em background: a janela é para eu ver e usar.
 - Não trocar o bypass por outro modo a menos que eu peça.
 - Não abrir uma chamada por janela quando são várias: o lote planeja a grade de uma vez.
-- Não deixar janela aberta depois que a trilha terminou, e não fechar janela de outra sessão.
+- Não deixar janela aberta depois que a trilha terminou, nem à espera do resto do lote, e não
+  fechar janela de outra sessão.
 - Não abrir o programa de terminal direto da sessão (`osascript … activate`, `open`, `wt`): ele
   herdaria o ambiente dela (veja "Ambiente limpo").

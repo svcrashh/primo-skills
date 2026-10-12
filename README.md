@@ -4,7 +4,7 @@ Minhas skills do Claude Code, uma pasta por skill. As de terminal valem no Mac e
 
 | Skill | O que faz |
 |---|---|
-| `terminal-claude` | Abre várias janelas de terminal, cada uma com um Claude e o seu prompt, acompanha em que pé está cada uma e fecha no fim. |
+| `terminal-claude` | Abre várias janelas de terminal, cada uma com um Claude e o seu prompt, acompanha em que pé está cada uma e fecha cada uma quando termina. |
 | `terminal-organizar` | Arruma as janelas de terminal em grade, cada monitor com a sua. |
 | `primo-videos` | Faz vídeo do seu produto, com ou sem narração: lê o projeto, pergunta o que falta, mostra cada cena como imagem parada antes de animar e entrega o MP4 com trilha original. A marca e as ideias são suas. A voz em off (ElevenLabs) e as imagens geradas (OpenAI) são opcionais, com a sua chave. Só Mac por enquanto. [Como usar](primo-videos/README.md). |
 
