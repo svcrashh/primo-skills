@@ -5,7 +5,8 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
 import { spawnSync } from 'node:child_process'
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
+import { acharPython } from '../scripts/where.cjs'
 import { montarLinha, resolverMarcas, PADRAO } from '../templates/drawn-explainer/timeline.mjs'
 import { temaDaMarca, TEXTURAS, colorOf } from '../templates/drawn-explainer/scene/engine/brand.js'
 import { layoutAreas, areaSegura, FORMATOS } from '../templates/drawn-explainer/scene/engine/layout.js'
@@ -164,7 +165,7 @@ test('os exemplos montam sem voz (cada cena do roteiro tem função no scenes.js
   for (const f of EXEMPLOS) {
     const P = JSON.parse(fs.readFileSync(path.join(MOLDE, f), 'utf8'))
     const tl = montarLinha(P.roteiro, null, { semVoz: true })
-    const cenas = (await import(path.join(MOLDE, P.cenas))).default
+    const cenas = (await import(pathToFileURL(path.join(MOLDE, P.cenas)).href)).default
     for (const sc of tl.scenes) assert.equal(typeof cenas[sc.id], 'function', `${f}: falta a cena ${sc.id}`)
     assert.equal(tl.voz.length, 0, f)
     for (const c of P.roteiro.filter((x) => x.fala)) assert.ok(c.texto, `${f}: a cena falada "${c.id}" precisa de "texto" para andar sem a voz`)
@@ -181,9 +182,9 @@ test('os exemplos montam sem voz (cada cena do roteiro tem função no scenes.js
 })
 
 test('os sons que o motor pede existem no catálogo do sounds.py', (t) => {
-  const py = [process.env.VIDEOSTUDIO_PYTHON, process.env.PYTHON, 'python3']
-    .find((p) => p && spawnSync(p, ['-c', 'import numpy, scipy'], { stdio: 'ignore' }).status === 0)
-  if (!py) return t.skip('sem Python com numpy e scipy (VIDEOSTUDIO_PYTHON)')
+  // o Python que a skill usa (scripts/where.cjs: o do ~/.videostudio/environment.json, o venv dele no Mac e no Windows)
+  const py = acharPython()
+  if (!py) return t.skip('sem Python com numpy e scipy (node scripts/environment.mjs --fix monta o da skill)')
   const r = spawnSync(py, ['-c', `import sys, json; sys.path.insert(0, ${JSON.stringify(path.join(RAIZ, 'assets', 'audio'))}); import sounds as sons; print(json.dumps(list(sons.CATALOGO)))`], { encoding: 'utf8' })
   assert.equal(r.status, 0, r.stderr)
   const cat = new Set(JSON.parse(r.stdout.trim().split('\n').pop()))

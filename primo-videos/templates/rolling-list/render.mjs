@@ -12,7 +12,7 @@ import os from 'node:os'
 import path from 'node:path'
 import { spawnSync, execFileSync } from 'node:child_process'
 import { createRequire } from 'node:module'
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 import { acharPython } from '../../scripts/where.cjs'
 import { aberturaDoJson, relatar } from '../../scripts/opening.mjs'
 
@@ -56,7 +56,7 @@ fs.copyFileSync(path.join(SKILL, 'assets', 'template', 'engine.js'), path.join(p
 const copia = (src) => {
   const abs = path.resolve(dirParams, exp(src))
   if (!fs.existsSync(abs)) { console.error(`MISSING IMAGE: ${src} (looked in ${abs})`); process.exit(1) }
-  const dst = path.join('media', path.basename(abs))
+  const dst = `media/${path.basename(abs)}`   // o caminho que a página lê: com /, também no Windows
   fs.copyFileSync(abs, path.join(proj, dst))
   return dst
 }
@@ -141,7 +141,7 @@ if (!tem('no-soundtrack') && PY) {
   const dirAudio = path.join(proj, 'audio')
   fs.mkdirSync(dirAudio, { recursive: true })
   for (const f of ['soundtrack.wav', 'final.wav']) fs.rmSync(path.join(dirAudio, f), { force: true })
-  const { escreverVozWav, blocoFolha, srt } = falasAudio.length ? await import(path.join(SKILL, 'scripts', 'tutorial', 'locucao.mjs')) : {}
+  const { escreverVozWav, blocoFolha, srt } = falasAudio.length ? await import(pathToFileURL(path.join(SKILL, 'scripts', 'tutorial', 'locucao.mjs')).href) : {}
   const falas = falasAudio.map((f) => ({ id: f.id, texto: f.texto, caminho: f.arq, inicioArquivo: f.em, som: +f.som.toFixed(3), fim: +f.fim.toFixed(3) }))
   if (falas.length) escreverVozWav(falas, plano.dur, path.join(dirAudio, 'voz.wav'))
   const T = P.trilha || {}

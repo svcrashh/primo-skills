@@ -7,25 +7,16 @@ import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { acharPython } from '../scripts/where.cjs'
 
 const RAIZ = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const TESTE = path.join(RAIZ, 'assets', 'audio', 'test_sounds.py')
 
-function acharPython() {
-  const cands = [
-    process.env.VIDEOSTUDIO_PYTHON, process.env.PYTHON,
-    process.platform === 'win32' ? 'python' : 'python3',
-  ].filter(Boolean)
-  for (const c of new Set(cands)) {
-    if (spawnSync(c, ['-c', 'import numpy, scipy'], { encoding: 'utf8' }).status === 0) return c
-  }
-  return null
-}
-
+// o Python que a skill usa (scripts/where.cjs: o do ~/.videostudio/environment.json, o venv dele no Mac e no Windows)
 const PY = acharPython()
 
 test('sons da explicação desenhada: o test_sounds.py passa (inclui o sounds.py --verify)', {
-  skip: !PY && 'sem Python com numpy e scipy (defina VIDEOSTUDIO_PYTHON ou PYTHON para um venv com os dois)',
+  skip: !PY && 'sem Python com numpy e scipy (node scripts/environment.mjs --fix monta o da skill; VIDEOSTUDIO_PYTHON ou PYTHON apontam outro)',
   timeout: 300_000,
 }, () => {
   const r = spawnSync(PY, [TESTE], { cwd: RAIZ, encoding: 'utf8', env: { ...process.env, PYTHONDONTWRITEBYTECODE: '1' } })
