@@ -29,6 +29,23 @@ test('terminal: o nome que aparece no vídeo roda o programa do projeto (alias)'
   assert.equal(g.comandos[0].saida[0].texto, 'args: a,b')
 })
 
+test('terminal: o argumento com / chega ao programa como foi escrito (no Git Bash, sem virar caminho do Windows)', async () => {
+  const dir = tmp()
+  fs.writeFileSync(path.join(dir, 'x.js'), 'console.log("args:", process.argv.slice(2).join(","))')
+  const g = await gravarTerminal({ pasta: dir, comandos: { alias: { meuapp: 'node x.js' }, comandos: [{ cmd: 'meuapp get /cestas' }] } })
+  assert.equal(g.comandos[0].saida[0].texto, 'args: get,/cestas')
+})
+
+test('terminal: passou do limite, corta a árvore inteira (o filho que segura a saída também) e diz que cortou', async () => {
+  const dir = tmp()
+  fs.writeFileSync(path.join(dir, 'segura.js'), "require('child_process').spawn(process.execPath, ['-e', 'setInterval(() => {}, 1000)'], { stdio: 'inherit' }); console.log('pai vivo'); setInterval(() => {}, 1000)")
+  const r = await rodar('node segura.js', dir, {}, {}, 3000)
+  assert.equal(r.cortado, true)
+  assert.equal(r.codigo, null)
+  assert.deepEqual(r.saida.map((l) => l.texto), ['pai vivo'])
+  assert.ok(r.ms < 10000, `levou ${r.ms} ms: o filho segurou a saída depois do corte`)
+})
+
 test('janela: a mensagem de permissão diz onde ligar, em uma mensagem só', () => {
   assert.match(MSG_TELA, /System Settings → Privacy & Security → Screen Recording/)
   assert.match(MSG_ACESSIBILIDADE, /Privacy & Security → Accessibility/)
