@@ -7,7 +7,7 @@
 // Este arquivo é copiado SOZINHO para a pasta de ferramentas dos projetos: não depende de nenhum outro arquivo da
 // skill (lê o environment.json por conta própria).
 //   node playwright.cjs [pasta]        onde ele achou o Playwright
-//   node playwright.cjs --gpu [pasta]  o renderer do WebGL (UNMASKED_RENDERER_WEBGL); sai 1 se for CPU (SwiftShader)
+//   node playwright.cjs --gpu [pasta]  o renderer do WebGL (UNMASKED_RENDERER_WEBGL); no Mac, sai 1 se for CPU (SwiftShader)
 const fs = require('fs'), path = require('path'), os = require('os')
 const { execSync } = require('child_process')
 
@@ -107,7 +107,11 @@ if (require.main === module) {
       const { browser } = await abrirNavegador(a[1])
       const r = await rendererWebGL(browser).finally(() => browser.close())
       console.log(`WebGL: ${r}`)
-      if (ehCpu(r) && !semGpu()) { console.error('3D ON CPU: the video\'s Chromium is not on the GPU (see the arguments in scripts/playwright.cjs)'); process.exitCode = 1 }
+      if (ehCpu(r) && !semGpu()) {
+        // fora do Mac o Chromium do vídeo desenha na CPU de propósito (sem argumento de GPU), como o render.cjs aceita
+        if (process.platform !== 'darwin') console.log('On this system the video is drawn on the CPU: the same image, slower (most of all in 3D scenes).')
+        else { console.error('3D ON CPU: the video\'s Chromium is not on the GPU (see the arguments in scripts/playwright.cjs)'); process.exitCode = 1 }
+      }
     })().catch((e) => { console.error(e.message); process.exitCode = 2 })
   } else {
     const cs = candidatos(a[0])
