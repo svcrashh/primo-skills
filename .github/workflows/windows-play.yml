@@ -1,11 +1,13 @@
+# A play e o instalador num Windows de verdade (o runner windows-latest). Sem rede paga: a OpenAI é a de mentira dos
+# testes (play/tests/api-falsa.mjs), e a chave é inventada na hora. Nada de segredo do repositório.
 name: windows-play
 
 on:
   push:
     branches: [main, 'windows-**']
-    paths: ['play/**', 'instalar.ps1', 'instalar.sh', '.github/workflows/windows-play.yml']
+    paths: ['play/**', 'instalar.ps1', 'instalar.sh', '.gitattributes', '.github/workflows/windows-play.yml']
   pull_request:
-    paths: ['play/**', 'instalar.ps1', 'instalar.sh', '.github/workflows/windows-play.yml']
+    paths: ['play/**', 'instalar.ps1', 'instalar.sh', '.gitattributes', '.github/workflows/windows-play.yml']
   workflow_dispatch:
 
 permissions:
@@ -15,12 +17,52 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  # Funções dos passos em PowerShell (5.1 e 7). Só ASCII: o 5.1 lê o script do passo como ANSI.
+  # Rodar devolve a saída como os bytes saíram do programa, lidos em UTF-8: é o que o Claude recebe.
+  AJUDA: |
+    $ErrorActionPreference = 'Stop'
+    try { [Console]::OutputEncoding = New-Object Text.UTF8Encoding $false } catch {}
+    function Rodar([string]$exe, [string[]]$argumentos) {
+      $psi = New-Object Diagnostics.ProcessStartInfo $exe
+      $psi.Arguments = ($argumentos | ForEach-Object { '"' + $_ + '"' }) -join ' '
+      $psi.UseShellExecute = $false
+      $psi.RedirectStandardOutput = $true
+      $psi.RedirectStandardError = $true
+      $psi.StandardOutputEncoding = New-Object Text.UTF8Encoding $false
+      $psi.StandardErrorEncoding = New-Object Text.UTF8Encoding $false
+      $p = [Diagnostics.Process]::Start($psi)
+      $erro = $p.StandardError.ReadToEndAsync()
+      $saida = $p.StandardOutput.ReadToEnd()
+      $p.WaitForExit()
+      Write-Host "> $exe $($argumentos -join ' ')   [saiu com $($p.ExitCode)]"
+      Write-Host $saida
+      if ($erro.Result) { Write-Host "(stderr) $($erro.Result)" }
+      [pscustomobject]@{ Codigo = $p.ExitCode; Saida = $saida; Erro = $erro.Result }
+    }
+    function Confere($condicao, [string]$oQue) {
+      if (-not $condicao) { throw "FALHOU: $oQue" }
+      Write-Host "ok: $oQue"
+    }
+    # UTF-8 lido como ANSI (A com til seguido de outro sinal, a com circunflexo e euro), como OEM (barra com traco),
+    # caractere perdido, ou BOM no meio da saida
+    function Legivel([string]$texto) { -not ($texto -match "\u00C3[\u0080-\u00BF]|\u00E2\u20AC|\u251C|\uFFFD|\uFEFF") }
+    function Juncao([string]$link, [string]$destino) {
+      $i = Get-Item -LiteralPath $link -Force -ErrorAction SilentlyContinue
+      $alvo = if ($i) { @($i.Target)[0] -replace '^\\\\\?\\', '' } else { $null }
+      $i -and $i.LinkType -eq 'Junction' -and $alvo -eq $destino -and (Test-Path -LiteralPath (Join-Path $link 'SKILL.md'))
+    }
+    # Um PowerShell aberto agora: o PATH sai do registro, como numa janela nova
+    function PathNovo { [Environment]::GetEnvironmentVariable('Path', 'Machine') + ';' + [Environment]::GetEnvironmentVariable('Path', 'User') }
+
 jobs:
   testes:
+    name: testes (Node ${{ matrix.node }})
     runs-on: windows-latest
     strategy:
       fail-fast: false
       matrix:
+        # o mínimo que a play promete, e o LTS, que é o que o winget instala
         node: ['18', 'lts/*']
     steps:
       - uses: actions/checkout@v7
@@ -30,42 +72,239 @@ jobs:
       - name: ffmpeg pelo winget
         shell: pwsh
         run: |
-          winget install ffmpeg --accept-source-agreements --accept-package-agreements --disable-interactivity | Select-String -Pattern 'Found|alias|Path|installed'
-          "usuario: " + [Environment]::GetEnvironmentVariable('Path', 'User')
-          "maquina: " + [Environment]::GetEnvironmentVariable('Path', 'Machine')
-          "sessao: $env:Path"
-          Get-ChildItem "$env:LOCALAPPDATA\Microsoft\WinGet\Links" -ErrorAction SilentlyContinue | Format-Table Name, LinkType, Target -AutoSize
-          Get-ChildItem "$env:LOCALAPPDATA\Microsoft\WinGet\Packages" -ErrorAction SilentlyContinue | Format-Table Name -AutoSize
-          Get-ChildItem "$env:ProgramFiles\WinGet\Links", "$env:ProgramFiles\WinGet\Packages" -ErrorAction SilentlyContinue | Format-Table FullName, LinkType -AutoSize
-          "$env:LOCALAPPDATA\Microsoft\WinGet\Links", "$env:ProgramFiles\WinGet\Links" | Add-Content $env:GITHUB_PATH
-      - name: testes da play
+          winget install ffmpeg --accept-source-agreements --accept-package-agreements --disable-interactivity | Select-String 'Found|alias|installed'
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          # O winget liga o ffmpeg em WinGet\Links, que está no PATH do usuário: só o que abrir depois enxerga.
+          "$env:LOCALAPPDATA\Microsoft\WinGet\Links" | Add-Content $env:GITHUB_PATH
+      - name: testes da play (com os shells do Windows)
+        if: matrix.node == '18'
         shell: pwsh
-        run: node --test play/tests/play.test.mjs play/tests/requisitos.test.mjs
+        # o Node 18 não expande glob no --test, e o PowerShell não expande para ele
+        run: node --test play/tests/play.test.mjs play/tests/requisitos.test.mjs play/tests/windows.test.mjs
+      - name: testes da play, com o comando do SKILL.md (com os shells do Windows)
+        if: matrix.node != '18'
+        shell: pwsh
+        run: node --test play/tests/*.test.mjs
 
-  explorar:
+  jornada:
+    name: do clone à play (PowerShell 5.1)
     runs-on: windows-latest
-    steps:
-      - name: o python da Microsoft Store
-        shell: pwsh
-        run: |
-          $semPython = ($env:Path -split ';' | Where-Object { $_ -and -not (Test-Path (Join-Path $_ 'python.exe')) }) + "$env:LOCALAPPDATA\Microsoft\WindowsApps"
-          $env:Path = $semPython -join ';'
-          Get-Command python -All | Format-Table Name, Source, CommandType
-          & python -c "import sys; print(sys.version)"
-          "saiu com $LASTEXITCODE"
-          & python --version
-          "saiu com $LASTEXITCODE"
-      - name: console no 5.1
+    defaults:
+      run:
         shell: powershell
+    steps:
+      - uses: actions/checkout@v7
+      - name: clone e instalador, como o README manda, antes de ter ffmpeg e chave
         run: |
-          "OutputEncoding=$([Console]::OutputEncoding.WebName) InputEncoding=$([Console]::InputEncoding.WebName) ACP=$([Text.Encoding]::Default.WebName)"
-          & node -e "console.log('node antes:', String.fromCodePoint(0xe1, 0x2714, 0x2716, 0x25cb))"
-          try { [Console]::OutputEncoding = [System.Text.Encoding]::UTF8; "trocou para $([Console]::OutputEncoding.WebName)" } catch { "nao deu: $_" }
-          & node -e "console.log('node depois:', String.fromCodePoint(0xe1, 0x2714, 0x2716, 0x25cb))"
-          Add-Type -AssemblyName PresentationCore
-          foreach ($f in 'consola.ttf', 'lucon.ttf', 'CascadiaMono.ttf', 'CascadiaCode.ttf', 'seguisym.ttf') {
-            $p = Join-Path $env:WINDIR "Fonts\$f"
-            if (-not (Test-Path $p)) { "$f nao existe"; continue }
-            $g = New-Object System.Windows.Media.GlyphTypeface ([uri]$p)
-            $f + ' ' + ((0x2714, 0x2716, 0x25CB, 0x2014, 0xE1 | ForEach-Object { '{0:X4}={1}' -f $_, $g.CharacterToGlyphMap.ContainsKey($_) }) -join ' ')
+          . ([scriptblock]::Create($env:AJUDA))
+          git clone -q $env:GITHUB_WORKSPACE "$HOME\Documents\GitHub\primo-skills"
+          git -C "$HOME\Documents\GitHub\primo-skills" checkout -q $env:GITHUB_SHA
+          Confere (-not (Get-Command ffmpeg -ErrorAction SilentlyContinue)) 'o runner nao tem ffmpeg antes do winget'
+          $r = Rodar powershell @('-ExecutionPolicy', 'Bypass', '-File', "$HOME\Documents\GitHub\primo-skills\instalar.ps1")
+          Confere ($r.Codigo -eq 0) 'o instalador sai com 0'
+          Confere (Juncao "$HOME\.claude\skills\play" "$HOME\Documents\GitHub\primo-skills\play") 'a juncao da play aponta para o repositorio'
+          Confere (Legivel $r.Saida) 'a saida sai legivel, sem caractere trocado'
+          $x = [char]0x2716
+          foreach ($t in "play $([char]0x2014) entende um arquivo de $([char]0xE1)udio", "$x ffmpeg", 'winget install ffmpeg', "$x chave da OpenAI", 'New-Item -ItemType Directory', 'notepad "$env:USERPROFILE\.claude\secrets\openai.env"') {
+            Confere ($r.Saida.Contains($t)) "a saida diz: $t"
           }
+      - name: winget install ffmpeg, como o requisito manda
+        run: |
+          winget install ffmpeg --accept-source-agreements --accept-package-agreements --disable-interactivity | Select-String 'Found|alias|installed'
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+      - name: num PowerShell novo, a chave pelos passos que o requisito imprime, e a play de verdade
+        run: |
+          . ([scriptblock]::Create($env:AJUDA))
+          $env:Path = PathNovo
+          Confere ((Get-Command ffmpeg).Source -like "$env:LOCALAPPDATA\Microsoft\WinGet\Links\ffmpeg.exe") 'num PowerShell novo, o ffmpeg do winget esta no PATH'
+          Confere (Get-Command ffprobe) 'e o ffprobe tambem'
+          $P = "$HOME\.claude\skills\play\scripts\play.mjs"
+          $req = "$HOME\.claude\skills\play\scripts\requisitos.mjs"
+
+          $r = Rodar node @($req)
+          Confere ($r.Codigo -eq 1 -and $r.Saida.Contains("$([char]0x2714) ffmpeg e ffprobe")) 'o requisito acha o ffmpeg e ainda pede a chave'
+          # Os passos da chave, ao pe da letra: os comandos que o requisito imprimiu rodam aqui. O Bloco de Notas nao abre
+          # num runner sem tela: no lugar dele, grava-se o que a pessoa escreveria, como ele pode salvar (BOM e CRLF).
+          $chave = 'sk-falsa-' + [guid]::NewGuid().ToString('N')
+          $passos = $r.Saida -split "`n" | ForEach-Object { $_.Trim() } | Where-Object { $_ -like 'New-Item *' -or $_ -like 'notepad *' }
+          Confere ($passos.Count -eq 2) 'o requisito imprime os dois comandos do PowerShell'
+          foreach ($c in $passos) {
+            if ($c -like 'notepad *') {
+              $arquivo = Invoke-Expression $c.Substring(8)
+              [IO.File]::WriteAllText($arquivo, "OPENAI_API_KEY=$chave`r`n", (New-Object Text.UTF8Encoding $true))
+            } else { Invoke-Expression $c }
+          }
+          Confere (Test-Path "$env:USERPROFILE\.claude\secrets\openai.env") 'o arquivo da chave ficou em %USERPROFILE%\.claude\secrets'
+          $r = Rodar node @($req)
+          Confere ($r.Codigo -eq 0 -and $r.Saida.Contains("$([char]0x2714) chave da OpenAI (em %USERPROFILE%\.claude\secrets\openai.env)")) 'o requisito acha a chave e sai com 0'
+          Confere (-not $r.Saida.Contains($chave.Substring(10))) 'sem mostrar a chave'
+
+          # A OpenAI de mentira, que so aceita a chave inventada; a play le a chave do arquivo, nao do ambiente
+          $env:PLAY_CHAVE_FALSA = $chave
+          $urlArq = Join-Path $env:RUNNER_TEMP 'api.txt'
+          $api = Start-Process node -ArgumentList "`"$env:GITHUB_WORKSPACE\play\tests\api-falsa.mjs`" `"$urlArq`"" -PassThru -WindowStyle Hidden
+          for ($i = 0; $i -lt 100 -and -not (Test-Path $urlArq); $i++) { Start-Sleep -Milliseconds 100 }
+          $env:OPENAI_API_BASE = Get-Content $urlArq
+          Remove-Item Env:PLAY_CHAVE_FALSA
+          Confere (-not $env:OPENAI_API_KEY) 'sem OPENAI_API_KEY no ambiente'
+
+          # Arquivos feitos na hora, numa pasta com acento: um audio, uma tela deitada, e um video de celular, que guarda
+          # o quadro deitado e a rotacao a parte
+          $pasta = "$HOME\Downloads\M$([char]0xED)dia da Ana"
+          New-Item -ItemType Directory -Force $pasta | Out-Null
+          $audio = "$pasta\Meu $([char]0xE1)udio (1).opus"
+          $deitado = "$pasta\tela deitada.mp4"
+          $emPe = "$pasta\celular em p$([char]0xE9).mp4"
+          $bipes = "aevalsrc='if(lt(mod(t\,2)\,1)\,0.5*sin(2*PI*440*t)\,0)':s=16000:d=10"
+          ffmpeg -hide_banner -v error -y -f lavfi -i $bipes -t 6 -c:a libopus -b:a 24k $audio
+          ffmpeg -hide_banner -v error -y -f lavfi -i 'testsrc=size=1280x720:rate=10:duration=10' -f lavfi -i $bipes -c:v libx264 -preset ultrafast -pix_fmt yuv420p -c:a aac -shortest $deitado
+          $cru = "$env:RUNNER_TEMP\cru.mp4"
+          ffmpeg -hide_banner -v error -y -f lavfi -i 'testsrc=size=720x1280:rate=10:duration=10' -f lavfi -i $bipes -vf transpose=2 -c:v libx264 -preset ultrafast -pix_fmt yuv420p -c:a aac -shortest $cru
+          ffmpeg -hide_banner -v error -y -display_rotation:v:0 -90 -i $cru -c copy $emPe
+
+          $r = Rodar node @($P, $audio)
+          Confere ($r.Codigo -eq 0) 'a play sai com 0 no audio'
+          Confere ($r.Saida.StartsWith("Meu $([char]0xE1)udio (1).opus $([char]0xB7) $([char]0xE1)udio $([char]0xB7) 0:06")) 'a primeira linha diz o que e o arquivo, com os acentos certos'
+          Confere ($r.Saida.Contains('[00:00] som 1.') -and $r.Saida.Contains('enviados ')) 'transcreveu pela API de mentira, com a chave do arquivo'
+          $r = Rodar node @($P, $audio)
+          Confere ($r.Saida.Contains('do cache, nada foi enviado agora')) 'a segunda chamada sai do cache'
+          Confere ((Get-ChildItem "$env:LOCALAPPDATA\play" -Directory).Count -eq 1) 'o cache esta em %LOCALAPPDATA%\play'
+
+          $folhas = Join-Path $env:RUNNER_TEMP 'folhas'
+          New-Item -ItemType Directory -Force $folhas | Out-Null
+          $r = Rodar node @($P, $deitado)
+          Confere ($r.Codigo -eq 0 -and $r.Saida.Contains("1280$([char]0xD7)720, horizontal")) 'o video deitado aparece deitado'
+          $f = [regex]::Match($r.Saida, '(?m)^(\S.*folha-1\.jpg)  ').Groups[1].Value
+          Confere ($f -like "$env:LOCALAPPDATA\play\*" -and (Test-Path $f)) 'a folha de contato esta no cache'
+          Copy-Item $f "$folhas\deitado-folha-1.jpg"
+          $r = Rodar node @($P, $emPe)
+          Confere ($r.Codigo -eq 0 -and $r.Saida.Contains("720$([char]0xD7)1280, vertical")) 'o video do celular aparece em pe'
+          Copy-Item ([regex]::Match($r.Saida, '(?m)^(\S.*folha-1\.jpg)  ').Groups[1].Value) "$folhas\em-pe-folha-1.jpg"
+          $r = Rodar node @($P, 'quadro', $emPe, '--em', '00:04')
+          Confere ($r.Codigo -eq 0 -and $r.Saida.Contains("(720$([char]0xD7)1280)")) 'quadro --em em resolucao cheia, em pe'
+          Copy-Item ([regex]::Match($r.Saida, '(\S:\\.*\.jpg)').Groups[1].Value) "$folhas\em-pe-quadro-00-04.jpg"
+          $r = Rodar node @($P, 'quadro', $deitado, '--em', '7', '--recorte', '0,0,50,50')
+          Confere ($r.Codigo -eq 0 -and $r.Saida.Contains("(640$([char]0xD7)360)")) 'quadro com recorte'
+          Copy-Item ([regex]::Match($r.Saida, '(\S:\\.*\.jpg)').Groups[1].Value) "$folhas\deitado-quadro-00-07-recorte.jpg"
+
+          $r = Rodar node @($P, 'limpar', $audio)
+          Confere ($r.Saida.StartsWith("Apaguei o cache de Meu $([char]0xE1)udio (1).opus")) 'limpar um arquivo'
+          $r = Rodar node @($P, 'limpar')
+          Confere ($r.Saida.StartsWith('Apaguei o cache da play') -and -not (Test-Path "$env:LOCALAPPDATA\play")) 'limpar tudo'
+          Stop-Process -Id $api.Id
+      - uses: actions/upload-artifact@v7
+        with:
+          name: folhas-de-contato
+          path: ${{ runner.temp }}/folhas
+          retention-days: 14
+
+  instalador:
+    name: instalador (${{ matrix.ps }})
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # o instalador roda no PowerShell que a pessoa usa; o roteiro do teste roda sempre no 7
+        ps: [powershell, pwsh]
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v7
+      - name: do zero, de novo, pasta de verdade, juncao quebrada, outro perfil, repositorio num caminho com espaco
+        run: |
+          . ([scriptblock]::Create($env:AJUDA))
+          $repo = "$HOME\Meus Projetos\primo skills"
+          git clone -q $env:GITHUB_WORKSPACE $repo
+          git -C $repo checkout -q $env:GITHUB_SHA
+          $inst = "$repo\instalar.ps1"
+          $dest = "$HOME\.claude\skills"
+          $skills = Get-ChildItem -Directory $repo | Where-Object { Test-Path "$($_.FullName)\SKILL.md" }
+          $arquivos = (Get-ChildItem -Recurse -File $repo | Where-Object FullName -notlike '*\.git\*').Count
+          function Todas([string]$d, [string[]]$menos = @()) { -not ($skills | Where-Object { $menos -notcontains $_.Name -and -not (Juncao "$d\$($_.Name)" $_.FullName) }) }
+
+          $r = Rodar ${{ matrix.ps }} @('-ExecutionPolicy', 'Bypass', '-File', $inst)
+          Confere ($r.Codigo -eq 0 -and (Todas $dest)) 'do zero: uma juncao por skill, apontando para o repositorio'
+          Confere (Legivel $r.Saida) 'a saida sai legivel'
+          foreach ($t in 'play — entende um arquivo de áudio', '✔ Node', '✖ ffmpeg', '✖ chave da OpenAI', 'winget install ffmpeg') { Confere ($r.Saida.Contains($t)) "a saida diz: $t" }
+
+          $r = Rodar ${{ matrix.ps }} @('-ExecutionPolicy', 'Bypass', '-File', $inst)
+          Confere ($r.Codigo -eq 0 -and -not $r.Erro -and (Todas $dest)) 'de novo: nada muda e nada quebra'
+          Confere ((Get-ChildItem -Recurse -File $repo | Where-Object FullName -notlike '*\.git\*').Count -eq $arquivos) 'o repositorio continua com todos os arquivos'
+
+          Remove-Item "$dest\play" -Force
+          New-Item -ItemType Directory "$dest\play" | Out-Null
+          Set-Content "$dest\play\meu.txt" 'meu'
+          $r = Rodar ${{ matrix.ps }} @('-ExecutionPolicy', 'Bypass', '-File', $inst)
+          Confere ($r.Saida.Contains("play: ja existe uma pasta de verdade em $dest\play. Nao mexi")) 'pasta de verdade: avisa'
+          Confere ((Get-Content "$dest\play\meu.txt") -eq 'meu' -and (Todas $dest @('play'))) 'e nao mexe nela, e liga as outras'
+          Remove-Item "$dest\play" -Recurse -Force
+
+          $sumiu = "$env:RUNNER_TEMP\copia velha\play"
+          New-Item -ItemType Directory -Force $sumiu | Out-Null
+          New-Item -ItemType Junction -Path "$dest\play" -Target $sumiu | Out-Null
+          Remove-Item (Split-Path $sumiu) -Recurse -Force
+          $r = Rodar ${{ matrix.ps }} @('-ExecutionPolicy', 'Bypass', '-File', $inst)
+          Confere ($r.Codigo -eq 0 -and (Todas $dest)) 'juncao para uma copia que sumiu (repositorio movido): refeita'
+
+          foreach ($outro in "$HOME\.claude-insiders\skills", "$HOME\Perfil João\skills") {
+            $r = Rodar ${{ matrix.ps }} @('-ExecutionPolicy', 'Bypass', '-File', $inst, $outro)
+            Confere ($r.Codigo -eq 0 -and (Todas $outro)) "outra pasta de perfil: $outro"
+          }
+      - name: sem Node e sem Python, e skills de mentira com requisitos.py, nos dois
+        run: |
+          . ([scriptblock]::Create($env:AJUDA))
+          $falso = "$env:RUNNER_TEMP\repo falso"
+          New-Item -ItemType Directory -Force $falso | Out-Null
+          Copy-Item instalar.ps1 $falso
+          foreach ($s in 'falsa-node', 'falsa-python', 'ambos', 'sem-requisitos') {
+            New-Item -ItemType Directory -Force "$falso\$s\scripts" | Out-Null
+            Set-Content "$falso\$s\SKILL.md" "---`nname: $s`n---"
+          }
+          New-Item -ItemType Directory -Force "$falso\nao-e-skill\scripts" | Out-Null
+          Set-Content "$falso\falsa-node\scripts\requisitos.mjs" "console.log('falsa-node — testa o node\n✔ acentuação')`nprocess.exitCode = 1"
+          Set-Content "$falso\falsa-python\scripts\requisitos.py" "print('falsa-python — testa o python\n○ opcional: ação')`nraise SystemExit(1)"
+          Set-Content "$falso\ambos\scripts\requisitos.mjs" "console.log('ambos — o .mjs vale')"
+          Set-Content "$falso\ambos\scripts\requisitos.py" "print('NAO DEVIA RODAR o .py de ambos')"
+          Set-Content "$falso\nao-e-skill\scripts\requisitos.mjs" "console.log('NAO DEVIA RODAR: nao e skill')"
+          $inst = "$falso\instalar.ps1"
+          $dest = "$env:RUNNER_TEMP\skills de mentira"
+          $semPython = { $_ -notlike 'C:\hostedtoolcache\windows\Python\*' -and -not (Test-Path (Join-Path $_ 'python.exe')) }
+          $semNode = { -not (Test-Path (Join-Path $_ 'node.exe')) }
+          $original = $env:Path
+
+          $r = Rodar ${{ matrix.ps }} @('-ExecutionPolicy', 'Bypass', '-File', $inst, $dest)
+          Confere ($r.Codigo -eq 0 -and (Legivel $r.Saida)) 'com node e python: sai com 0 e legivel'
+          foreach ($t in "falsa-node — testa o node`n✔ acentuação", "falsa-python — testa o python`n○ opcional: ação", 'ambos — o .mjs vale') { Confere ($r.Saida.Replace("`r`n", "`n").Contains($t)) "roda e mostra: $($t.Split("`n")[0])" }
+          Confere (-not $r.Saida.Contains('NAO DEVIA')) 'o .py de quem tem .mjs e a pasta que nao e skill ficam de fora'
+
+          # O python.exe da Microsoft Store: o runner tem, em WindowsApps, como o Windows de quem nunca instalou o Python
+          $env:Path = (($original -split ';' | Where-Object $semPython) + "$env:LOCALAPPDATA\Microsoft\WindowsApps") -join ';'
+          Confere ((Get-Command python).Source -like '*\WindowsApps\python.exe') 'o python do PATH e o atalho da loja'
+          $r = Rodar ${{ matrix.ps }} @('-ExecutionPolicy', 'Bypass', '-File', $inst, $dest)
+          Confere ($r.Codigo -eq 0 -and $r.Saida.Contains('Falta o Python 3: o python que existe aqui e o atalho da Microsoft Store, que nao roda nada. Sem o Python nao da para conferir nem usar: falsa-python.')) 'o atalho da loja nao conta como Python'
+          Confere ($r.Saida.Contains('winget install Python.Python.3.12') -and $r.Saida.Contains('falsa-node — testa o node')) 'diz como instalar, e o node segue'
+
+          $env:Path = ($original -split ';' | Where-Object $semPython | Where-Object { $_ -notlike '*\WindowsApps' } | Where-Object $semNode) -join ';'
+          Confere (-not (Get-Command node, python -ErrorAction SilentlyContinue)) 'PATH sem node e sem python'
+          $r = Rodar ${{ matrix.ps }} @('-ExecutionPolicy', 'Bypass', '-File', $inst, $dest)
+          Confere ($r.Codigo -eq 0 -and (Juncao "$dest\falsa-node" "$falso\falsa-node")) 'sem node e sem python: liga as skills e sai com 0'
+          Confere ($r.Saida.Contains('Falta o Node (18 ou mais novo), e sem ele nao da para conferir nem usar: ambos, falsa-node.') -and $r.Saida.Contains('winget install OpenJS.NodeJS.LTS')) 'diz que falta o Node, para quais, e como instalar'
+          Confere ($r.Saida.Contains('Falta o Python 3, e sem ele nao da para conferir nem usar: falsa-python.')) 'diz que falta o Python, para quais'
+
+          # E no repositorio de verdade, sem node: a play e a primo-videos dependem dele
+          $r = Rodar ${{ matrix.ps }} @('-ExecutionPolicy', 'Bypass', '-File', "$env:GITHUB_WORKSPACE\instalar.ps1", "$env:RUNNER_TEMP\skills sem node")
+          Confere ($r.Codigo -eq 0 -and $r.Saida -match 'Falta o Node .*: (.*, )?play') 'repositorio de verdade sem node: diz que a play precisa dele'
+          $env:Path = $original
+      - name: o atalho da loja, e o winget install Python.Python.3.12 que o instalador manda
+        if: matrix.ps == 'pwsh'
+        run: |
+          . ([scriptblock]::Create($env:AJUDA))
+          $falso = "$env:RUNNER_TEMP\repo falso"
+          winget install Python.Python.3.12 --accept-source-agreements --accept-package-agreements --disable-interactivity | Select-String 'Found|installed'
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          # um PowerShell novo, sem o Python que o runner ja trazia
+          $env:Path = ((PathNovo) -split ';' | Where-Object { $_ -notlike 'C:\hostedtoolcache\windows\Python\*' }) -join ';'
+          Confere ((Get-Command python).Source -like "$env:LOCALAPPDATA\Programs\Python\Python312\python.exe") 'o python do winget vem antes do atalho da loja'
+          $r = Rodar powershell @('-ExecutionPolicy', 'Bypass', '-File', "$falso\instalar.ps1", "$env:RUNNER_TEMP\skills de mentira")
+          Confere ($r.Saida.Contains('falsa-python — testa o python') -and -not $r.Saida.Contains('Falta o Python')) 'o instalador passa a rodar o requisito em Python'
