@@ -16,7 +16,7 @@ or "Not one of the five types" (a native phone app, with no web version), ask th
 |---|---|---|---|---|
 | 1 | website or web app on the computer (`web-computer`) | real screen, browser | `real-screen-camera` | `scripts/tutorial/record.mjs` |
 | 2 | web app on the phone (`web-phone`) | real screen, 390×844 | tutorial mode with a phone mockup frame | `scripts/tutorial/record.mjs` |
-| 3 | program with a window (`window`) | only the window, macOS | `real-screen-camera` with `"moldura": "nenhuma"` | `scripts/product/record-window.mjs` |
+| 3 | program with a window (`window`) | only the window, macOS or Windows | `real-screen-camera` with `"moldura": "nenhuma"` | `scripts/product/record-window.mjs` |
 | 4 | command line (`terminal`) | what was typed and what it answered | `typing-terminal` | `scripts/product/record-terminal.mjs` |
 | 5 | no screen (`no-screen`) | **none** | none | `scripts/product/propose.mjs` |
 
@@ -37,11 +37,13 @@ or "Not one of the five types" (a native phone app, with no web version), ask th
   the identity (`references/tutorial.md` §9 and §13).
 
 ## 3 · Computer program with a window (Electron, Tauri, native)
-Records **the window and only it** on macOS, at its native resolution (2× on Retina), with no shadow, without the desktop around it.
+Records **the window and only it** on macOS or Windows, at its native resolution (2× on Retina; the display scale on Windows), with no shadow,
+without the desktop around it. On any other system (Linux) it does not record: the recorder says so and stops. Then, for a web app, record
+through the browser (types 1 and 2); otherwise ask the owner to record the screen and hand over the video file.
 
 - **Start:** the reconnaissance's `subir` (`npm start`, `cargo tauri dev`, `swift run`, `python3 main.py`). No need to start it by hand:
-  the recorder opens it with `--launch` and, at the end, closes **only** the process group it opened.
-- **Permission (once):** Screen Recording for whatever runs the skill. Check it with `node scripts/product/record-window.mjs --permission`.
+  the recorder opens it with `--launch` and, at the end, closes **only** the process group it opened (on Windows, the process tree).
+- **Permission (once, macOS):** Screen Recording for whatever runs the skill. Check it with `node scripts/product/record-window.mjs --permission`.
   If it is missing, the recorder **stops** and says, in a message: *Ajustes do Sistema → Privacidade e Segurança → Gravação de Tela*
   (System Settings → Privacy & Security → Screen Recording), tick the app that runs the skill (Terminal, VS Code…), quit and reopen that app. It does not keep retrying. A click in the script
   also needs **Accessibility** (same settings screen) and stops the same way.
@@ -51,11 +53,26 @@ Records **the window and only it** on macOS, at its native resolution (2× on Re
   ```
   `script.json`: `{ "dur": 5, "passos": [ { "t": 0.2, "frase": "…", "aponta": {x,y,w,h}, "clique": {x,y}, "sucesso": {x,y,w,h} } ] }`,
   coordinates in **points** from the top corner of the window (the title bar counts). To find the rectangles: record
-  with no steps, open a frame from `recording/frames/` and divide the pixels by `dsf` (2). The tap time is measured on the frames
+  with no steps, open a frame from `recording/frames/` and divide the pixels by `dsf` from `recording/events.json` (2 on a Retina Mac;
+  on Windows, the monitor's display scale: 1 at 100%, 1.5 at 150%). The tap time is measured on the frames
   (the instant the click changed the screen), not only by the clock.
 - **Rules:** it records only the window of the program the recorder opened (or the `--pid` you give it); never by program name. The click
   moves the real mouse: it only fires if the program's window is the one on top at that point, otherwise it aborts without clicking. If the owner
-  is using the computer, take the `clique` out of the script and use only `aponta`. A minimized window, or one in another Space, does not record.
+  is using the computer, take the `clique` out of the script and use only `aponta`. A minimized window, or one in another Space (another virtual
+  desktop on Windows), does not record.
+- **On Windows:** there is no permission to turn on (`--permission` only checks that the helper runs). It needs `ffmpeg` on the PATH
+  (`winget install ffmpeg`, then a new terminal) and Windows PowerShell 5.1, which comes with Windows (the helper is `scripts/product/window.ps1`).
+  `ffmpeg -f gdigrab` records the **area of the screen where the window is**, exactly as it shows. So, before recording:
+  - keep the window restored, not minimized (a minimized window is not found), and whole on the screen (a part past the edge is cut off,
+    and the coordinates then count from the visible corner);
+  - keep everything else off it: a notification, a dialog or another window over that area goes into the video, and a click that another
+    window would receive aborts the recording. The recorder brings the window to the front once, at the start; it does not keep it there.
+
+  `--launch` runs the command through `cmd.exe` (so `npm start`, `npx …` and `&&` work) and, at the end, closes the process tree it opened
+  (`taskkill /T`), nothing else. A program that hands its window to an instance already open is not found: close that instance first, or use
+  `--pid`. With display scaling (125%, 150%), the recorder measures in real pixels and checks the screen size ffmpeg sees; if the first frame
+  still comes out shifted or cut, set Settings → System → Display → Scale to 100% for the recording. A program running as administrator
+  ignores clicks from a terminal that is not: run the terminal the same way, or leave out the `clique`.
 - **Resolution:** the capture comes out at the window's resolution (`--width 2560` reduces it). For camera zoom without softening, the program
   should open at ~1280×800 pt or more; a small window allows less zoom, it is not blurred on purpose.
 - **Template:** `real-screen-camera` with `"gravacao": "<folder>/recording"` and **`"moldura": "nenhuma"`** (the window already brings its own
