@@ -308,3 +308,20 @@ jobs:
           Confere ((Get-Command python).Source -like "$env:LOCALAPPDATA\Programs\Python\Python312\python.exe") 'o python do winget vem antes do atalho da loja'
           $r = Rodar powershell @('-ExecutionPolicy', 'Bypass', '-File', "$falso\instalar.ps1", "$env:RUNNER_TEMP\skills de mentira")
           Confere ($r.Saida.Contains('falsa-python — testa o python') -and -not $r.Saida.Contains('Falta o Python')) 'o instalador passa a rodar o requisito em Python'
+
+  fontes:
+    runs-on: windows-latest
+    steps:
+      - name: as fontes do console tem os sinais?
+        shell: pwsh
+        run: |
+          Add-Type -AssemblyName PresentationCore
+          foreach ($f in 'consola.ttf', 'lucon.ttf', 'cour.ttf', 'seguisym.ttf', 'CascadiaMono.ttf', 'CascadiaCode.ttf') {
+            $p = Join-Path $env:WINDIR "Fonts\$f"
+            if (-not (Test-Path $p)) { "$f nao existe"; continue }
+            $g = New-Object System.Windows.Media.GlyphTypeface ([uri]$p)
+            $f + ' ' + ((0x2714, 0x2716, 0x25CB, 0x2014, 0xE1, 0xB7, 0xD7) | ForEach-Object { '{0:X4}={1}' -f $_, $g.CharacterToGlyphMap.ContainsKey($_) }) -join ' '
+          }
+          Get-ChildItem "$env:ProgramFiles\WindowsApps" -Directory -Filter 'Microsoft.WindowsTerminal*' -ErrorAction SilentlyContinue | ForEach-Object { Get-ChildItem $_.FullName -Filter *.ttf -Recurse -ErrorAction SilentlyContinue | Select-Object -ExpandProperty FullName }
+          reg query "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\FontLink\SystemLink" /v Consolas
+          exit 0
