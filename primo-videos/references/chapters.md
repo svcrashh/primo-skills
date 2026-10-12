@@ -1,8 +1,11 @@
 # Chapter video: the redesigned interface
 
 The default for updates, patch notes, launches, demos, explainers and announcements. Without voice, the video is music,
-sound effects and the on-screen text: the timings are fixed, on the soundtrack's grid (§9). The tutorial that teaches a
-task still uses the real screen (`references/tutorial.md`).
+sound effects and the on-screen text: the timings are fixed, on the soundtrack's grid (§9). That is the default, and it
+runs entirely on this machine. With voice (opt-in and paid: an ElevenLabs voiceover, only when the person asks for one
+and the key is set up, `references/voice-choice.md` §12), each chapter lasts as long as its line and the stage follows
+the spoken word: the "With voice" parts of §4, §9, §10 and §11. The tutorial that teaches a task still uses the real
+screen (`references/tutorial.md`).
 
 ## Contents
 1. Why redesign instead of record
@@ -14,8 +17,11 @@ task still uses the real screen (`references/tutorial.md`).
 7. Transition between chapters
 8. 16:9 and 9:16, recomposed
 9. Without voice: timing, text and soundtrack
+   - With voice: the voice in the chapters
 10. Names spelled right
+    - With voice: pronunciation dictionary and transcription check
 11. Production: template first, chapters in parallel
+    - With voice: the order of production
 12. Contact sheet: mandatory, per format
 13. The example template (`assets/chapters/`)
 14. Pitfalls that already cost time
@@ -43,6 +49,10 @@ Each item below shipped in a delivered video and was rejected. The contact sheet
 - **Page recorded half-loaded:** the frame shows loading, blank white or an empty corner.
 - **Always the same composition:** screen in the middle and caption below, from start to finish.
 - **No index or chapters:** the viewer doesn't know how much is left or where they are.
+- **With voice, on-screen text that repeats the whole line:** the text on screen says what the voice says, word for
+  word. In a chapter video the title is a poster (§4), and the line is something else.
+- **With voice, a name pronounced wrong:** brand, product name, a term in another language, an invented name. Without
+  the dictionary and the transcription check (§10), it only shows up when the owner listens.
 
 ## 3. The structure
 
@@ -69,6 +79,9 @@ Fixed composition, so the viewer learns to read the video in the first chapter:
 - **Background:** the brand's background color, a subtle grid and a slow glow in the highlight color. The same in every
   chapter: what changes is the object.
 
+With voice (§9), the title is not a sentence from the line, each support line comes in when the voice reaches its
+subject, and the object changes while the voice speaks.
+
 Timing of a chapter:
 
 | t (s) | What |
@@ -80,10 +93,23 @@ Timing of a chapter:
 | 1.4 onward | a new action every 1.5–3 s, on a beat of the bar, and nothing still for more than 0.6 s between them (the stage camera breathes, the object reacts): the refinement check fails frozen frames; each support line comes in at its marked time (`em`) |
 | last action + 0.8 | breathing room with everything still and readable; in the last 0.5 s everything rises and disappears, the background stays |
 
+With voice, the first three rows stay and the rest follow the line instead of the bar grid:
+
+| t (s) | What |
+|---|---|
+| 1.4 | the line starts (`VOZ_EM`): the title has already been read |
+| during the line | a new action every 1.5–3 s, each on the word that names it (`em('word')`), and nothing still for more than 0.6 s between them: the refinement check fails frozen frames; each support line comes in when the voice reaches it (`em`) |
+| end of the line + 0.8 | breathing room with everything still and readable; in the last 0.5 s everything rises and disappears, the background stays |
+
 Without voice, the chapter's duration is fixed and comes from the stage and from reading time: `max(5, 1.4 + beats + 0.8)`
 seconds, with each beat lasting 1.5–3 s and each support line on screen at least long enough to be read (§9). Three 2 s
 beats give an 8.2 s chapter; if it goes past 12–15 s, the chapter holds two new features: split it. Round the duration to
 the soundtrack's bar, so the transition lands on a downbeat.
+
+With voice, the chapter lasts as long as its line: `max(5, 1.4 + line + 0.8)` seconds. A 9 s line gives an 11.2 s
+chapter; if it goes past 12–15 s, the chapter holds two new features: split it. The `em` values of the support and the
+beats come from the word-by-word timings measured in `narration.json`, through `scripts/chapters/tempos.mjs`, not from
+the estimate (§11, "With voice").
 
 ## 5. The redesigned interface
 
@@ -145,7 +171,9 @@ The vertical is a different composition, with the same elements, not a crop of t
 **In 9:16 the whole phone has small text.** It comes in whole and the stage camera (`camPalco` in the kit) slowly moves
 in on the action area, which follows the stage beats (the button when the beat is the button), with the stage fading out
 at the top and bottom instead of a hard cut. The opening starts with the brand in the center and rises when the index
-comes in: without that, half the frame stays empty while the first item is read.
+comes in: without that, half the frame stays empty while the first item is read. With voice, the action area follows
+the line instead of the beats (the button when the voice talks about the button), and the opening rises as the voice
+says its first sentence.
 
 Each scene declares the layout per format (`L({ '16x9': …, '9x16': … })`) from the first line. A title that fits
 on one line in 16:9 may need two in 9:16: write the line breaks, don't let the browser decide.
@@ -167,6 +195,38 @@ on one line in 16:9 may need two in 9:16: write the line breaks, don't let the b
 - **Numbers in digits, and large,** with a 3-word label that says what they count.
 - The mix is the protagonist-soundtrack mix (−14 LUFS, `references/soundtrack.md` §2), checked by `finalize.mjs`.
 
+### With voice: the voice in the chapters
+
+Only when the person asked for a voiceover. Everything above about the on-screen text still holds; what changes is who
+sets the time.
+
+- **One line per chapter:** each chapter's line is `"onde": { "capitulo": n }` in `voice/<version>/script.json`, plus
+  `"abertura"` and `"fechamento"` (`references/voice-script.md` §2 and §6). `voice.mjs` orders and checks it the same
+  way as in a tutorial: one line per place, and a script doesn't mix `passo` and `capitulo`.
+- **Sentences that say what you gain:** present tense, one idea per sentence, written the way people talk
+  (`references/voice-script.md` §3; `voice.mjs review` checks the script before any credit is spent). 6 to 10 s of
+  speech per chapter, usually two sentences. "There are thirty-three layouts now, four of them featured and the rest one
+  tap away." It doesn't read the screen.
+- **The voice rules the timing** (§4): the chapter lasts as long as its line, not the bar. Write the script, generate
+  the voice, and only then lock the durations. In split work, the locked script (text + estimated duration) comes
+  before any scene.
+- **Title ≠ line:** the title is the poster (2–3 words), the support is 1–2 lines, the line is the whole sentence. There
+  is no word-by-word caption in a chapter video. `assemble.mjs` writes the speech as a caption file
+  (`out/assembled.srt`) for platforms that take one; if the video must be followed without sound with the speech
+  burned in, that caption is a separate element at the bottom, checked on the contact sheet like the rest.
+- **Numbers:** in digits on screen. In the script, spelled out when the voice can misread them ("two point seven
+  megabytes"), or kept in digits with the spoken form in the `pronuncia` map (§10).
+- **The line is measured:** `voice.mjs generate` writes each line's real duration and the time of each word in
+  `narration.json`; `tempos.mjs` and the assembly use the measured times, never the estimate.
+- **Opening and closing** follow `references/voice-script.md`. Here the opening line can say how many new features
+  there are, while the index fills in.
+- **The mix is the mix with voice** (`references/voice-mix.md`), not the protagonist-soundtrack one: the music steps
+  back to a bed and gives way under each line. Profile `reels` for ads and social media, `calmo` for help content: the
+  same `perfil` in `script.json` and `--profile` in `assemble.mjs`.
+- **Sounds under the line:** the transition whoosh and the impacts go down 6 dB while the voice speaks, and taps and
+  clicks stay at their level (`references/voice-mix.md` §4). An effect right on top of the product's name can eat the
+  word: `listen --mix` catches it (§12).
+
 ## 10. Names spelled right
 
 Without voice, the risk isn't pronunciation: it's spelling. Before the first chapter:
@@ -176,6 +236,45 @@ Without voice, the risk isn't pronunciation: it's spelling. Before the first cha
 2. **Copy the spelling from the source,** letter by letter (case, accents, periods, hyphens): the site, the app, the
    manual (`references/brand.md`). Close enough doesn't count.
 3. **Check on the contact sheet** (§12) each name on the list, in 16:9 and in 9:16.
+
+### With voice: pronunciation dictionary and transcription check
+
+With voice, the spelling above still holds for the screen, and pronunciation becomes a risk too. Before generating the
+first line:
+
+1. **List the risk words of the whole video:** the same list as above (product, proper names, stage names, terms in
+   another language, acronyms, numbers with units, address). In a product update there are almost always 8 to 15.
+2. **Decide the spelling of each one** in the script's `pronuncia` map (`references/voice-script.md` §4). A word the
+   voice reads right stays out of the map, but stays on the risk list.
+3. **Listen before spending the rest:** the risk words in a single sentence, written the way the map spells them, read
+   by the chosen voice:
+
+   ```sh
+   node $SKILL/scripts/voice.mjs samples --phrase "<the risk words in one sentence>" --voices <chosen voice id> --profile <the script's perfil> --project <folder>
+   ```
+
+   One sentence, few credits. Adjust the map and repeat until the person hears it right
+   (`voice.mjs transcribe <the sample's mp3> --project <folder>`, paid by duration, shows what the transcription hears
+   in it).
+4. **Show the dictionary in the approval table** (`references/voice-script.md` §5): word → how the voice reads it.
+5. **After generating, transcribe:**
+
+   ```sh
+   node $SKILL/scripts/voice.mjs listen <folder>/voice/<version>/narration.json --words "Name,Other,Acronym"
+   ```
+
+   - It sends each line to the ElevenLabs speech-to-text (`scribe_v2`), **without keyterms**: biasing the
+     transcription toward the right word would hide the wrong one.
+   - It compares what the transcription heard with what the voice should say (the `dito`, when there is a
+     pronunciation swap).
+   - Risk word = one with a swap in the map, plus those in `--words`. If one doesn't appear in the transcription, the
+     line fails and the command exits with code 1.
+   - It writes `heard.md` next to `narration.json`: line, risk, what it should say, what was heard.
+   - A risk word that failed: adjust the map and `voice.mjs generate … --redo <id>`. Two takes in a row wrong on the
+     same word: change the spelling, don't insist on the take.
+   - It is paid by duration, like every transcription (`references/voice-mix.md` §6), and goes through the video's cap.
+6. The transcription doesn't judge accent or intonation, and an invented word can come out "right" in the transcription
+   and strange to the ear. The report lists the risk words for whoever listens.
 
 ## 11. Production: template first, chapters in parallel
 
@@ -208,6 +307,71 @@ A defect in the template goes to a requests file that only whoever maintains the
 
 Each chapter is a short video: render and check one on its own, without depending on the others.
 
+### With voice: the order of production
+
+Only when the person asked for a voiceover. Without that request, or without the ElevenLabs key, the steps above are the
+whole production and nothing here runs. The voice is paid (`references/voice-choice.md` §12): before the first paid
+call, tell the person it costs up to about 900 credits per minute of narration, and that the video's cap is 1,500 voice
+credits unless they raise it. The template (step 2) and the chapters in parallel (step 4) stay the same; the rest
+changes:
+
+1. **Script locked, with the lines:** the index and, per chapter, its line in `<folder>/voice/<version>/script.json`
+   (§9), with the estimated duration (`review` counts ~150 words per minute, `references/voice-script.md` §3).
+   `node $SKILL/scripts/voice.mjs review <folder>/voice/<version>/script.json` with no errors, the risk words in the
+   `pronuncia` map (§10), then the approval table (`references/voice-script.md` §5) and the person's yes. On the review
+   board it is "Approve script" (`recipes/board.md`). No line is generated before it.
+2. **The voice, chosen by ear:** three different candidates reading the first real line,
+   `node $SKILL/scripts/voice.mjs samples --script <folder>/voice/<version>/script.json --voices id1,id2,id3`
+   (`references/voice-choice.md` §4), and the pace, `calmo` or `reels` (§5 there). The chosen voice goes into `voz` in
+   `script.json`.
+3. **Generate early:**
+   `node $SKILL/scripts/voice.mjs generate <folder>/voice/<version>/script.json --out <folder>/voice/<version>`
+   writes `narration.json` and `lines/<id>.wav`. A writing tic in a new line stops it before spending (exit code 3;
+   `--accept-text` only with the person's yes). Over the cap, nothing is called (exit code 5):
+   ask the person, and with their yes, `node $SKILL/scripts/costs.mjs cap <folder> --voice-credits <n>`. Then `listen`
+   (§10). With the measured times, the durations and the `em` values stop being guesses.
+4. **Timings:** with the voice generated and the scene folders created,
+   `node $SKILL/scripts/chapters/tempos.mjs <folder> [--narration voice/<version>/narration.json] [--speech-at 1.4]`
+   writes each scene's `tempos.js` and loads it in the scene's `index.html`: `em('word')` / `ate('word')` on the
+   **exact** word (§14), `VOZ_EM`, `FIM_FALA` and `DURACAO_MINIMA`. The `"abertura"` line goes to `00-…`,
+   `{ "capitulo": n }` to `NN-…`, the `"fechamento"` line to `99-…`. `--narration` can be left out when the project has
+   a single `voice/<version>/narration.json`.
+   - Every support `em` and every stage beat uses `em()`, never a copied number.
+   - Each scene's `duracao` in `video.js` is `FIM_FALA` + ~0.8 s, and at least 5 s: below `DURACAO_MINIMA` the
+     assembly refuses the line, and more than 1.3 s after the last word (3 s on the closing) the refinement check flags
+     leftover silence.
+   - The voice changed? Run it again and render the scenes again.
+5. **Render** each scene in its formats (`scripts/chapters/render.mjs`), as in steps 2 and 4.
+6. **Assembly with the voice:**
+
+   ```sh
+   node $SKILL/scripts/chapters/assemble.mjs <folder> --narration voice/<version>/narration.json --profile reels|calmo [--soundtrack --deliver <delivery folder>]
+   ```
+
+   It joins opening + chapters + closing, puts each line at `scene start + 1.4 s` (`--speech-at`, the same value as in
+   `tempos.mjs`), refuses a line that doesn't fit its scene and says which `duracao` fixes it, and writes
+   `audio/voz.wav`, `out/assembled.srt` and `audio/sheet.json` with the `voz` block and one whoosh per transition.
+   `--profile` is the script's `perfil` (`reels` when left out). Then the soundtrack over that sheet is the mix with
+   voice (`references/voice-mix.md` §5), and `finalize.mjs` for each format; with `--soundtrack --deliver`, it composes,
+   checks with `verify.py`, finalizes each format and puts the `.srt` next to each delivered MP4.
+7. **Refinement check:** `node $SKILL/scripts/refine.mjs <folder> [--product "Name"]`, before showing the draft and
+   again on the final MP4. With voice it also fixes, by itself, the narration's alignment to the real pauses and the
+   silence left at the end of each line, keeping the originals (`narration.before-refine.json`, `lines/_before-refine/`).
+   It finds the project's single `narration.json` by itself; with more than one version, pass
+   `--narration voice/<version>/narration.json`. After that: `tempos.mjs`, render the scenes and refine again, until it
+   passes.
+8. **The mix, heard (optional):** on each format's final MP4,
+   `node $SKILL/scripts/voice.mjs listen --mix <delivery folder>/<name>-<format>.mp4 --script <folder>/voice/<version>/narration.json --words "…"`:
+   did the soundtrack or an effect eat a word? (`references/voice-mix.md` §6).
+
+After every paid call (samples, generate, `--redo`, listen):
+`node $SKILL/scripts/costs.mjs board <folder> [--account-left <credits>]`, and a patch to the review board with the
+block it prints, as `{"costs": …}` (`recipes/board.md`).
+
+In split work, the contract carries the locked script with the line of each chapter (folder, duration, label, title,
+support with `em`, the line) instead of the beat times. Generate the voice before the chapters are done, and tell
+whoever makes each chapter when the timings change.
+
 ## 12. Contact sheet: mandatory, per format
 
 Before saying it's done, for **each** final **format**: the refinement check (`node $SKILL/scripts/refine.mjs <folder>`,
@@ -230,6 +394,12 @@ Open each sheet with the image-reading tool and look for:
 Also check the duration (`ffprobe`) and the audio (`finalize.mjs`: loudness and true peak). Find a defect, fix it,
 redo the sheet.
 
+With voice, the refinement check also has to pass the voice checks (animation on the word, voice alignment, flat voice
+and leftover silence), `finalize.mjs` also checks the voice above the soundtrack in each line
+(`references/voice-mix.md` §6), and the transcription comes in: `voice.mjs listen` on the lines (§10) and, optionally,
+`voice.mjs listen --mix` on each format's final MP4 (§11, "With voice"). Both are paid by duration: about 20 credits per
+minute of audio.
+
 ## 13. The example template (`assets/chapters/`)
 
 A minimal chapter video, with no brand at all (made-up colors and names), taken from a patch notes video that
@@ -242,7 +412,9 @@ went live with this method:
 - `README.md`: how to swap the tokens, write a chapter, render and assemble.
 
 The scripts live in `scripts/chapters/`: `new.mjs` (creates the project), `render.mjs` (one chapter or all of them, in
-both formats, with the contact sheet) and `assemble.mjs` (joins them and writes the soundtrack's sync sheet). Swap the tokens
+both formats, with the contact sheet) and `assemble.mjs` (joins them and writes the soundtrack's sync sheet). With voice,
+`tempos.mjs` writes each scene's timings from the spoken words, and `assemble.mjs --narration` also puts each line in its
+scene (through `falas.mjs`) and writes the `voz` block of the sheet. Swap the tokens
 for those from the project reading (§3 of the reading: the product's look) and write the chapters. The example is structure, not identity: each
 product's background, fonts, phone shape and motion come from its own project reading.
 
@@ -259,6 +431,16 @@ product's background, fonts, phone shape and motion come from its own project re
 - **False positives from `frames.cjs --check`:** the mask of the title's second line touches the first one
   ("COLLISION … at up to 33%") and the 9:16 label sits above the social-media safe area when the
   video doesn't declare a platform. Check on the sheet you looked at; if there's no visible overlap, move on.
+- **With voice, `em()` by prefix:** an old `tempos.js` found the first word that *started* with the search:
+  `em('nine', 2)` landed on "ninety" and the price jumped 0.5 s before "nine!"; `em('no')` landed on "now". The
+  `scripts/chapters/tempos.mjs` compares the exact word, and the refinement check (animation on the word) flags a call
+  that lights up before the voice.
+- **With voice, a word after a pause comes early:** the ElevenLabs alignment put the pause inside the next word, and a
+  beat tied to it lit up 0.2 to 0.74 s before the sound. `voice.mjs generate` already corrects it by the measured
+  pauses; for a narration generated before that, the refinement check corrects it (and keeps the original).
+- **With voice, a line that grows after the voice was generated:** the durations and the support `em` values come from
+  the measured times (`narration.json`), not from the estimate. Generate the voice before the chapters are done, and
+  tell whoever makes the chapters when the timings change.
 - **`.abs` ignores `right`:** the class fixes `left: 0`, so `right: '12px'` does nothing and the box ends up on the
   left, on top of the icon. Compute the `left`. (Three subagents ran into this in the same video.)
 - **`font:` resets `lineHeight`:** the `font` shorthand (the kit's `F.*`) declared afterward wipes out `lineHeight` and
@@ -268,8 +450,10 @@ product's background, fonts, phone shape and motion come from its own project re
   came out as a ghost digit ("3779 × 2128"). The engine's `conta()` already locks the number to the 60 fps frame; text
   that changes with `t` outside `conta` uses `quadroDe(t)`.
 - **Pop at the start and a rewritten sheet:** `assemble.mjs` puts 20 ms of silence at the beginning. If you edit
-  `sheet.json` by hand, remember that `montar` rewrites it: whatever must stay (an impact on the logo) goes in as a marker
+  `sheet.json` by hand, remember that `assemble.mjs` rewrites it: whatever must stay (an impact on the logo) goes in as a marker
   without `"auto"`.
+- **With voice, a fade that eats the last word:** at 2.5 s from the end, the fade swallowed the closing's last word.
+  `assemble.mjs` now starts the fade only after the last line ends.
 - **The example scene in the assembly:** `01-example` no longer goes into the video; delete it once the first real
   chapter exists.
 - **Split work without a contract:** each person invents their own transition, their own background, their own title
