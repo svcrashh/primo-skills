@@ -76,7 +76,8 @@ function faltaOpcional(op) {
 
 /** O caminho absoluto de um executável no PATH, ou null. */
 export function noPath(nome) {
-  const exts = win ? (process.env.PATHEXT || '.EXE;.CMD;.BAT;.COM').split(';').filter(Boolean) : ['']
+  // em minúscula: o PATHEXT vem em maiúscula, e o caminho é mostrado para a pessoa (py.exe, não py.EXE)
+  const exts = win ? (process.env.PATHEXT || '.EXE;.CMD;.BAT;.COM').toLowerCase().split(';').filter(Boolean) : ['']
   for (const d of (process.env.PATH || '').split(path.delimiter).filter(Boolean)) {
     for (const e of exts) {
       const p = path.join(d, nome + e)
