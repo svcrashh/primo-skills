@@ -23,17 +23,33 @@ node $SKILL/scripts/refine.mjs <video.mp4> [--project <video folder>] [--product
 
 - **In the video folder** it finds by itself the scenes (`scenes/NN-*`), the assembly (`out/assembly.json`) and the most
   advanced MP4 of each format in `out/` (final > assembled). `--video` and `--format` pick by hand.
+  - **With voice** (opt-in and paid: `references/voice-script.md`), it also finds the narration: the only
+    `voice/<version>/narration.json` in the folder, or the one the scenes' `tempos.js` used. `--narration
+    voice/<version>/narration.json` picks by hand. More than one narration and no scene pointing to one (a tutorial
+    with two versions): it stops with code 2 and asks for `--narration`. The refine itself calls no API and costs
+    nothing.
 - **MP4 only** runs the video checks (legibility, reading in the player, frozen, empty, safe area). With `--project`, also the
   page checks in Chromium (font and DOM boxes).
+  - With voice, `--project` also measures the narration and the animation on the word, without fixing anything: a run
+    on an MP4 never rewrites the narration.
 - **In the drawn explainer's work folder** (`<output>/.work-<name>/`, a canvas) it finds the MP4 with sound in the folder
   above (the newest between `<name>-<format>.mp4` and the `-draft` one), the formats and the platform of the work
   (`out/assembly.json`, `params.js`) and skips the pages, which can't see the canvas (the template's `render.mjs`
   already checked the text).
+  With voice, it measures the build's narration (`voice/obra/narration.json`, the excerpt of each scene) without fixing
+  it: it's a copy the render cuts from the video's narration (`voz.locucao` in `video.json`). A fix goes in that one,
+  and the build is rendered again.
 - **Output** goes to `<folder>/refine/` (or `<video>.refine/`): `refine.md` (to read), `refine.json` (for scripts) and
   `frames/` with the frame of each problem, the box marked in red. Open the frames with the image-reading
   tool before fixing: they tell you where to look.
 - **Exit code 1 = failed.** Each error says what to do. Exit code 2 = it couldn't run (the error says why).
 - **It only checks:** without voice, there's nothing it fixes by itself. Each fix is yours, in the scene or in the kit.
+- **With voice, it fixes what is automatic:** the voice alignment (each word's start by the measured pauses) and the
+  silence left over at the end of each take. It rewrites `narration.json` and trims the WAVs in `lines/`, keeping the
+  originals first in `narration.before-refine.json` and `lines/_before-refine/` (only once: a later run doesn't
+  overwrite them). The terminal says `fixed: …` and `refine.md` gains a "Fixed automatically" section. `--check-only`
+  measures without touching the narration or the takes: use it when the folder isn't yours (with `--out <folder>`,
+  not even the report goes into it). Everything else is still yours.
 - **Where the video plays:** `--channel whatsapp|reels|feed|site|big-screen` (the names from `recommend-style.mjs`) or
   `--player <width in px>` (overrides `--channel`) turn on the reading in the player (section 2, "Reading in the player").
   Without either of them, it doesn't run and the summary says so: always pass the briefing's channel.
@@ -55,8 +71,12 @@ Each row is a defect that already shipped in a delivered video.
 | Empty frame | **Empty** (`vazio`): edges per 36 px cell, 10 times per second (a background with grid and glow counts as empty) | less than 1.5% of the safe area occupied for more than 0.3 s; the top or bottom half with less than 2% for more than 1 s is a warning |
 | Stuff under TikTok's interface | **Safe area** (`area-segura`): in Chromium, the box of **every** element that paints (text, image, SVG, box with a background); in the MP4, the OCR text and the content in the zones | something still with content intrudes on the interface zones (top y < 220, bottom y > 1500, buttons x > 940 between y 900 and 1650, in 9:16); text outside x 70–940, y 250–1450 (just a glimpse, < 1 s, or faded, is a warning). The marked frame is the one from the worst moment |
 
-The thresholds came from the delivered videos that had these defects. The tests (`tests/refino-*.test.mjs`) rebuild
+The thresholds came from the delivered videos that had these defects. The tests (`tests/refine-*.test.mjs`) rebuild
 each case.
+
+With voice there are four more rows ("With voice: the voice checks", at the end of this section). In a video without
+voice they show in the report as "did not run" (three of them with the note "video without voiceover") and count for
+nothing.
 
 ### Reading in the player
 
@@ -117,6 +137,33 @@ address). Three approved sales Reels too (72% to 88% of frames): overlines and n
 22–40 px (8–14 px in the player), the price footer and the whole app screen (which legibility already catches). The benchmark is
 stricter than the approved videos: in a 9:16 for the phone, text meant to be read starts at 45 px.
 
+### With voice: the voice checks
+
+Only when the video has a narration (`voice/<version>/narration.json`). The report names them "Voice alignment",
+"Animation on the word", "Flat voice" and "Leftover silence".
+
+| Problem that already happened | Check (`checagem` in the JSON) | Fails when |
+|---|---|---|
+| Animation before the word | **Voice alignment** (`alinhamento`): the real pauses of each take (below −38 dBFS for ≥ 0.1 s); a word born inside a pause starts at its end, and the last word ends at the last sound | it doesn't fail: it's fixed in `narration.json`. A word moved 0.08 s or more is a warning that names it; the error shows up in "Animation on the word" if a scene lights up early |
+| `em('nine')` catching "ninety" | **Animation on the word** (`palavra`): each literal `em('word', n)` and `ate(…)` of the scene's `scene.js`, evaluated with that scene's own `tempos.js`, against the instant the **exact** word is heard (in the narration already fixed by the alignment) | it lights up ≥ 0.08 s before the word; the word isn't in the line. A call that only finds the word by its prefix is a warning |
+| Flat voice ("a corpse talking") | **Flat voice** (`voz-apagada`): the pitch range (p90−p10 of f0, in semitones) and the energy range (p90−p10 of the RMS, in dB), median of the lines | against the approved voice of the reference profile (section 4), the mean of the two ratios below 0.8 (below 0.9, a warning). Without one, only with the `reels` profile (the `perfil` of the `script.json` next to the narration; without that file, a reels/tiktok/shorts platform): below the floor on both (8 st and 17.5 dB), on one only a warning. With `calmo` and no approved voice it doesn't run ("no baseline"). A line under 70% of the pitch and 80% of the energy of the benchmark is a warning: redo only that one |
+| A line with silence left over at the end | **Leftover silence** (`silencio-fim`): the last sound of each take; the end of each scene against its last word | the take has more than 0.3 s after the last sound (it's trimmed at the last sound + 0.12 s); the scene goes on more than 1.3 s after the last word (3.0 s in the closing, `99-…`; the rules `respiro_max` and `fecho_respiro_max`) is a warning, and more than 0.7 s past that limit, an error |
+
+The thresholds came from real cases: with −38 dBFS, the end of each pause fell within ±5 ms of where the voice comes
+back, on the words a series of videos had corrected by ear (up to 0.74 s early); the lively voice approved for Reels
+measures ~10 st and ~20 dB, and the calm tutorial voice, turned down in Reels, ~6.7 st and ~16 dB. The tests
+(`tests/refine-voice.test.mjs`, `tests/refine-narration.test.mjs`) rebuild each case with synthetic speech (and, on the
+Mac, real speech from `say`), no network. In `refine.json`, what it fixed is in `correcoes`, and the measurements in
+`medidas.voz` and `medidas.cenas`.
+
+### em() on the exact word
+
+The scenes' `tempos.js` comes from `scripts/chapters/tempos.mjs` (`node $SKILL/scripts/chapters/tempos.mjs <folder>
+--narration voice/v1/narration.json --speech-at 1.4`). `em('nine')` finds the word equal to "nine", without accent,
+case or punctuation: "nine!" yes, "ninety" no. Also valid: `em('acme')` for "acme.app!" (the piece before the dot),
+`em('forty two')` (the sequence) and `em('nine', 2)` (the second time). A word that isn't in the line goes to the page
+console (`WORD "…" (time 1) IS NOT IN LINE <id>: …`) and the scene's render exits with code 3.
+
 ## 3. Fixing until it passes
 
 1. `refine.mjs <folder>`: lists what failed and the warnings.
@@ -127,10 +174,25 @@ stricter than the approved videos: in a 9:16 for the phone, text meant to be rea
 5. Only then the contact sheet, looked at, and the draft (or the final) for the user. In the report to the user, say that the
    refinement check passed and how many warnings remained, and why.
 
+**With voice,** steps 1 and 2 are these; 3 to 5 stay the same:
+
+1. `refine.mjs <folder>`: fixes the narration by itself and lists the rest. On this first run "Animation on the word"
+   can still fail: the scenes still have the old times.
+2. Fixed the narration? In a chapter video, `node $SKILL/scripts/chapters/tempos.mjs <folder> --narration
+   voice/<version>/narration.json`, render the scenes again (a draft is enough for the refine) and assemble again
+   (`references/chapters.md`). In another style with voice, render it again (the tutorial: compose again,
+   `references/voice-tutorial.md`), so it reads the fixed narration. Then run the refine again.
+
+- **The refine doesn't fix a flat voice:** that's a new take, of the line (`voice.mjs generate … --redo <id>`) or of
+  the whole script with a livelier read (`references/voice-choice.md` §7). It's a paid call: it checks the video's cap
+  before calling and goes into the cost notebook (`references/voice-choice.md` §12); after it, update the board's
+  `costs` (`recipes/board.md`). Let the person listen to it next to the old one before assembling.
+
 ## 4. Reference profile per product
 
 The brand kit and each product's approved videos, saved as a reference: the next video starts from them and the refinement check
-measures against them (the kit's fonts become the font benchmark; the rules, the thresholds).
+measures against them (the kit's fonts become the font benchmark; the rules, the thresholds; with voice, the approved
+voice becomes the flat voice's benchmark).
 
 ```sh
 node $SKILL/scripts/refine.mjs profile "<Product>" --from <approved video folder> --video <delivered mp4> --approved
@@ -168,13 +230,19 @@ aprovados/<name>-sheet.jpg   the contact sheet of each approved video
 - Every key is optional, except `versao` and `produto`. `regras` only stores what differs from the default (the values above are the
   default). `texto_excecoes` are regular expressions matched against the OCR text; they apply to legibility and to text outside the
   safe area (a small logo in the background scenery isn't text to read: `--rule "texto_excecoes=^Brand$"`).
+- **With voice,** `voz` only exists after a `profile … --approved` on a video with narration (`--narration
+  voice/<version>/narration.json` when the folder has more than one): who the voice is and how much it moves,
+  `"voz": { "nome": "…", "id": "…", "modelo": "eleven_v3", "ajustes": { "stability": 0 }, "tom": 10.2, "energia": 21.2,
+  "nivel": -15.6, "f0": 271, "fonte": "…", "locucao": "<path>" }`. `tom` and `energia` are the flat voice's benchmark;
+  without `voz`, the flat voice uses the Reels floor, and only with the `reels` profile (section 2, "With voice: the
+  voice checks").
 - `fontes_extras` (`--extra-fonts`): a font from outside the brand used on purpose, like the generic font on the
   competitor's side in a comparison. `sintetico_ok` (`--synthetic "Family:italico"` or `:negrito`): the style the
   product itself synthesizes. Only with proof: the family has no italic face and the product's own site imports only the regular one and asks for
   italic, so the browser slants it there too. Without that in the reference profile, synthesized italic is an error: it's the "the logo's
   font changed" case when the face exists and didn't load.
 - In a regular run, `--rule key=value` applies only to that run, on top of the reference profile (a one-video exception,
-  without touching the product's benchmark). In `gabarito`, it gets saved.
+  without touching the product's benchmark). In `profile`, it gets saved.
 - `--rule key=value` changes a rule (`--rule parado_max=0.8`; `texto_excecoes` separates with `|`). `--fonts`,
   `--platform`, `--title` and `--style` (the skill's style id) complete it.
 
@@ -182,9 +250,15 @@ aprovados/<name>-sheet.jpg   the contact sheet of each approved video
 
 - **It doesn't listen or watch.** Is the soundtrack pleasing? Do the effects land well? Does the motion have taste? That's still up to the user's
   ear and to the contact sheet, looked at.
+- **With voice, it doesn't listen to the voice either.** Does the voice fit the brand? The intonation of the questions?
+  Breaths and mouth clicks? Does the soundtrack work under the voice? By ear: `references/voice-mix.md` §8 lists what to
+  tell the user. Whether each word is understood, alone and after the mix, is `voice.mjs listen` and `listen --mix`
+  (`references/voice-mix.md` §6), paid calls.
 - **OCR only on macOS** (Vision, compiled the first time with the machine's `swiftc`). On another machine, legibility
   becomes a "não rodou" (did not run) warning, the reading in the player is "não rodou" and the other checks carry on.
 - **Font and DOM boxes need Playwright** (the same one the render uses). Without it, those two become "não rodou".
+- **With voice, the scene check reads literal calls** (`em('word', n)`). An `em(variable)` isn't evaluated: write the
+  word.
 
 ## 6. Direction: is the video dull?
 
