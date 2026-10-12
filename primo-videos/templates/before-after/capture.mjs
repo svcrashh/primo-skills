@@ -24,7 +24,7 @@ if (!cap) { console.error('the JSON has no "captura" block (the screens come rea
 const saida = path.resolve(exp(arg('out', path.join(path.dirname(jsonP), 'telas'))))
 fs.mkdirSync(saida, { recursive: true })
 const resolveUrl = (u) => {
-  if (/^[a-z]+:/i.test(u)) return u
+  if (/^[a-z][a-z0-9+.-]+:/i.test(u)) return u   // esquema tem 2+ letras: C:\… é caminho do Windows, não URL
   const [arq, q] = u.split('?')
   return pathToFileURL(path.resolve(path.dirname(jsonP), arq)).href + (q ? '?' + q : '')
 }

@@ -9,7 +9,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { spawnSync, execFileSync } from 'node:child_process'
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 import { acharPython } from '../../scripts/where.cjs'
 import { createRequire } from 'node:module'
 import { aberturaDoJson, relatar } from '../../scripts/opening.mjs'
@@ -69,7 +69,7 @@ const pg = await browser.newPage()
 const erros = []
 pg.on('console', (m) => { if (m.type() === 'error') erros.push(m.text()) })
 pg.on('pageerror', (e) => erros.push(e.message))
-await pg.goto('file://' + path.join(obra, 'index.html') + `?f=${formatos[0]}`)
+await pg.goto(pathToFileURL(path.join(obra, 'index.html')).href + `?f=${formatos[0]}`)
 await pg.waitForFunction('window.__ready === true', null, { timeout: 60000 }).catch(() => {})
 const sons = await pg.evaluate(() => window.SONS || [])
 await browser.close()

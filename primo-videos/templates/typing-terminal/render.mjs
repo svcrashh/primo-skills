@@ -17,7 +17,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import os from 'node:os'
 import { spawnSync, execFileSync } from 'node:child_process'
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 import { acharPython } from '../../scripts/where.cjs'
 import { createRequire } from 'node:module'
 import { aberturaDoJson, relatar } from '../../scripts/opening.mjs'
@@ -27,7 +27,7 @@ const a = process.argv.slice(2), arg = (k, d) => { const i = a.indexOf('--' + k)
 const arq = a.find((x) => x.endsWith('.json'))
 if (!arq || !arg('out')) { console.error('usage: node render.mjs <parametros.json> --out <folder> [--mode draft|final] [--formats 16x9,9x16] [--no-sound]'); process.exit(1) }
 const base = path.dirname(path.resolve(arq))
-const cam = (p) => path.resolve(base, p.replace(/^~(?=$|\/)/, os.homedir()))
+const cam = (p) => path.resolve(base, p.replace(/^~(?=$|[\\/])/, os.homedir()))
 const P = JSON.parse(fs.readFileSync(arq, 'utf8'))
 const modo = arg('mode', 'draft'), saida = path.resolve(arg('out'))
 const formatos = arg('formats', (P.formatos || ['16x9']).join(',')).split(',')
@@ -68,7 +68,7 @@ if (!a.includes('--no-sound')) {
     const { abrirNavegador } = createRequire(import.meta.url)(path.join(skill, 'scripts', 'playwright.cjs'))
     const { browser } = await abrirNavegador(obra)
     const pg = await browser.newPage()
-    await pg.goto('file://' + path.join(obra, 'index.html') + `?f=${formatos[0]}`)
+    await pg.goto(pathToFileURL(path.join(obra, 'index.html')).href + `?f=${formatos[0]}`)
     await pg.waitForFunction('window.__ready === true', null, { timeout: 60000 })
     const L = await pg.evaluate('({ dur: VIDEO.duracao, fecho: VIDEO.fechoEm ?? null, cmds: cmds.map((c) => ({ ini: c.ini, enter: c.enter, acabou: c.acabou })) })')
     await browser.close()
