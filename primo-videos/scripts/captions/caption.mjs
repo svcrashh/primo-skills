@@ -16,6 +16,7 @@ import { palavrasDoVideo, escrita, agrupar, estados, semPiscar } from './words.m
 import { ZONAS, COLUNAS, COLUNAS_DO_FORMATO, formatoDe, lerQuadros, detalhePorLinha, acentoPorLinha, PESO_ACENTO, escolherTopo } from './placement.mjs'
 import { estiloDaMarca, abrirDesenho } from './drawing.mjs'
 import { cuesDaFolha, somarSons, medir } from './sounds.mjs'
+import { aberturaDe } from '../opening.mjs'
 
 const aqui = path.dirname(fileURLToPath(import.meta.url))
 const r3 = (x) => Math.round(x * 1000) / 1000
@@ -78,6 +79,9 @@ async function main() {
   const info = probe(video)
   const de = +arg('from', 0), ate = +arg('to', info.duracao), dur = r3(ate - de)
   const recorte = arg('from') != null || arg('to') != null
+  // a abertura com o logo (scripts/opening.mjs) pôs segundos antes do vídeo: a folha e a locução são de antes dela
+  const abertura = aberturaDe(video)
+  if (abertura && (legenda || sons)) console.log(`the video has the logo opening (+${abertura.toFixed(2)} s): the captions and the sounds move with it`)
   fs.mkdirSync(path.dirname(saida), { recursive: true })
 
   if (!legenda && !sons && !recorte) { fs.copyFileSync(video, saida); console.log(`✓ ${saida} (captions and sounds off: identical copy)`); return }
@@ -93,7 +97,7 @@ async function main() {
     const folha = JSON.parse(fs.readFileSync(path.resolve(arg('sheet') || fail('--captions needs --sheet')), 'utf8'))
     const serieDir = path.resolve(arg('series') || fail('--captions needs --series (the folder with series.json and brand.js)'))
     const roteiro = arg('script') && JSON.parse(fs.readFileSync(path.resolve(arg('script')), 'utf8'))
-    const todas = semPiscar(escrita(palavrasDoVideo(loc, folha), (roteiro && roteiro.pronuncia) || {}))
+    const todas = semPiscar(escrita(palavrasDoVideo(loc, folha), (roteiro && roteiro.pronuncia) || {})).map((p) => ({ ...p, ini: r3(p.ini + abertura), fim: r3(p.fim + abertura) }))
     const palavras = todas.filter((p) => p.fim > de && p.ini < ate).map((p) => ({ ...p, ini: r3(p.ini - de), fim: r3(p.fim - de) }))
     const estilo = estiloDaMarca(serieDir)
     const desenho = await abrirDesenho(estilo, info.w, info.h, serieDir)
@@ -133,12 +137,12 @@ async function main() {
   let audioArgs = ['-map', '0:a?', '-c:a', 'copy']
   if (sons) {
     const folha = arg('sheet') && JSON.parse(fs.readFileSync(path.resolve(arg('sheet')), 'utf8'))
-    const cues = arg('cues') ? JSON.parse(fs.readFileSync(path.resolve(arg('cues')), 'utf8')) : cuesDaFolha(folha || fail('--sounds needs --cues or --sheet'))
+    const cues = (arg('cues') ? JSON.parse(fs.readFileSync(path.resolve(arg('cues')), 'utf8')) : cuesDaFolha(folha || fail('--sounds needs --cues or --sheet'))).map((c) => ({ ...c, t: r3(c.t + abertura) }))
     const base = path.join(trabalho, 'base.wav')
     ff(arg('audio') ? ['-ss', String(de), '-t', String(dur), '-i', path.resolve(arg('audio')), '-ar', '48000', '-ac', '2', '-c:a', 'pcm_f32le', base]
       : ['-ss', String(de), '-t', String(dur), '-i', video, '-vn', '-ar', '48000', '-ac', '2', '-c:a', 'pcm_f32le', base])
     const noJanela = cues.filter((c) => c.t >= de && c.t < ate).map((c) => ({ ...c, t: r3(c.t - de) }))
-    const trechos = ((folha && folha.voz && folha.voz.trechos) || []).map(([a, b]) => [a - de, b - de]).filter(([a, b]) => b > 0 && a < dur)
+    const trechos = ((folha && folha.voz && folha.voz.trechos) || []).map(([a, b]) => [a + abertura - de, b + abertura - de]).filter(([a, b]) => b > 0 && a < dur)
     const teto = (folha && folha.teto_dbtp) ?? -1.0
     const r = somarSons({ base, cues: noJanela, duracao: dur, trechos, teto, trabalho, semente: +arg('seed', 7), python: arg('python') })
     relatorio.sons = r

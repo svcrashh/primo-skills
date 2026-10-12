@@ -8,6 +8,9 @@
 // curto (o whoosh da skill) que chega no logo, e a trilha do vídeo começa no corte, como estava. `largura` é em px num
 // quadro de 1080 de lado menor (620 = o logo do fecho dos moldes) e acompanha o tamanho do quadro. Vídeo que já tem a
 // abertura (a etiqueta "abertura=logo" no MP4) fica como está.
+// Com voz, tudo o que estava no tempo do vídeo anda `dur` junto com ele: a legenda .srt ao lado do MP4 (<vídeo>.srt) sai
+// deslocada ao lado da saída, e o MP4 guarda quanto a abertura somou (a etiqueta abertura_s), que o captions/caption.mjs
+// soma às palavras e aos sons da folha.
 // Confere: tamanho e fps iguais e duração = a do vídeo + dur (±1 quadro). Código 0 = ok; 1 = falhou; 2 = uso ou arquivo.
 import fs from 'node:fs'
 import os from 'node:os'
@@ -30,7 +33,7 @@ const ANTES = 0.12            // s de entrada que já passaram no quadro 0: ele 
 const ETIQUETA = 'logo'
 
 function sondar(arq) {
-  const r = spawnSync('ffprobe', ['-v', 'error', '-show_entries', 'stream=codec_type,width,height,r_frame_rate,sample_rate:format=duration:format_tags=abertura', '-of', 'json', arq], { encoding: 'utf8' })
+  const r = spawnSync('ffprobe', ['-v', 'error', '-show_entries', 'stream=codec_type,width,height,r_frame_rate,sample_rate:format=duration:format_tags=abertura,abertura_s', '-of', 'json', arq], { encoding: 'utf8' })
   if (r.status !== 0) throw new Falha(`could not read ${arq} with ffprobe (${String(r.stderr || r.error?.message || '').trim().split('\n')[0]}): check the file and whether ffmpeg is installed (brew install ffmpeg)`)
   const j = JSON.parse(r.stdout)
   const v = (j.streams || []).find((s) => s.codec_type === 'video')
@@ -40,7 +43,23 @@ function sondar(arq) {
     largura: v.width, altura: v.height, fpsTxt: v.r_frame_rate, fps: n / (d || 1),
     duracao: Number(j.format?.duration), audio: (j.streams || []).some((s) => s.codec_type === 'audio'),
     jaTem: (j.format?.tags?.abertura ?? j.format?.tags?.ABERTURA) === ETIQUETA,
+    segundos: Number(j.format?.tags?.abertura_s ?? j.format?.tags?.ABERTURA_S) || 0,
   }
+}
+
+/** Quantos segundos a abertura com o logo somou no começo deste MP4 (0 = não tem, ou é de antes da etiqueta abertura_s). */
+export const aberturaDe = (arq) => sondar(arq).segundos
+
+const ts = (ms) => `${String(Math.floor(ms / 3600000)).padStart(2, '0')}:${String(Math.floor(ms / 60000) % 60).padStart(2, '0')}:${String(Math.floor(ms / 1000) % 60).padStart(2, '0')},${String(ms % 1000).padStart(3, '0')}`
+/** Cada deixa de uma legenda .srt `seg` segundos depois. */
+export const deslocarSrt = (texto, seg) => texto.replace(/(\d{2}):(\d{2}):(\d{2}),(\d{3})/g, (_, h, m, s, ms) => ts(Math.max(0, ((+h * 60 + +m) * 60 + +s) * 1000 + +ms + Math.round(seg * 1000))))
+
+// A legenda ao lado do vídeo de entrada (<vídeo>.srt) vai, deslocada, para o lado da saída. → o caminho, ou null.
+function deslocarLegenda(entrada, saida, seg) {
+  const de = entrada.replace(/\.mp4$/i, '.srt'), para = saida.replace(/\.mp4$/i, '.srt')
+  if (de === entrada || !fs.existsSync(de)) return null
+  fs.writeFileSync(para, deslocarSrt(fs.readFileSync(de, 'utf8'), seg))
+  return para
 }
 
 // o sopro da abertura, do catálogo de sons da skill, com o pico quando o logo termina de entrar
@@ -119,7 +138,7 @@ export function aplicarAbertura(video, { logo, fundo = PADRAO.fundo, dur = PADRA
     '-r', v.fpsTxt, '-c:v', 'libx264', '-crf', String(crf), '-preset', 'medium', '-pix_fmt', 'yuv420p',
     '-colorspace', 'bt709', '-color_primaries', 'bt709', '-color_trc', 'bt709', '-color_range', 'tv',
     ...(v.audio ? ['-c:a', 'aac', '-b:a', '320k', '-ar', '48000'] : []),
-    '-metadata', `abertura=${ETIQUETA}`, '-movflags', '+faststart+use_metadata_tags', tmpOut]
+    '-metadata', `abertura=${ETIQUETA}`, '-metadata', `abertura_s=${d.toFixed(6)}`, '-movflags', '+faststart+use_metadata_tags', tmpOut]
   const r = spawnSync('ffmpeg', args, { encoding: 'utf8' })
   fs.rmSync(tmp, { recursive: true, force: true })
   if (r.status !== 0 || !fs.existsSync(tmpOut)) {
@@ -133,7 +152,8 @@ export function aplicarAbertura(video, { logo, fundo = PADRAO.fundo, dur = PADRA
   if (Math.abs(n.duracao - (v.duracao + d)) > 1.5 / v.fps) erros.push(`duration ${n.duracao.toFixed(3)} s (expected ${(v.duracao + d).toFixed(3)} s)`)
   if (erros.length) { fs.rmSync(tmpOut, { force: true }); throw new Falha(`the opening came out wrong: ${erros.join('; ')}`, 1) }
   fs.renameSync(tmpOut, out)
-  return { saida: out, dur: d, antes: v.duracao, depois: n.duracao, som: comSom }
+  const legenda = deslocarLegenda(entrada, out, d)
+  return { saida: out, dur: d, antes: v.duracao, depois: n.duracao, som: comSom, ...(legenda ? { legenda } : {}) }
 }
 
 /** Para os moldes: aplica a abertura do JSON (`P.aberturaLogo`) no vídeo entregue, se houver. → resultado ou null. */
@@ -143,7 +163,7 @@ export function aberturaDoJson(video, abertura, dirJson) {
 }
 
 /** Linha para o terminal do molde. */
-export const relatar = (r) => (r.jaTinha ? `opening: ${r.saida} already had the logo opening` : `✓ logo opening: +${r.dur.toFixed(2)} s (${r.depois.toFixed(2)} s total)${r.som === false ? ', without the whoosh (the soundtrack\'s Python is missing)' : ''} · ${r.saida}`)
+export const relatar = (r) => (r.jaTinha ? `opening: ${r.saida} already had the logo opening` : `✓ logo opening: +${r.dur.toFixed(2)} s (${r.depois.toFixed(2)} s total)${r.som === false ? ', without the whoosh (the soundtrack\'s Python is missing)' : ''} · ${r.saida}${r.legenda ? `\n  captions shifted with it: ${r.legenda}` : ''}`)
 
 function principal(argv) {
   const opt = (k) => { const i = argv.indexOf(`--${k}`); return i >= 0 && argv[i + 1] != null && !argv[i + 1].startsWith('--') ? argv[i + 1] : null }
