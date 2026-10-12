@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // O progresso do vídeo em %, em duas réguas: até a prévia (o draft aberto para o dono) e da prévia ao final.
-//   node progress.mjs start <video folder> [--kit | --new] [--target <min>] [--skip telas,voz] [--restart]
+//   node progress.mjs start <video folder> [--kit | --new] [--voice] [--target <min>] [--skip telas,voz] [--restart]
+//        --voice: o vídeo tem voz em off (a etapa voice entra na régua); sem ele, o vídeo sem voz de sempre
 //        --kit: o produto já tem kit (prévia em ~10 min); sem ele, ou com --new, produto novo (~25 min)
 //   node progress.mjs now <folder> <stage> [--remaining <min>]     a etapa que começou; várias podem correr juntas
 //   node progress.mjs done <folder> <stage> [--note "voz gerada"]
@@ -252,14 +253,14 @@ function tabelaDasEtapas() {
     out.push(r === 'previa' ? 'Up to the preview (closes with the draft; does not wait for the refine):' : 'From the preview to the final (the preview refine runs alongside it):')
     for (const e of lista) {
       if (!NARRACAO && e.id === 'voice') continue
-      out.push(`  ${e.id.padEnd(9)} ${String(e.peso).padStart(3)}%  ~${e.kit} min with a kit (new product ~${e.novo})  ${e.nomeKit ? `${e.nomeKit} / ${e.nome}` : e.nome}`)
+      out.push(`  ${e.id.padEnd(9)} ${String(e.peso).padStart(3)}%  ~${e.kit} min with a kit (new product ~${e.novo})  ${e.nomeKit ? `${e.nomeKit} / ${e.nome}` : e.nome}${e.id === 'voice' ? ' (only with start --voice)' : ''}`)
     }
   }
   out.push(`Preview target: ~${META_MIN.kit} min for a product that already has a kit (start --kit), ~${META_MIN.novo} min for a new product.`)
   return out.join('\n')
 }
 
-const USO = 'usage: node progress.mjs start|now|done|skip|line|report|stages <video folder> [stage] [--kit | --new] [--target min] [--skip a,b] [--note "…"] [--remaining min] [--json]'
+const USO = 'usage: node progress.mjs start|now|done|skip|line|report|stages <video folder> [stage] [--kit | --new] [--voice] [--target min] [--skip a,b] [--note "…"] [--remaining min] [--json]'
 
 async function principal(argv) {
   const [cmd, pasta, etapa] = argv.filter((a, i) => !a.startsWith('--') && !(i > 0 && ['--target', '--skip', '--note', '--remaining'].includes(argv[i - 1])))
@@ -280,7 +281,7 @@ async function principal(argv) {
       return 0
     }
     fs.mkdirSync(path.resolve(pasta), { recursive: true })
-    const estado = novoEstado({ narracao: NARRACAO, kit: argv.includes('--kit'), meta: opt('target') ? Number(opt('target')) : null, sem: (opt('skip') || '').split(',').map((s) => s.trim()).filter(Boolean) })
+    const estado = novoEstado({ narracao: NARRACAO && argv.includes('--voice'), kit: argv.includes('--kit'), meta: opt('target') ? Number(opt('target')) : null, sem: (opt('skip') || '').split(',').map((s) => s.trim()).filter(Boolean) })
     gravar(pasta, estado)
     await contar(estado, linha(estado))
     return 0

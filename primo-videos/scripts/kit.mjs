@@ -23,7 +23,8 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 
 const AQUI = path.dirname(fileURLToPath(import.meta.url))
 const SKILL = path.resolve(AQUI, '..')
-// A narração só existe nos pacotes com voz: sem scripts/tutorial/locucao.mjs, o kit não leva voz para o vídeo novo.
+// A narração só existe nos pacotes com voz: sem scripts/tutorial/locucao.mjs, o kit não leva voz para o vídeo novo. Com
+// ela, leva só quando o kit tem uma voz aprovada.
 const NARRACAO = fs.existsSync(path.join(AQUI, 'tutorial', 'locucao.mjs'))
 
 export const raizMarcas = () => process.env.VIDEOSTUDIO_BRANDS || path.join(os.homedir(), 'Documents', 'VideoStudio', 'Brands')
@@ -195,11 +196,11 @@ export function mostrar(produto) {
 
 // ── novo-video ───────────────────────────────────────────────────────────────────────────────────────────────────────
 /** Os blocos por nível de um modelo .md (no pacote o empacotador já resolveu; na fonte, resolve aqui). */
-function niveis(txt) {
+function niveis(txt, comVoz = NARRACAO) {
   const out = [], pilha = []
   for (const l of txt.split('\n')) {
     const m = /^<!--\s*se\s+(!?)voz\s*-->$/.exec(l.trim())
-    if (m) { pilha.push(m[1] ? !NARRACAO : NARRACAO); continue }
+    if (m) { pilha.push(m[1] ? !comVoz : comVoz); continue }
     if (/^<!--\s*fim\s*-->$/.test(l.trim())) { pilha.pop(); continue }
     if (pilha.every(Boolean)) out.push(l)
   }
@@ -208,13 +209,13 @@ function niveis(txt) {
 
 // os modelos (texto puro: o empacotador não lê import dentro deles) com {{marcas}} trocadas
 const preencher = (arq, vals) => Object.entries(vals).reduce((t, [k, v]) => t.replaceAll(`{{${k}}}`, String(v)), fs.readFileSync(path.join(AQUI, 'kit', arq), 'utf8'))
-const modeloVideo = ({ gravar, id, serie, semente, origem, inicio, versao, cinema, perfil, antesPorta, produto, pedido }) => preencher('video.template.txt', {
+const modeloVideo = ({ gravar, id, serie, semente, origem, inicio, versao, cinema, perfil, antesPorta, produto, pedido, comVoz }) => preencher('video.template.txt', {
   id, produto, data: agoraIso().slice(0, 10), pedido140: pedido.replace(/\n/g, ' ').slice(0, 140),
-  arquivoTextos: NARRACAO ? 'voice/v1/script.json (the lines)' : 'texts.json (the texts)', arquivoFalas: NARRACAO ? 'voice/v1/script.json' : 'texts.json',
-  checkVoz: NARRACAO ? ' (before the voice, from the script)' : '', gravaVoz: NARRACAO ? ' (with the generated voice: voice/v1/narration.json)' : '',
-  caminhoTextos: NARRACAO ? "'voice', 'v1', 'script.json'" : "'texts.json'", gravar, serie, cinema, semente: semente == null ? 'undefined' : semente,
+  arquivoTextos: comVoz ? 'voice/v1/script.json (the lines)' : 'texts.json (the texts)', arquivoFalas: comVoz ? 'voice/v1/script.json' : 'texts.json',
+  checkVoz: comVoz ? ' (before the voice, from the script)' : '', gravaVoz: comVoz ? ' (with the generated voice: voice/v1/narration.json)' : '',
+  caminhoTextos: comVoz ? "'voice', 'v1', 'script.json'" : "'texts.json'", gravar, serie, cinema, semente: semente == null ? 'undefined' : semente,
   origem, inicio, versao, antesPorta,
-  linhaVoz: NARRACAO ? `  ...(ANTES ? {} : { voz: { locucao: 'voice/v1/narration.json', roteiro: 'voice/v1/script.json', perfil: '${perfil}' } }),\n` : '',
+  linhaVoz: comVoz ? `  ...(ANTES ? {} : { voz: { locucao: 'voice/v1/narration.json', roteiro: 'voice/v1/script.json', perfil: '${perfil}' } }),\n` : '',
 })
 const modeloJornada = ({ pedido, produto }) => preencher('journey.template.txt', { produto, pedido160: pedido.replace(/\n/g, ' ').slice(0, 160) })
 
@@ -242,8 +243,10 @@ export function novoVideo(produto, pastaVideo, { pedido, serie = null, semente =
   ]
   let takes = 0
   const V = kit.voz
-  if (NARRACAO) {
-    if (!V) throw new Error(`the ${kit.produto} kit has no approved voice: save a video with voice (kit.mjs save)`)
+  // a voz é opcional: o vídeo novo tem voz quando o kit guardou uma aprovada (salvo de um vídeo com voz); sem ela, é o
+  // vídeo sem voz de sempre, com os textos em texts.json
+  const comVoz = NARRACAO && !!V
+  if (comVoz) {
     gravarJson(path.join(pasta, 'voice', 'v1', 'script.json'), { idioma: V.idioma, perfil: V.perfil, voz: { id: V.id, nome: V.nome, modelo: V.modelo }, ajustes: V.ajustes, pronuncia: V.pronuncia, falas })
     takes = juntarTakes(path.join(dir, V.takes || 'voice/_takes'), path.join(pasta, 'voice', '_takes'))
   } else gravarJson(path.join(pasta, 'texts.json'), { idioma: S.idioma, falas })
@@ -252,21 +255,21 @@ export function novoVideo(produto, pastaVideo, { pedido, serie = null, semente =
   fs.writeFileSync(path.join(pasta, 'video.mjs'), modeloVideo({
     gravar: path.join(SKILL, 'scripts', 'tutorial', 'record.mjs'), id, serie: path.join(dir, S.pasta),
     semente: semente ?? kit.trilha?.semente ?? null, origem: R.url || 'https://exemplo.com', inicio: inicio || R.inicio || '/', versao: v,
-    cinema: S.cinema || 'moldura', perfil: V?.perfil || 'calmo', antesPorta: R.antes?.porta || 8191, produto: kit.produto, pedido,
+    cinema: S.cinema || 'moldura', perfil: V?.perfil || 'calmo', antesPorta: R.antes?.porta || 8191, produto: kit.produto, pedido, comVoz,
   }))
   const modelo = path.join(AQUI, 'kit', 'REQUEST.template.md')
   const sub = { '{{produto}}': kit.produto, '{{pedido}}': pedido, '{{pasta}}': pasta, '{{skill}}': SKILL, '{{serie}}': sid, '{{kit}}': casa(dir), '{{voz}}': V ? `${V.nome || V.id} (${V.id}, ${V.modelo})` : '', '{{takes}}': String(takes) }
-  let ped = niveis(fs.readFileSync(modelo, 'utf8'))
+  let ped = niveis(fs.readFileSync(modelo, 'utf8'), comVoz)
   for (const [k, x] of Object.entries(sub)) ped = ped.replaceAll(k, x)
   fs.writeFileSync(path.join(pasta, 'REQUEST.md'), ped)
   const linhasProgresso = []
   if (progresso) {
     const pg = (...a) => { const r = spawnSync(process.execPath, [path.join(AQUI, 'progress.mjs'), ...a], { encoding: 'utf8' }); if (r.stdout.trim()) linhasProgresso.push(r.stdout.trim().split('\n').at(-1)) }
-    pg('start', pasta, '--kit')
+    pg('start', pasta, '--kit', ...(comVoz ? ['--voice'] : []))
     pg('done', pasta, 'reading', '--note', `${kit.produto} kit applied`)
     pg('done', pasta, 'soundtrack', '--note', `series ${sid} and soundtrack from the kit`)
   }
-  return { pasta, serie: sid, takes, progresso: linhasProgresso }
+  return { pasta, serie: sid, takes, comVoz, progresso: linhasProgresso }
 }
 
 // ── linha de comando ─────────────────────────────────────────────────────────────────────────────────────────────────
@@ -289,8 +292,8 @@ async function principal(argv) {
   }
   if (cmd === 'new-video' && produto) {
     const r = novoVideo(produto, alvo, { pedido: opt('request'), serie: opt('series'), semente: opt('seed') != null ? Number(opt('seed')) : null, versao: opt('device'), inicio: opt('start') })
-    console.log(`✓ ${r.pasta} created with the kit (series ${r.serie}${NARRACAO ? `, ${r.takes} voice take(s) in the cache` : ''})`)
-    console.log(`  only missing: recording/journey.mjs and ${NARRACAO ? 'voice/v1/script.json' : 'texts.json'} — the path is in ${path.join(r.pasta, 'REQUEST.md')}`)
+    console.log(`✓ ${r.pasta} created with the kit (series ${r.serie}${r.comVoz ? `, ${r.takes} voice take(s) in the cache` : ''})`)
+    console.log(`  only missing: recording/journey.mjs and ${r.comVoz ? 'voice/v1/script.json' : 'texts.json'} — the path is in ${path.join(r.pasta, 'REQUEST.md')}`)
     for (const l of r.progresso) console.log(l)
     return 0
   }
