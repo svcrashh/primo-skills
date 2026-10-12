@@ -1,0 +1,79 @@
+name: primo-videos no Windows
+
+on:
+  push:
+    branches: [main, 'windows-**']
+    paths: ['primo-videos/**', '.github/workflows/windows-primo-videos.yml']
+  pull_request:
+    paths: ['primo-videos/**', '.github/workflows/windows-primo-videos.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  sondagem:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - name: O que o runner tem
+        shell: pwsh
+        run: |
+          winget --version
+          Get-Command python, python3, py, node, npm, wt, claude -ErrorAction SilentlyContinue | Format-Table Name, Source -AutoSize
+          [System.Environment]::OSVersion
+      - name: winget install ffmpeg
+        shell: pwsh
+        run: |
+          winget install ffmpeg --accept-source-agreements --accept-package-agreements --disable-interactivity
+          $links = Join-Path $env:LOCALAPPDATA 'Microsoft\WinGet\Links'
+          Get-ChildItem $links | Format-Table Name, Length
+          $env:PATH = "$links;$env:PATH"
+          Get-Command ffmpeg, ffprobe | Format-Table Name, Source -AutoSize
+          ffmpeg -hide_banner -version | Select-Object -First 1
+          ffmpeg -hide_banner -loglevel error -f gdigrab -framerate 10 -t 2 -i desktop -y "$env:RUNNER_TEMP\tela.mp4"
+          ffprobe -v error -show_entries stream=width,height,nb_frames -of compact "$env:RUNNER_TEMP\tela.mp4"
+      - name: OCR e vozes (Windows PowerShell 5.1)
+        shell: powershell
+        run: |
+          $PSVersionTable.PSVersion
+          Add-Type -AssemblyName System.Runtime.WindowsRuntime
+          $null = [Windows.Media.Ocr.OcrEngine, Windows.Foundation, ContentType = WindowsRuntime]
+          "OCR languages: " + (([Windows.Media.Ocr.OcrEngine]::AvailableRecognizerLanguages | ForEach-Object { $_.LanguageTag }) -join ', ')
+          $e = [Windows.Media.Ocr.OcrEngine]::TryCreateFromUserProfileLanguages()
+          "OCR engine: " + ($(if ($e) { $e.RecognizerLanguage.LanguageTag } else { 'none' }))
+          Add-Type -AssemblyName System.Speech
+          "voices: " + (((New-Object System.Speech.Synthesis.SpeechSynthesizer).GetInstalledVoices() | ForEach-Object { $_.VoiceInfo.Name }) -join ', ')
+          Add-Type -AssemblyName System.Windows.Forms
+          [System.Windows.Forms.Screen]::AllScreens | Format-Table DeviceName, Bounds, Primary
+
+  testes:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      - name: ffmpeg pelo winget
+        shell: pwsh
+        run: |
+          winget install ffmpeg --accept-source-agreements --accept-package-agreements --disable-interactivity
+          Join-Path $env:LOCALAPPDATA 'Microsoft\WinGet\Links' | Out-File -Append -Encoding utf8 $env:GITHUB_PATH
+      - name: requisitos.mjs
+        shell: pwsh
+        run: node primo-videos/scripts/requisitos.mjs; "código $LASTEXITCODE"; exit 0
+      - name: environment.mjs --fix --yes
+        shell: pwsh
+        run: node primo-videos/scripts/environment.mjs --fix --yes
+      - name: A suíte
+        shell: pwsh
+        working-directory: primo-videos
+        run: node --test --test-reporter=spec "tests/*.test.mjs"
