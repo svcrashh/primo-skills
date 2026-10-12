@@ -96,3 +96,5 @@ node templates/card-stack/render.mjs <params.json> --out <folder> [--mode draft|
   the blend passes through a muddy color.
 - The closing is only the logo (or `marca.nome`, when there is no logo): there is no field for a slogan or an address.
 - Icon and logo in PNG or JPEG; using a single icon set per piece is the brand's choice, not a template rule.
+- No narration: this template has no voice. For a video with voice (opt-in, `references/voice-script.md`), the closest style that
+  takes it is `rolling-list` (one tip or step per item, numbered).

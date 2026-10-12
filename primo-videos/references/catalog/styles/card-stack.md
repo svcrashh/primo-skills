@@ -9,6 +9,8 @@ channels `reels` and `whatsapp` (9:16), `feed` (1:1 and 4:5), `site`; internal a
 **When not to use:** the click path on a screen (that's `real-screen-camera`); more than 8 cards (split into two
 videos); long text (each card takes a title of up to 7 words and one line); comparing two things (that's
 `before-after`); numbers that need to stand out (`counting-number`).
+**Voice:** none: the style has no narration. With voice (opt-in, `references/voice-script.md`), the closest style
+that takes it is `rolling-list` (one tip or step per item, numbered).
 
 ## Structure (8–15 s)
 - **0–0.9 s:** the stack comes in from below, the series title and the "1/N" counter already in place.

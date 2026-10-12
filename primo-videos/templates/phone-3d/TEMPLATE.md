@@ -97,6 +97,7 @@ Both record `assets/example/page.html` (the neutral sample page that ships with 
 - One recording only, from a phone. A computer inside the phone makes no sense; a 3D laptop does not exist here.
 - The closing is the logo only: there is no field for a catchphrase, an address or any other text in it.
 - No voice: the text beside it tells the story. The skill's soundtrack is the lead, with the tap, the scroll and the logo marked.
+  For a video with voice (opt-in, `references/voice-script.md`), the closest style that takes it is `real-screen-camera` (the real screen, in 9:16).
 - The phone has no drawn rear camera and no brand; the side is flat with light (no glass reflection).
 - Up close, the window clips the phone at the top and bottom (that is what keeps the screen's type in the safe area).
 - `orbita` passes through the phone's front view in the middle of the video (the turn goes from −22° to +32°, in a single curve from the end of the opening to the closing); anyone who wants the phone always

@@ -10,6 +10,8 @@ recomposed); product `b2b`, internal, platform with several parts.
 **When not to use:** teaching the click path (that's `real-screen-camera`); a single feature or a single number
 (`counting-number`); more than 9 items (the grid gets tiny: split it); when what matters is the product's real screen (the
 mini-visual is a drawing, not a screenshot).
+**Voice:** none: the style has no narration. With voice (opt-in, `references/voice-script.md`), the closest style
+that takes it is `chapters-with-index` (one feature per chapter).
 
 ## Structure (10–15 s)
 - **0–1.5 s:** the cards come in one by one until the grid is complete; or, in the "along the way" assembly, the first one already in close-up.

@@ -97,3 +97,5 @@ Refinement check of the rendered video: `node scripts/refine.mjs <output>/<name>
   the drawing).
 - Node with a PNG icon only; no photo inside the node.
 - A single font family (label, detail, call to action and title).
+- No narration: this template has no voice. For a video with voice (opt-in, `references/voice-script.md`), the closest style that
+  takes it is `drawn-explainer` (the idea or the flow drawn by hand, scene by scene).

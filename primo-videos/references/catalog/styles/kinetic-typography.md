@@ -9,6 +9,8 @@ beside them. Each sentence is a color frame; the change is a hard cut on the bea
 **When not to use:** teaching how to use something (that's a tutorial); a subject that needs a long sentence; no fact to show. **By
 default the text is informative: name, number, fact.** It's the style where it's easiest to slip into a slogan: "4 features" and
 "Website and mobile app" yes; "faster", "transform" only when the brand has a slogan and the person wants it.
+**Voice:** none: the style has no narration. With voice (opt-in, `references/voice-script.md`), the closest style
+that takes it is `rolling-list` (`cartaz`: one big sentence per card).
 
 ## Structure (6–15 s)
 - **0 s:** the 1st line already coming in (frame 0 never empty), the sentence's shapes bouncing along.

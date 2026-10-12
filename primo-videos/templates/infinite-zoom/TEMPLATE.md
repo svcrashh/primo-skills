@@ -115,3 +115,5 @@ has `"clicar": "#theme"`; on a page that follows the system, `captura.tema` alon
 - The closing is born from the last detail with the logo inside, already at scale: the logo grows with it and stops at
   its final size.
 - The closing is the logo only: there is no field for a catchphrase, an address or any other text in it.
+- No narration: this template has no voice. For a video with voice (opt-in, `references/voice-script.md`), the closest style that
+  takes it is `real-screen-camera` (the camera going to the detail on the real screen).

@@ -168,3 +168,5 @@ Refinement check of the rendered video: `node scripts/refine.mjs <output>/<name>
 - Up to 6 layers; with 5 or more, the stack gets tall and narrow in 16:9 (the dolly-3d makes up for it by coming close
   at the start).
 - Needs WebGL 2 in the render's Chromium (the skill's `scripts/playwright.cjs` opens it on the GPU).
+- No narration: this template has no voice. For a video with voice (opt-in, `references/voice-script.md`), the closest style that
+  takes it is `drawn-explainer` (how a system works inside).

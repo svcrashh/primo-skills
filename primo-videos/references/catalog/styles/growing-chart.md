@@ -11,6 +11,8 @@ compare, a **proportion** ("96 of 128") or a **time series**.
 **When not to use:** a single number, with no comparison (that's `counting-number`); an invented number or one with no source; internal data
 that can't leave the company; more than 8 bars or 12 points (the labels become unreadable: group them into "others"); teaching
 where to click. **The number has to be true and have a source** (the scene's `nota` says which one).
+**Voice:** none: the style has no narration. With voice (opt-in, `references/voice-script.md`), the closest style
+that takes it is `counting-number` (one number at a time).
 
 ## Structure (6–20 s)
 - **0–1 s:** the title (the subject, up to 7 words) and the note (the data's source) already written; the axis appears and the camera

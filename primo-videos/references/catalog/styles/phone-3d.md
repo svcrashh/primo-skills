@@ -10,6 +10,8 @@ phone fills the frame), `site`, `feed`; product `layperson`, `retail`, internal 
 **When not to use:** a product that only exists on the computer (the phone would be decoration: `real-screen-camera` or
 `infinite-zoom`); a tutorial of more than 3 steps (`real-screen-camera`); a screen that can't be recorded; an ad with no
 screen at all.
+**Voice:** none: the style has no narration. With voice (opt-in, `references/voice-script.md`), the closest style
+that takes it is `real-screen-camera` (the real screen, in 9:16).
 
 ## Structure (10–15 s)
 - **0–1.5 s:** the whole phone coming in (turning, or coming from far away), with the written promise beside it already in frame 0.

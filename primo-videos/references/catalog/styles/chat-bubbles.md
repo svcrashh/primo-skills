@@ -10,6 +10,8 @@ follows the last bubble. An 8–15 s video.
 **When not to use:** a single request and its answer, with no question back (`typing-text` is more direct); teaching
 where to click (`real-screen-camera`); a long conversation (more than ~6 messages). **Never a conversation with a real customer, name or
 data:** the bubbles are generic requests and answers, and no invented testimonial.
+**Voice:** none: the style has no narration. With voice (opt-in, `references/voice-script.md`), the closest style
+that takes it is `typing-text` (the request typed and the product answering).
 
 ## Structure (8–15 s)
 - **0 s:** the first bubble (the request) already coming in: frame 0 is never empty.

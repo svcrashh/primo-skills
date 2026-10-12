@@ -112,3 +112,5 @@ node templates/card-bento/render.mjs <parameters.json> --out <folder> [--mode dr
 - 9 cards at most; with many cards in 9:16 the cells get short and the text may drop out of some cards (warning
   in the console, `card "…": the text did not fit in this format`). Look at that format's contact sheet.
 - The transition from one card to another is always the camera's movement; `fecho.transicao` is only the one from the grid to the logo.
+- No narration: this template has no voice. For a video with voice (opt-in, `references/voice-script.md`), the closest style that
+  takes it is `chapters-with-index` (one feature per chapter).

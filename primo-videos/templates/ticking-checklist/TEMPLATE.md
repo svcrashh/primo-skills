@@ -102,3 +102,5 @@ node templates/ticking-checklist/render.mjs templates/ticking-checklist/example-
 - Two columns, no more and no less, in the `colunas` structure.
 - The counter counts marked items (✓ and ✕ together); there is no separate "does" and "doesn't" counter besides the column one.
 - With `camera: "segue"` in portrait, the counter (at the bottom) leaves the frame while the camera is on the items and comes back at the end.
+- No narration: this template has no voice. For a video with voice (opt-in, `references/voice-script.md`), the closest style that
+  takes it is `rolling-list` (one item per line of the list).

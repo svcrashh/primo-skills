@@ -109,4 +109,5 @@ Recomposed, not cropped.
 - The highlight puts the other photos in a column of thumbnails; with more than 6, they become two small columns.
 - In `travelling`, the grid moves through the whole video at a single speed; going back to the mosaic shows another
   part of it.
-- No voice: this is a video skill without narration. The soundtrack is the lead.
+- No voice: this template does not narrate, and the soundtrack is the lead. For a video with voice (opt-in,
+  `references/voice-script.md`), the closest style that takes it is `rolling-list` (each photo as an item's `foto` proof).

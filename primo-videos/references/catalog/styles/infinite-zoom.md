@@ -10,6 +10,8 @@ there"), `results` for a package shown from the whole to the part; opening or cl
 **When not to use:** teaching the click path (the dive doesn't show the tap: `real-screen-camera`,
 `phone-3d`); screens without a small detail that leads from one to the next; more than 5 levels; a whole screen to be read
 slowly (the first level goes by quickly).
+**Voice:** none: the style has no narration. With voice (opt-in, `references/voice-script.md`), the closest style
+that takes it is `real-screen-camera` (the camera going to the detail on the real screen).
 
 ## Structure (10–14 s)
 - **0–1 s:** the overview screen filling the window, the promise already written beside it, the camera pushing in slowly.

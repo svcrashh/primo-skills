@@ -11,6 +11,8 @@ request, and where the path **stops** (a missing rule or approval: the arrow wit
 **When not to use:** teaching where to click (that's `real-screen-camera`); explaining an idea that needs free drawing,
 a number or a chart alongside (that's `drawn-explainer`); more than 8 pieces or more than 3 side by side (split it); a cycle (the
 flow goes in one direction only); a stack of parts that rest on each other (that's `isometric`).
+**Voice:** none: the style has no narration. With voice (opt-in, `references/voice-script.md`), the closest style
+that takes it is `drawn-explainer` (the flow drawn by hand, scene by scene).
 
 ## Structure (7–12 s)
 - **Frame 0:** the headline (`chamada`) in the pill and the first node already drawing itself.

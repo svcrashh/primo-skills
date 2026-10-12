@@ -114,3 +114,5 @@ cut (nothing stays still).
 - Icon only on bars and columns, next to the label (never inside the bar).
 - The closing is the logo only, centered: a slogan, a sentence or an address in `fecho` is rejected. A brand that
   closes with its slogan needs another template for the closing.
+- No narration: this template has no voice. For a video with voice (opt-in, `references/voice-script.md`), the closest style that
+  takes it is `counting-number` (one number at a time).

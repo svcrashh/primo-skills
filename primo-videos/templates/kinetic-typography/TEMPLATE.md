@@ -119,5 +119,5 @@ Recomposed, not cropped.
 - The template does not know what a slogan is: keeping the text informative is on whoever writes the JSON.
 - The closing is the logo only: a slogan, a sentence, a date or an address in `fecho` is rejected, and so is an
   exclamation mark in any line. A brand that closes with its slogan needs another template for the closing.
-- No voice: this skill makes videos without narration. The
-  soundtrack is the protagonist.
+- No voice: this template does not narrate, and the soundtrack is the protagonist. For a video with voice (opt-in,
+  `references/voice-script.md`), the closest style that takes it is `rolling-list` (`cartaz`: one big sentence per card).

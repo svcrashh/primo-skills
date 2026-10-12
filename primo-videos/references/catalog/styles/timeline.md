@@ -9,6 +9,8 @@ been done and when), `update` and `launch` (the roadmap, what's coming and when)
 `feed`; product `b2b` (internal process, onboarding), `creator`. Also "a day with": the routine hour by hour.
 **When not to use:** teaching where to click (that's a tutorial); items with no order between them (that's `rolling-list`); a number that
 proves everything (that's `counting-number`); more than 10 milestones (it becomes a list); invented dates or steps.
+**Voice:** none: the style has no narration. With voice (opt-in, `references/voice-script.md`), the closest style
+that takes it is `rolling-list` (numbered items, in order).
 
 ## Structure (8–20 s)
 - **0–0.4 s:** the title already written at the top; the axis track appears and the progress runs up to the first milestone.

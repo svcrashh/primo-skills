@@ -9,6 +9,8 @@ world), `results` (what a team did, with its own photos); channels `site`, `big-
 and people audiences.
 **When not to use:** without approved photos (only the brand's own approved photos, never stock images or people
 without authorization); teaching how to use something; more than 12 photos; a photo with customer data or of a person without authorization.
+**Voice:** none: the style has no narration. With voice (opt-in, `references/voice-script.md`), the closest style
+that takes it is `rolling-list` (each photo as an item's `foto` proof).
 
 ## Structure (8–15 s)
 - **0 s:** the photos coming in one by one, the tag and the 1st label already in the strip.

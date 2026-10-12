@@ -52,3 +52,5 @@ Outputs `<output>/<name>-<format>-draft.mp4` and the contact sheet: **look at th
 - Basic ANSI colors (16 colors and bold). Long output scrolls up like a real terminal, and the top line
   can get cut by the window bar: prefer outputs that fit in the window (~9 lines in landscape).
 - No brand: name and colors come from the project.
+- No narration: this template has no voice. For a video with voice (opt-in, `references/voice-script.md`), the closest style that
+  takes it is `typing-text` (the request typed on screen and the product answering).

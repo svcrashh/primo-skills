@@ -9,6 +9,8 @@ doesn't do yet), `results` (the check that was done); channels `site`, `whatsapp
 **When not to use:** new features that need screen proof (`rolling-list`); a where-to-click step by step
 (`real-screen-camera`); more than 8 items per list. **Each item is a verifiable fact**, never a catchphrase
 ("faster", "hassle-free").
+**Voice:** none: the style has no narration. With voice (opt-in, `references/voice-script.md`), the closest style
+that takes it is `rolling-list` (one item per line of the list).
 
 ## Structure (6–12 s)
 - **0 s:** the title and the cards already on screen, with the items and each one's empty circle.

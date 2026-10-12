@@ -71,7 +71,8 @@ area) fades out before touching the edge: nothing stays still and opaque outside
   image too. `VIDEO.texto = "fora-da-imagem"`: the engine's check fails text that crosses any of them.
 - A wrong parameter stops before building, with what to do (`render.mjs` prints them all at once): layout, camera,
   transition, side, card type, a color that is not `#rrggbb`, missing logo, closing with a phrase, `zoom` with `janela`.
-- No voice: the template does not narrate. The bubbles' text tells the story.
+- No voice: the template does not narrate. The bubbles' text tells the story. For a video with voice (opt-in,
+  `references/voice-script.md`), the closest style that takes it is `typing-text` (the request typed and the product answering).
 
 Format examples: `example.json` (`coluna` inside a chat window with a title, `segue`, the delivery in an `arquivo` card
 with 8 thumbnails, `push`) and `example-split.json` (`dividido`, `zoom`, the delivery in a `lista` card that opens in the

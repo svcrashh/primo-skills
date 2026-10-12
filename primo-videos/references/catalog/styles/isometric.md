@@ -16,6 +16,8 @@ system, of a package, of a platform; steps that build on one another.
 **When not to use:** a path with branches or with a lock (that's `drawn-flow`); teaching where to click (that's
 `real-screen-camera`); loose items that don't rest on each other (`rolling-list`, `card-bento`); more than 6 layers;
 when what matters is the product's real screen (the blocks are abstract).
+**Voice:** none: the style has no narration. With voice (opt-in, `references/voice-script.md`), the closest style
+that takes it is `drawn-explainer` (how a system works inside).
 
 ## Structure (7–12 s)
 - **Frame 0:** the headline (`chamada`) in the pill and the base already landing.
