@@ -1,5 +1,9 @@
 name: terminais no Windows
 
+# terminal-claude e terminal-organizar num Windows de verdade (o windows-latest do Actions): os testes
+# simulados no Python de lá e o fluxo inteiro com janelas do Windows Terminal de verdade e um claude de
+# mentira (terminal-claude/scripts/teste_windows_real.py). Sem segredo e sem rede além do checkout.
+
 on:
   push:
     branches: [main, "windows-**"]
@@ -22,9 +26,71 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  experimento:
+  simulados:
+    runs-on: windows-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - name: teste simulado do Windows
+        run: python terminal-claude/scripts/teste_windows_simulado.py
+      - name: teste simulado do Mac (registro e esperar)
+        run: python terminal-claude/scripts/teste_mac_simulado.py
+      - name: requisitos
+        run: |
+          python terminal-claude/scripts/requisitos.py
+          "saiu com $LASTEXITCODE"
+          python terminal-organizar/scripts/requisitos.py
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+
+  real:
     runs-on: windows-latest
     timeout-minutes: 20
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - name: tela de 1920×1080
+        continue-on-error: true
+        run: Set-DisplayResolution -Width 1920 -Height 1080 -Force
+      - name: Windows Terminal
+        run: |
+          if (-not (Get-Command wt -ErrorAction SilentlyContinue)) {
+            winget install --id Microsoft.WindowsTerminal -e --accept-source-agreements --accept-package-agreements --disable-interactivity
+          }
+          (Get-AppxPackage Microsoft.WindowsTerminal).Version
+      # Espaço e acento no caminho do Python e no das skills, como no perfil de um "João Silva".
+      - name: Python e skills em pastas com espaço e acento
+        run: |
+          Copy-Item -Recurse $env:pythonLocation "$env:RUNNER_TEMP\Python com espaço"
+          $skills = New-Item -ItemType Directory "$env:RUNNER_TEMP\skills com espaço ção"
+          Copy-Item -Recurse terminal-claude, terminal-organizar $skills
+      - name: fluxo de verdade
+        env:
+          FALSO_PYTHON: ${{ env.pythonLocation }}\python.exe
+        run: |
+          & "$env:RUNNER_TEMP\Python com espaço\python.exe" "$env:RUNNER_TEMP\skills com espaço ção\terminal-claude\scripts\teste_windows_real.py" --artefatos "$env:GITHUB_WORKSPACE\captura"
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: telas
+          path: captura/
+          retention-days: 7
+          if-no-files-found: ignore
+
+  experimento:
+    runs-on: windows-latest
+    timeout-minutes: 15
     defaults:
       run:
         shell: pwsh
@@ -37,38 +103,30 @@ jobs:
         continue-on-error: true
         run: |
           New-Item -ItemType Directory -Force cmdteste | Out-Null
-          Set-Content cmdteste\eco.cmd '@python -c "import sys, json; print(json.dumps(sys.argv[1:], ensure_ascii=False))" %*'
-          python -c "import subprocess, json; p = 'Leia \"docs/x.md\" e % ^ & | > < ação\nsegunda linha'; r = subprocess.run(['cmdteste\\eco.cmd', p], capture_output=True, text=True, encoding='utf-8', errors='replace'); print('saida:', r.stdout, r.stderr); print('igual:', r.stdout.strip() == json.dumps([p], ensure_ascii=False))"
-      - name: claude pelo npm
+          Set-Content -Encoding utf8 cmdteste\eco.py 'import sys, json; print(json.dumps(sys.argv[1:]))'
+          Set-Content -Encoding ascii cmdteste\eco.cmd '@python "%~dp0eco.py" %*'
+          @'
+          import json, subprocess, sys
+          for p in ['uma linha simples', 'duas\nlinhas', 'aspas "assim" e fim', '100% & | > < ^ fim']:
+              r = subprocess.run([sys.argv[1], p], capture_output=True)
+              saida = r.stdout.decode('utf-8', 'replace').strip()
+              print(repr(p), '->', saida or r.stderr.decode('utf-8', 'replace').strip(), '| igual:', saida == json.dumps([p]))
+          '@ | Set-Content -Encoding utf8 cmdteste\teste.py
+          python cmdteste\teste.py cmdteste\eco.cmd
+      - name: claude pelo npm, e o requisitos
         continue-on-error: true
         run: |
-          npm install -g @anthropic-ai/claude-code 2>&1 | Select-Object -Last 3
-          Get-Command claude -All -ErrorAction SilentlyContinue | Format-Table Name, CommandType, Source -AutoSize | Out-String -Width 300
-          python -c "import shutil; print('which:', shutil.which('claude'))"
-          claude --version
-      - name: claude nativo (instalador oficial)
+          npm install -g @anthropic-ai/claude-code 2>&1 | Select-Object -Last 1
+          Get-Content C:\npm\prefix\claude.cmd
+          Get-ChildItem C:\npm\prefix\node_modules\@anthropic-ai -Recurse -Depth 1 | Select-Object -First 15 FullName | Out-String -Width 300
+          python terminal-claude/scripts/requisitos.py; "saiu com $LASTEXITCODE"
+      - name: claude nativo fora do PATH, o comando do PATH e o requisitos
         continue-on-error: true
         run: |
-          npm uninstall -g @anthropic-ai/claude-code 2>&1 | Select-Object -Last 1
           irm https://claude.ai/install.ps1 | iex
-          "user PATH tem .local\bin: $([Environment]::GetEnvironmentVariable('Path','User') -like '*\.local\bin*')"
-          Get-ChildItem "$env:USERPROFILE\.local\bin" -ErrorAction SilentlyContinue | Format-Table Name, Length | Out-String
+          python terminal-claude/scripts/requisitos.py; "saiu com $LASTEXITCODE"
+          npm uninstall -g @anthropic-ai/claude-code 2>&1 | Select-Object -Last 1
+          [Environment]::SetEnvironmentVariable('Path', [Environment]::GetEnvironmentVariable('Path', 'User') + ';' + $env:USERPROFILE + '\.local\bin', 'User')
           $env:Path = [Environment]::GetEnvironmentVariable('Path','Machine') + ';' + [Environment]::GetEnvironmentVariable('Path','User')
-          python -c "import shutil; print('which:', shutil.which('claude'))"
           claude --version
-      - name: python pelo winget
-        continue-on-error: true
-        run: |
-          winget install --id Python.Python.3.12 -e --accept-source-agreements --accept-package-agreements --disable-interactivity 2>&1 | Select-Object -Last 3
-          "user PATH: $([Environment]::GetEnvironmentVariable('Path','User'))"
-          "machine PATH tem Python312: $([Environment]::GetEnvironmentVariable('Path','Machine') -like '*Python312*')"
-          $env:Path = [Environment]::GetEnvironmentVariable('Path','Machine') + ';' + [Environment]::GetEnvironmentVariable('Path','User')
-          Get-Command python -All -ErrorAction SilentlyContinue | Format-Table Name, Source -AutoSize | Out-String -Width 300
-      - name: resolução maior
-        continue-on-error: true
-        run: |
-          Get-Command Set-DisplayResolution -ErrorAction SilentlyContinue | Format-List Name, Source
-          Set-DisplayResolution -Width 1920 -Height 1080 -Force
-          Start-Sleep 2
-          Add-Type -AssemblyName System.Windows.Forms
-          [System.Windows.Forms.Screen]::AllScreens | Format-List Bounds, WorkingArea | Out-String
+          python terminal-claude/scripts/requisitos.py; "saiu com $LASTEXITCODE"
