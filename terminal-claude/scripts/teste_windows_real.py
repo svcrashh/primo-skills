@@ -306,7 +306,7 @@ def de_onde_vem_o_claude(raiz, claude):
 
     def roda(argv, path, casa_):
         r = subprocess.run(argv, capture_output=True, cwd=raiz, env={**ENV, "PATH": path, "USERPROFILE": str(casa_)})
-        return r.returncode, (r.stdout + r.stderr).decode("utf-8", "replace").strip()
+        return r.returncode, (r.stdout + r.stderr).decode("utf-8", "replace").replace("\r\n", "\n").strip()
 
     def busca(path, casa_):
         # Como no terminais.py, que põe a saída em UTF-8 antes de procurar o claude.
@@ -486,7 +486,7 @@ def principal():
     if confere("abrir uma janela só, com --prompt", D and d and linha_d, saida):
         vigia = subprocess.Popen([sys.executable, str(T), "esperar", "--minutos", "2"], stdout=subprocess.PIPE,
                                  stderr=subprocess.STDOUT, env=ENV)
-        time.sleep(5)
+        time.sleep(8)  # o esperar já leu o registro uma vez (leva menos de 1 s)
         win.pedir_para_fechar(D)  # como o X da janela
         espera = vigia.communicate(timeout=180)[0].decode("utf-8", "replace")
         confere("a janela fechada por fora fechou (o Windows Terminal não pediu confirmação)", not win.existe(D))
