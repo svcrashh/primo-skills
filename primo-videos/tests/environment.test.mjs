@@ -1,7 +1,8 @@
 // node --test tests/   (sem rede): o ~/.videostudio/environment.json (VIDEOSTUDIO_HOME numa pasta temporária) manda no
 // Playwright e no Python: o playwright.cjs, mesmo copiado sozinho, põe o do environment.json logo depois do
 // PLAYWRIGHT_PATH; o acharPython do where.cjs prefere o do environment.json ao python3; o environment.mjs diagnostica em JSON
-// e o --fix grava o environment.json sem baixar nada quando o que precisa já existe (e, sem --yes, não baixa).
+// e o --fix grava o environment.json sem baixar nada quando o que precisa já existe (e, sem --yes, não baixa); as chaves
+// opcionais da voz e das imagens aparecem sem o valor e não mudam o código de saída.
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
@@ -132,4 +133,79 @@ test('environment.mjs --fix sem Playwright e sem --yes diz o que baixaria e não
   assert.match(r.stdout, /environment incomplete/)
   assert.ok(!fs.existsSync(path.join(vh, 'node')), 'sem --yes, não baixa')
   assert.equal(JSON.parse(fs.readFileSync(path.join(vh, 'environment.json'), 'utf8')).playwright, null)
+})
+
+// as chaves opcionais (voz e imagens): o environment.mjs diz se existem e de onde, nunca o valor, e elas não mudam o
+// código de saída nem o que falta
+const EL = 'sk-el-FAKE-1234567890', OA = 'sk-oa-FAKE-0987654321'
+function segredo(c, arq, conteudo) {
+  const d = path.join(c, '.claude', 'secrets')
+  fs.mkdirSync(d, { recursive: true })
+  fs.writeFileSync(path.join(d, arq), conteudo)
+}
+const semValor = (r, msg) => { for (const v of [EL, OA]) assert.ok(!`${r.stdout}${r.stderr}`.includes(v), `${msg}: a chave apareceu na saída`) }
+
+test('environment.mjs: as chaves da voz e das imagens são opcionais, ditas sem o valor, e não mudam o código de saída', (t) => {
+  const { c, env } = casa(t)
+  const roda = (e, ...a) => spawnSync(process.execPath, [AMB, ...a], { encoding: 'utf8', cwd: c, env: e })
+  const sem = roda(env)
+  assert.match(sem.stdout, /^voice\s+ELEVENLABS_API_KEY not found · optional, paid/m)
+  assert.match(sem.stdout, /^images\s+OPENAI_API_KEY not found · optional, paid/m)
+  assert.match(sem.stdout, /OPTIONAL \(paid[^\n]*\n {2}· ELEVENLABS_API_KEY: [^\n]*voice\.mjs account[^\n]*\n {2}· OPENAI_API_KEY: [^\n]*openai\.env/)
+  const jSem = JSON.parse(roda(env, '--json').stdout)
+  assert.deepEqual([jSem.opcional.voz.ok, jSem.opcional.imagens.ok], [false, false])
+
+  segredo(c, 'openai.env', `# a chave da OpenAI\nexport OPENAI_API_KEY="${OA}"\n`)
+  const comChave = { ...env, ELEVENLABS_API_KEY: EL }
+  const com = roda(comChave)
+  semValor(com, 'texto')
+  assert.equal(com.status, sem.status, 'a chave não muda o código de saída')
+  assert.match(com.stdout, /ELEVENLABS_API_KEY found \(environment\)/)
+  assert.match(com.stdout, /OPENAI_API_KEY found \(~\/\.claude\/secrets\/openai\.env\)/)
+  assert.doesNotMatch(com.stdout, /OPTIONAL/)
+  const rj = roda(comChave, '--json')
+  semValor(rj, '--json')
+  const j = JSON.parse(rj.stdout)
+  assert.deepEqual([j.opcional.voz.ok, j.opcional.voz.de, j.opcional.imagens.ok, j.opcional.imagens.de], [true, 'ambiente', true, 'arquivo'])
+  assert.deepEqual(j.falta, jSem.falta, 'a chave não entra no que falta')
+  assert.equal(j.consertar, jSem.consertar)
+
+  // linha vazia (ou só aspas) no arquivo = sem chave
+  segredo(c, 'elevenlabs.env', 'ELEVENLABS_API_KEY=\n')
+  segredo(c, 'openai.env', 'OPENAI_API_KEY=""\n')
+  const vazia = roda(env)
+  assert.match(vazia.stdout, /ELEVENLABS_API_KEY not found/)
+  assert.match(vazia.stdout, /OPENAI_API_KEY not found/)
+  assert.equal(vazia.status, sem.status)
+  // a chave no arquivo da ElevenLabs também conta
+  segredo(c, 'elevenlabs.env', `ELEVENLABS_API_KEY=${EL}\n`)
+  const doArquivo = roda(env)
+  semValor(doArquivo, 'do arquivo')
+  assert.match(doArquivo.stdout, /ELEVENLABS_API_KEY found \(~\/\.claude\/secrets\/elevenlabs\.env\)/)
+})
+
+test('environment.mjs --fix: as chaves opcionais não mudam o código de saída e não vão para a saída nem para o environment.json', { skip: win && 'o python falso é um script de shell' }, (t) => {
+  const { c, vh, env } = casa(t)
+  const pw = pwFalso(path.join(c, 'outra', 'node_modules', 'playwright'))
+  pyFalso(path.join(vh, 'venv', 'bin', 'python'))
+  const base = { ...env, PLAYWRIGHT_PATH: pw }
+  const roda = (e, ...a) => spawnSync(process.execPath, [AMB, '--fix', ...a], { encoding: 'utf8', cwd: c, env: e })
+  const sem = roda(base)
+  assert.match(sem.stdout, /ELEVENLABS_API_KEY not found · optional/)
+  assert.match(sem.stdout, /OPTIONAL \(paid/)
+  segredo(c, 'openai.env', `OPENAI_API_KEY=${OA}\n`)
+  const comChave = { ...base, ELEVENLABS_API_KEY: EL }
+  const com = roda(comChave)
+  semValor(com, '--fix')
+  assert.equal(com.status, sem.status, 'a chave não muda o código de saída do conserto')
+  assert.match(com.stdout, /ELEVENLABS_API_KEY found \(environment\)/)
+  assert.match(com.stdout, /OPENAI_API_KEY found \(~\/\.claude\/secrets\/openai\.env\)/)
+  const rj = roda(comChave, '--json')
+  semValor(rj, '--fix --json')
+  const j = JSON.parse(rj.stdout)
+  assert.equal(rj.status, sem.status)
+  assert.deepEqual([j.opcional.voz.de, j.opcional.imagens.de], ['ambiente', 'arquivo'])
+  assert.ok(!j.falta.some((f) => /API_KEY/.test(f.o)), 'a chave não entra no que falta')
+  const gravado = fs.readFileSync(path.join(vh, 'environment.json'), 'utf8')
+  for (const v of [EL, OA]) assert.ok(!gravado.includes(v), 'a chave não vai para o environment.json')
 })
