@@ -26,9 +26,9 @@ Order of use:
 5. [`variety.md`](variety.md): the ten axes of a direction and the rule that keeps a brand's videos from repeating.
 
 **With voice** (opt-in and paid, only when the person asks: `references/voice-script.md`), the choice narrows: the
-styles that take narration are the panel tutorial, `real-screen-camera`, `chapters-with-index`, `drawn-explainer`,
-`rolling-list`, `counting-number`, `typing-text`, `before-after` (the voice alone, with no soundtrack under it) and
-`light-trail-teaser`. The others have no narration; the **Voice:** line of each card names the closest style that takes
+styles that take narration are the panel tutorial, `chapters-with-index`, `drawn-explainer`, `rolling-list`,
+`counting-number`, `typing-text`, `light-trail-teaser`, and `real-screen-camera` and `before-after` (in these two, the
+voice alone, with no soundtrack under it). The others have no narration; the **Voice:** line of each card names the closest style that takes
 it. Without voice, every style stays as it is.
 
 The cards: [`real-screen-camera`](styles/real-screen-camera.md) · [`typing-text`](styles/typing-text.md) ·
