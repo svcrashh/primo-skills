@@ -39,7 +39,7 @@ await vb?.checarDono({ onde: `assemble ${path.basename(projeto)}` })
 await vb?.avisar('montagem', `assembling ${path.basename(projeto)}`)
 
 // a cena de exemplo do molde (01-example) nunca entra no vídeo
-const cenas = fs.readdirSync(path.join(projeto, 'scenes')).filter((c) => /^\d\d-/.test(c) && !/-exemplo$/.test(c)).sort().map((nome) => ({ nome, n: +nome.slice(0, 2) }))
+const cenas = fs.readdirSync(path.join(projeto, 'scenes')).filter((c) => /^\d\d-/.test(c) && !/-example$/.test(c)).sort().map((nome) => ({ nome, n: +nome.slice(0, 2) }))
 if (!cenas.length) erro(`there are no NN-name scenes in ${path.join(projeto, 'scenes')}`)
 const temTodas = (f) => cenas.every((c) => fs.existsSync(path.join(projeto, 'scenes', c.nome, 'out', `${f}.mp4`)))
 const formatos = opt('formats') ? opt('formats').split(',') : ['16x9', '19x9', '21x9', '9x16', '1x1', '4x5'].filter(temTodas)
