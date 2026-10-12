@@ -17,6 +17,8 @@ const CASOS = path.join(AQUI, 'cases', 'thesis')
 const caso = (f) => fs.readFileSync(path.join(CASOS, f), 'utf8')
 const tmp = () => fs.mkdtempSync(path.join(os.tmpdir(), 'tese-'))
 const TESE = caso('valid-thesis.md')
+// O .cmd que o npm (cmd-shim) cria para um .js do node.
+const ATALHO_JS = '@ECHO off\r\nGOTO start\r\n:find_dp0\r\nSET dp0=%~dp0\r\nEXIT /b\r\n:start\r\nSETLOCAL\r\nCALL :find_dp0\r\n\r\nIF EXIST "%dp0%\\node.exe" (\r\n  SET "_prog=%dp0%\\node.exe"\r\n) ELSE (\r\n  SET "_prog=node"\r\n  SET PATHEXT=%PATHEXT:;.JS;=;%\r\n)\r\n\r\nendLocal & goto #_undefined_# 2>NUL || title %COMSPEC% & "%_prog%"  "%dp0%\\node_modules\\@anthropic-ai\\claude-code\\cli.js" %*\r\n'
 
 describe('ler a tese', () => {
   test('acha as cinco partes e os campos', () => {
@@ -276,9 +278,19 @@ describe('CLI (claude falso)', () => {
     fs.mkdirSync(repo)
     fs.writeFileSync(path.join(repo, 'README.md'), '# Produto\n')
   })
+  // O claude falso é um script do node; no Windows, no layout do npm (claude.cmd e o .js que ele chama), para passar
+  // pela resolução do .cmd de verdade. Grava os argumentos, a pasta e o que chegou pelo stdin.
   const falso = (resposta, nome) => {
+    const js = `#!/usr/bin/env node\nlet entrada = ''\nprocess.stdin.setEncoding('utf8').on('data', (d) => (entrada += d)).on('end', () => {\n  require('node:fs').appendFileSync(${JSON.stringify(path.join(dir, nome + '.args'))}, JSON.stringify({ a: process.argv.slice(2), cwd: process.cwd(), entrada }) + '\\n')\n  console.log(JSON.stringify({ result: ${JSON.stringify(resposta)}, total_cost_usd: 0.3, duration_ms: 90000, num_turns: 14, usage: { input_tokens: 5, output_tokens: 7 }, modelUsage: { 'claude-sonnet-5-5': {} } }))\n})\n`
+    if (process.platform === 'win32') {
+      const pacote = path.join(dir, nome, 'node_modules', '@anthropic-ai', 'claude-code')
+      fs.mkdirSync(pacote, { recursive: true })
+      fs.writeFileSync(path.join(pacote, 'cli.js'), js)
+      fs.writeFileSync(path.join(dir, nome, 'claude.cmd'), ATALHO_JS)
+      return path.join(dir, nome, 'claude.cmd')
+    }
     const bin = path.join(dir, nome)
-    fs.writeFileSync(bin, `#!/usr/bin/env node\nconst a = process.argv.slice(2)\nrequire('node:fs').appendFileSync(${JSON.stringify(path.join(dir, nome + '.args'))}, JSON.stringify({ a, cwd: process.cwd() }) + '\\n')\nconsole.log(JSON.stringify({ result: ${JSON.stringify(resposta)}, total_cost_usd: 0.3, duration_ms: 90000, num_turns: 14, usage: { input_tokens: 5, output_tokens: 7 }, modelUsage: { 'claude-sonnet-5-5': {} } }))\n`)
+    fs.writeFileSync(bin, js)
     fs.chmodSync(bin, 0o755)
     return bin
   }
@@ -294,17 +306,19 @@ describe('CLI (claude falso)', () => {
     const reg = JSON.parse(fs.readFileSync(path.join(saida, 'thesis.log.json'), 'utf8'))
     assert.equal(reg.valida, true)
     assert.equal(fs.realpathSync(reg.repositorio), fs.realpathSync(repo))
-    const { a, cwd } = JSON.parse(fs.readFileSync(path.join(dir, 'claude-ok.args'), 'utf8').trim())
+    const { a, cwd, entrada } = JSON.parse(fs.readFileSync(path.join(dir, 'claude-ok.args'), 'utf8').trim())
     assert.equal(fs.realpathSync(cwd), fs.realpathSync(repo))
     assert.equal(a[a.indexOf('--tools') + 1], 'Read,Glob,Grep')
     assert.equal(a[a.indexOf('--allowedTools') + 1], 'Read,Glob,Grep')
     assert.equal(a[a.indexOf('--setting-sources') + 1], '')
     for (const flag of ['-p', '--no-session-persistence', '--strict-mcp-config', '--disable-slash-commands']) assert.ok(a.includes(flag), flag)
     assert.equal(a[a.indexOf('--system-prompt') + 1], PAPEL_TESE)
-    // o papel e o prompt são prosa (o papel diz "Write the thesis…"); o que não pode ter escrita são as flags e os valores delas
-    const semProsa = a.slice(0, -1).filter((_, i) => a[i - 1] !== '--system-prompt')
+    // o papel é prosa (diz "Write the thesis…"); o que não pode ter escrita são as flags e os valores delas
+    const semProsa = a.filter((_, i) => a[i - 1] !== '--system-prompt')
     assert.doesNotMatch(semProsa.join(' '), /Bash|Write|Edit|--dangerously|--resume|--continue/)
-    assert.match(a[a.length - 1], /The thesis has five parts/)
+    // o prompt (a receita) vai pelo stdin, não na linha de comando: a do Windows tem teto
+    assert.match(entrada, /The thesis has five parts/)
+    assert.ok(!a.some((x) => x.includes('The thesis has five parts')))
   })
 
   test('escrever: não passa por cima de uma tese que já existe; com --redo a antiga vira thesis-v1.md', () => {

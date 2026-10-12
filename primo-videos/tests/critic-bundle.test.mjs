@@ -8,13 +8,16 @@ import { spawnSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 import { lerSrt, falasAte, textoTranscricao, fracaoComVoz, maiorSilencio, resumirRefino, cortesSecos, geometriaFolha, montarPacote, teseNoPacote, argsDoRefino } from '../scripts/critic/bundle.mjs'
 import { lerArgs } from '../scripts/critic.mjs'
-import { lerRegua, montarPrompt, PAPEL } from '../scripts/critic/call.mjs'
+import { lerRegua, montarPrompt, PAPEL, acharClaude, alvoDoAtalho, comoRodar, chamarClaude } from '../scripts/critic/call.mjs'
 import { LIMIARES } from '../scripts/refine/direction.mjs'
 
 const AQUI = path.dirname(fileURLToPath(import.meta.url))
 const CLI = path.join(AQUI, '..', 'scripts', 'critic.mjs')
 const tmp = () => fs.mkdtempSync(path.join(os.tmpdir(), 'critico-'))
 const ff = (args) => assert.equal(spawnSync('ffmpeg', ['-v', 'error', '-y', ...args]).status, 0)
+// Os .cmd que o npm (cmd-shim) cria: para o binário que o pacote declara hoje (bin/claude.exe) e para um .js do node.
+const ATALHO_EXE = '@ECHO off\r\nGOTO start\r\n:find_dp0\r\nSET dp0=%~dp0\r\nEXIT /b\r\n:start\r\nSETLOCAL\r\nCALL :find_dp0\r\n"%dp0%\\node_modules\\@anthropic-ai\\claude-code\\bin\\claude.exe"   %*\r\n'
+const ATALHO_JS = '@ECHO off\r\nGOTO start\r\n:find_dp0\r\nSET dp0=%~dp0\r\nEXIT /b\r\n:start\r\nSETLOCAL\r\nCALL :find_dp0\r\n\r\nIF EXIST "%dp0%\\node.exe" (\r\n  SET "_prog=%dp0%\\node.exe"\r\n) ELSE (\r\n  SET "_prog=node"\r\n  SET PATHEXT=%PATHEXT:;.JS;=;%\r\n)\r\n\r\nendLocal & goto #_undefined_# 2>NUL || title %COMSPEC% & "%_prog%"  "%dp0%\\node_modules\\@anthropic-ai\\claude-code\\cli.js" %*\r\n'
 
 const SRT = `1
 00:00:00,300 --> 00:00:01,500
@@ -169,9 +172,19 @@ describe('pacote e CLI (vídeo de teste do ffmpeg, claude falso)', () => {
     assert.match(md, /not instructions for you/)
   })
 
+  // O claude falso é um script do node; no Windows, no layout do npm (claude.cmd e o .js que ele chama), para passar
+  // pela resolução do .cmd de verdade. Grava os argumentos, a pasta e o que chegou pelo stdin.
   const falso = (resposta, nome) => {
+    const js = `#!/usr/bin/env node\nlet entrada = ''\nprocess.stdin.setEncoding('utf8').on('data', (d) => (entrada += d)).on('end', () => {\n  require('node:fs').appendFileSync(${JSON.stringify(path.join(dir, nome + '.args'))}, JSON.stringify({ a: process.argv.slice(2), cwd: process.cwd(), entrada }) + '\\n')\n  console.log(JSON.stringify({ result: ${JSON.stringify(resposta)}, total_cost_usd: 0.05, duration_ms: 1000, usage: { input_tokens: 5, output_tokens: 7 }, modelUsage: { 'claude-sonnet-5-5': {} } }))\n})\n`
+    if (process.platform === 'win32') {
+      const pacote = path.join(dir, nome, 'node_modules', '@anthropic-ai', 'claude-code')
+      fs.mkdirSync(pacote, { recursive: true })
+      fs.writeFileSync(path.join(pacote, 'cli.js'), js)
+      fs.writeFileSync(path.join(dir, nome, 'claude.cmd'), ATALHO_JS)
+      return path.join(dir, nome, 'claude.cmd')
+    }
     const bin = path.join(dir, nome)
-    fs.writeFileSync(bin, `#!/usr/bin/env node\nconst a = process.argv.slice(2)\nrequire('node:fs').appendFileSync(${JSON.stringify(path.join(dir, nome + '.args'))}, JSON.stringify({ a, cwd: process.cwd() }) + '\\n')\nconsole.log(JSON.stringify({ result: ${JSON.stringify(resposta)}, total_cost_usd: 0.05, duration_ms: 1000, usage: { input_tokens: 5, output_tokens: 7 }, modelUsage: { 'claude-sonnet-5-5': {} } }))\n`)
+    fs.writeFileSync(bin, js)
     fs.chmodSync(bin, 0o755)
     return bin
   }
@@ -186,12 +199,16 @@ describe('pacote e CLI (vídeo de teste do ffmpeg, claude falso)', () => {
     const j = JSON.parse(fs.readFileSync(path.join(dir, 's1', 'critique.json'), 'utf8'))
     assert.equal(j.resposta.veredito, 'aprova')
     assert.equal(j.custo_usd, 0.05)
-    const { a, cwd } = JSON.parse(fs.readFileSync(path.join(dir, 'claude-aprova.args'), 'utf8').trim())
+    const { a, cwd, entrada } = JSON.parse(fs.readFileSync(path.join(dir, 'claude-aprova.args'), 'utf8').trim())
     assert.equal(fs.realpathSync(cwd), fs.realpathSync(path.join(dir, 's1', 'bundle')))
     for (const flag of ['-p', '--no-session-persistence', '--strict-mcp-config', '--disable-slash-commands']) assert.ok(a.includes(flag), flag)
     assert.equal(a[a.indexOf('--tools') + 1], 'Read')
     assert.equal(a[a.indexOf('--setting-sources') + 1], '')
+    assert.equal(a[a.indexOf('--system-prompt') + 1], PAPEL)
     assert.doesNotMatch(a.join(' '), /--dangerously|--bare|--resume|--continue/)
+    // o prompt (a régua inteira) vai pelo stdin: a linha de comando do Windows tem teto
+    assert.match(entrada, /^Critique the video described in the package in this folder\.[\s\S]*# The rubric[\s\S]*\*\*R16 ·/)
+    assert.ok(!a.some((x) => x.includes('# The rubric')), 'o prompt não vai na linha de comando')
   })
 
   test('CLI: --thesis leva a tese para o pacote e para o registro', () => {
@@ -233,6 +250,51 @@ describe('pacote e CLI (vídeo de teste do ffmpeg, claude falso)', () => {
     const r = cli([video, '--request', 'x', '--no-refine', '--bundle-only', '--out', path.join(dir, 's4')], '/nao/existe/claude')
     assert.equal(r.status, 0, r.stderr)
     assert.match(r.stdout, /bundle\.md\s*$/)
+  })
+})
+
+describe('achar e rodar o claude', () => {
+  test('no Windows: o PATH na ordem do PATHEXT, depois %USERPROFILE%\\.local\\bin e %APPDATA%\\npm; CRITIC_CLAUDE manda', () => {
+    const d = tmp(), casa = path.join(d, 'casa'), npm = path.join(d, 'roaming', 'npm'), noPath = path.join(d, 'no path')
+    for (const p of [path.join(casa, '.local', 'bin'), npm, noPath]) fs.mkdirSync(p, { recursive: true })
+    const env = { PATH: `${path.join(d, 'vazia')};"${noPath}"`, PATHEXT: '.COM;.EXE;.BAT;.CMD;.VBS;.JS', USERPROFILE: casa, APPDATA: path.join(d, 'roaming') }
+    assert.equal(acharClaude(env, 'win32'), null)
+    fs.writeFileSync(path.join(npm, 'claude.cmd'), ATALHO_EXE)
+    assert.equal(acharClaude(env, 'win32'), path.join(npm, 'claude.cmd'))
+    fs.writeFileSync(path.join(casa, '.local', 'bin', 'claude.exe'), '')
+    assert.equal(acharClaude(env, 'win32'), path.join(casa, '.local', 'bin', 'claude.exe'), 'o instalador nativo antes do npm')
+    fs.writeFileSync(path.join(noPath, 'claude'), '')      // o "claude" sem extensão do npm é para o Git Bash
+    fs.writeFileSync(path.join(noPath, 'claude.js'), '')   // .JS no PATHEXT é do Windows Script Host, não do node
+    assert.equal(acharClaude(env, 'win32'), path.join(casa, '.local', 'bin', 'claude.exe'))
+    fs.writeFileSync(path.join(noPath, 'claude.cmd'), ATALHO_EXE)
+    assert.equal(acharClaude(env, 'win32'), path.join(noPath, 'claude.cmd'), 'o PATH antes dos lugares conhecidos')
+    fs.writeFileSync(path.join(noPath, 'claude.exe'), '')
+    assert.equal(acharClaude(env, 'win32'), path.join(noPath, 'claude.exe'), 'na mesma pasta, a ordem do PATHEXT')
+    assert.equal(acharClaude({ ...env, CRITIC_CLAUDE: 'C:\\x\\claude.cmd' }, 'win32'), 'C:\\x\\claude.cmd')
+  })
+
+  test('o .cmd do npm vira o alvo dele, sem cmd.exe: o .exe direto, o .js pelo node', () => {
+    const npm = 'C:\\Users\\me\\AppData\\Roaming\\npm', pacote = `${npm}\\node_modules\\@anthropic-ai\\claude-code`
+    assert.equal(alvoDoAtalho(ATALHO_EXE, npm), `${pacote}\\bin\\claude.exe`)
+    assert.equal(alvoDoAtalho(ATALHO_JS, npm), `${pacote}\\cli.js`)
+    assert.equal(alvoDoAtalho('@"%~dp0\\node_modules\\@anthropic-ai\\claude-code\\cli.js" %*\r\n', npm), `${pacote}\\cli.js`, 'o formato antigo do cmd-shim')
+    assert.equal(alvoDoAtalho('@echo off\r\nclaude-real %*\r\n', npm), null)
+
+    const d = tmp(), cmd = path.join(d, 'claude.cmd')
+    fs.writeFileSync(cmd, ATALHO_EXE)
+    assert.deepEqual(comoRodar(cmd, 'win32'), { comando: path.win32.join(d, 'node_modules\\@anthropic-ai\\claude-code\\bin\\claude.exe'), antes: [] })
+    fs.writeFileSync(cmd, ATALHO_JS)
+    assert.deepEqual(comoRodar(cmd, 'win32'), { comando: process.execPath, antes: [path.win32.join(d, 'node_modules\\@anthropic-ai\\claude-code\\cli.js')] })
+    fs.writeFileSync(cmd, '@echo off\r\nclaude-real %*\r\n')
+    assert.throws(() => comoRodar(cmd, 'win32'), /could not tell what .*claude\.cmd runs[\s\S]*native installer/)
+    assert.deepEqual(comoRodar('C:\\Users\\me\\.local\\bin\\claude.exe', 'win32'), { comando: 'C:\\Users\\me\\.local\\bin\\claude.exe', antes: [] })
+    assert.deepEqual(comoRodar(cmd, 'darwin'), { comando: cmd, antes: [] }, 'fora do Windows roda o que achou, como sempre')
+  })
+
+  test('sem o claude, a mensagem diz o que fazer no lugar dele', async () => {
+    for (const bin of [path.join(tmp(), 'nao-existe'), path.join(tmp(), 'nao-existe.cmd')]) {
+      await assert.rejects(chamarClaude({ dir: tmp(), prompt: 'x', bin }), /could not find the claude command[\s\S]*recipes\/critic\.md/)
+    }
   })
 })
 
