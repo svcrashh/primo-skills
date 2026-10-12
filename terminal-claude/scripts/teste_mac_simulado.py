@@ -6,6 +6,9 @@ nem toca no registro de verdade. Rode depois de mexer em so_mac.py, no terminais
 fechar-terminal.sh:
 
     python3 teste_mac_simulado.py
+
+No Windows roda a parte do registro e do esperar, que é o terminais.py no sistema de arquivos de lá; a
+do fechar fica de fora, porque o fechar-terminal.sh é zsh e usa o ps e o lsof do Mac.
 """
 import contextlib, io, json, os, shutil, subprocess, sys, tempfile, threading
 from pathlib import Path
@@ -13,6 +16,20 @@ from pathlib import Path
 AQUI = Path(__file__).resolve().parent
 sys.path.insert(0, str(AQUI))
 os.environ["CLAUDE_CODE_SESSION_ID"] = "sessao-teste"
+NO_WINDOWS = os.name == "nt"
+if NO_WINDOWS:
+    # O so_mac trava o registro com o fcntl, que o Windows não tem: a mesma trava, pelo msvcrt. O que o
+    # terminais.py importa vem antes de fingir o Mac (o urllib.request, por exemplo, muda no Mac).
+    import argparse, collections, math, msvcrt, re, shlex, time, types, unicodedata, urllib.parse, urllib.request, uuid  # noqa
+    for _saida in (sys.stdout, sys.stderr):
+        _saida.reconfigure(encoding="utf-8")
+    fcntl = types.ModuleType("fcntl"); fcntl.LOCK_EX = 2
+    def _flock(f, _modo):
+        while True:
+            try: return msvcrt.locking(f.fileno(), msvcrt.LK_LOCK, 1)
+            except OSError: pass
+    fcntl.flock = _flock; sys.modules["fcntl"] = fcntl
+    sys.platform = "darwin"
 import so_mac as so, terminais
 
 raiz = Path(tempfile.mkdtemp(prefix="simmac-"))
@@ -43,6 +60,9 @@ so.ttys_do_terminal = lambda: set(terminal.values()) | outras_abas
 so.tela = lambda jid: "tela de mentira"
 
 # O que o fechar-terminal.sh pede ao Terminal: a lista das janelas, o "exit" do shell e o close.
+def fim():
+    shutil.rmtree(raiz, ignore_errors=True)
+    sys.exit(f"\n{len(falhas)} FALHA(S): {'; '.join(falhas)}" if falhas else print("\nTUDO OK"))
 osascript = raiz / "osascript"
 osascript.write_text(f"""#!{sys.executable}
 import re, sys
@@ -57,7 +77,7 @@ elif "do script" not in pedido:
 """, encoding="utf-8")
 osascript.chmod(0o755)
 script = (AQUI / "fechar-terminal.sh").read_text(encoding="utf-8")
-if "/usr/bin/osascript" not in script or registro_de_verdade not in script:
+if not NO_WINDOWS and ("/usr/bin/osascript" not in script or registro_de_verdade not in script):
     sys.exit("O fechar-terminal.sh mudou o jeito de chamar o osascript ou de achar o registro: "
              "acerta a cópia de teste antes, senão ela falaria com o Terminal de verdade.")
 so.FECHAR = raiz / "fechar-terminal.sh"
@@ -201,6 +221,10 @@ terminal.clear()
 confere("sem janela nenhuma, o esperar diz isso e volta", espera() == ("Nenhuma janela aberta por esta sessão.\n", 0))
 confere("os avisos somem do cache junto com as janelas", list(so.CACHE.iterdir()) == [], str(list(so.CACHE.iterdir())))
 
+if NO_WINDOWS:
+    print("pulado no Windows: o fechar (fechar-terminal.sh é zsh, com o ps e o lsof do Mac)")
+    fim()
+
 # --- fechar: o script só lê o registro; quem tira a janela fechada é o terminais.py, com a trava ---
 # Ids e ttys que não existem em máquina nenhuma: o script roda o ps e o lsof de verdade.
 def tty(jid): return f"/dev/ttys{jid}"
@@ -263,6 +287,4 @@ confere("fechando pelo terminais.py, janela que outra sessão abre na mesma hora
         "5 janela(s) fechada(s)" in saida and alheias and linhas() == [990404, *alheias], f"{len(set(alheias) - set(linhas()))} de {len(alheias)} linhas sumiram; saída: {saida}")
 terminal.clear()
 confere("no fim não sobra nada no registro nem no cache", registro() == [] and list(so.CACHE.iterdir()) == [], str(list(so.CACHE.iterdir())))
-
-shutil.rmtree(raiz, ignore_errors=True)
-sys.exit(f"\n{len(falhas)} FALHA(S): {'; '.join(falhas)}" if falhas else print("\nTUDO OK"))
+fim()

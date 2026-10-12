@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""Exercita no Mac os ramos de Windows do terminal-claude e do organizar, com o sistema simulado:
-janelas, monitores, processos, o wt.exe e o claude são de mentira.
+"""Exercita os ramos de Windows do terminal-claude e do organizar com o sistema simulado: janelas,
+monitores, processos, o wt.exe e o claude são de mentira. Roda no Mac e no Windows.
 
-Não prova as chamadas Win32 de verdade nem o Windows Terminal: prova que a lógica em volta delas
-fecha. Rode depois de mexer em so_windows.py, janelas_win.py ou no terminais.py:
+Não prova as chamadas Win32 de verdade nem o Windows Terminal (isso é o teste_windows_real.py): prova
+que a lógica em volta delas fecha. Rode depois de mexer em so_windows.py, janelas_win.py ou no
+terminais.py:
 
     python3 teste_windows_simulado.py
 """
@@ -13,20 +14,23 @@ import argparse, contextlib, io, re, shlex, subprocess, time, unicodedata, urlli
 from pathlib import Path
 
 AQUI = Path(__file__).resolve().parent
+NO_WINDOWS = os.name == "nt"   # o sys.platform vai ser trocado logo abaixo
+for _saida in (sys.stdout, sys.stderr):
+    _saida.reconfigure(encoding="utf-8")
 raiz = Path(tempfile.mkdtemp(prefix="simwin-"))
 os.environ.update(APPDATA=str(raiz / "AppData/Roaming"), LOCALAPPDATA=str(raiz / "AppData/Local"),
                   TMPDIR=str(raiz / "Temp"), CLAUDE_CONFIG_DIR=r"C:\Users\gu\.claude-insiders")
 (raiz / "Temp").mkdir(); tempfile.tempdir = str(raiz / "Temp")
 (raiz / "projeto").mkdir()
-claude_falso = raiz / "claude-falso"
-claude_falso.write_text(f"""#!{sys.executable}
+# No Windows o claude de mentira precisa ser um .exe: script com #! o Windows não roda.
+from teste_windows_real import executavel
+claude_falso = executavel(raiz / "bin", f"""
 import json, os, sys
 a = sys.argv[1:]; sid = a[a.index("--session-id") + 1]
 json.dump({{"argv": a, "cwd": os.getcwd(), "config": os.environ.get("CLAUDE_CONFIG_DIR"),
            "env": sorted(k for k in os.environ if k.upper().startswith(("CLAUDE", "TERMINAL_CLAUDE", "AI_AGENT")))}},
-          open({str(raiz)!r} + "/saida-" + sid + ".json", "w"), ensure_ascii=False)
+          open({str(raiz)!r} + "/saida-" + sid + ".json", "w", encoding="utf-8"), ensure_ascii=False)
 """)
-claude_falso.chmod(0o755)
 os.environ["CLAUDE_CODE_SESSION_ID"] = "sessao-teste"
 
 # --- sistema de mentira -------------------------------------------------------------------
@@ -72,18 +76,27 @@ confere("organizar --monitor vertical leva a janela pro monitor em pé", fake.ja
 fake.jan[1001] = (0, 0, 800, 600); fake.movidas.clear()
 
 # --- constantes e hook --------------------------------------------------------------------
-confere("registro e cache nas pastas do Windows", str(so.REGISTRO).startswith(str(raiz / "Temp")) and str(so.CACHE).endswith("AppData/Local/terminal-claude"))
-h = so.comando_hook("parada")
-confere("hook sem aspas quando o caminho não tem espaço", '"' not in h and h.endswith("terminais.py marcar parada"), h)
-real = sys.executable; sys.executable = "C:/Users/Nome Com Espaco/python.exe"
-confere("hook com aspas quando o caminho tem espaço", so.comando_hook("parada").startswith('"C:/Users/Nome Com Espaco/python.exe" '), so.comando_hook("parada"))
+confere("registro e cache nas pastas do Windows", so.REGISTRO.parent == raiz / "Temp" and so.CACHE == raiz / "AppData/Local/terminal-claude")
+real = sys.executable; sys.executable = r"C:\Users\João da Silva\AppData\Local\Programs\Python\Python312\python.exe"
+h = so.hook("parada")
+confere("hook sem shell: o python e o terminais.py vão inteiros, como argumentos", h == {"type": "command",
+        "command": sys.executable, "args": [str(so.MOTOR), "marcar", "parada"]}, str(h))
 sys.executable = real
+confere("todo hook do --settings vai sem shell", all("args" in x for grupos in terminais.HOOKS["hooks"].values() for g in grupos for x in g["hooks"]))
 
 # --- abrir -------------------------------------------------------------------------------
-chamadas = []
+chamadas, shells = [], []
 PopenReal = subprocess.Popen
+class Terminado:
+    """O processo de mentira que já terminou: é o PowerShell que a janela abre quando o claude sai."""
+    def __enter__(self): return self
+    def __exit__(self, *_): pass
+    def wait(self, timeout=None): return 0
 def popen_falso(argv, **k):
     """Faz o papel do wt.exe: cria a janela e roda nela o que foi pedido (o `rodar`). O resto passa direto."""
+    if argv[0] == "C:/pwsh.exe":
+        shells.append(k.get("cwd"))
+        return Terminado()
     if argv[0] != "C:/wt.exe":
         return PopenReal(argv, **k)
     chamadas.append((argv, k["env"]))
@@ -93,7 +106,7 @@ def popen_falso(argv, **k):
     ambiente = dict(os.environ); os.environ.clear(); os.environ.update(k["env"])   # a janela herda o ambiente do wt
     try: so.rodar(types.SimpleNamespace(base=argv[-1]))
     finally: os.environ.clear(); os.environ.update(ambiente)
-shutil.which = {"wt": "C:/wt.exe", "pwsh": "/usr/bin/true", "claude": str(claude_falso)}.get
+shutil.which = {"wt": "C:/wt.exe", "pwsh": "C:/pwsh.exe", "claude": str(claude_falso)}.get
 subprocess.Popen = popen_falso
 
 prompt_dificil = "Leia \"docs/x.md\" e não use 'aspas' $HOME `data` \\ barra ! ; && | > < % ^ ação 🚀\nsegunda linha"
@@ -114,7 +127,8 @@ confere("a última janela veio para a frente", fake.frente == [2003], str(fake.f
 confere("a trava do registro foi usada", msv.travas >= 1)
 reg = [l.split("\t") for l in so.REGISTRO.read_text(encoding="utf-8").splitlines()]
 confere("registro com hwnd, pid, pasta, sessão e base", len(reg) == 3 and all(c[0].isdigit() and c[1] == str(os.getpid()) and c[3] == "sessao-teste" for c in reg), str(reg))
-saidas = {json.load(open(f))["argv"][json.load(open(f))["argv"].index("--name") + 1]: json.load(open(f)) for f in glob.glob(str(raiz / "saida-*.json"))}
+def le(f): return json.loads(Path(f).read_text(encoding="utf-8"))
+saidas = {le(f)["argv"][le(f)["argv"].index("--name") + 1]: le(f) for f in glob.glob(str(raiz / "saida-*.json"))}
 confere("o claude de cada janela foi chamado", sorted(saidas) == ["A · simples", "B · difícil", "C · sem prompt"], str(sorted(saidas)))
 b = saidas.get("B · difícil", {"argv": [], "env": []})
 confere("prompt difícil chegou idêntico", prompt_dificil in b["argv"])
@@ -125,6 +139,7 @@ confere("claude rodou na pasta da trilha", os.path.realpath(b.get("cwd", "")) ==
 confere("manteve acordado enquanto o claude rodava e soltou depois", fake.acordado[:2] == [True, False], str(fake.acordado))
 estados = sorted(Path(c[5] + ".estado").read_text(encoding="utf-8") for c in reg)
 confere("depois que o claude sai o estado vira encerrada", estados == ["encerrada"] * 3, str(estados))
+confere("e a janela abre um PowerShell na pasta da trilha", len(shells) == 3 and all(os.path.samefile(c, pasta) for c in shells), str(shells))
 
 # --- registro: sem ver a janela, só a esquece se o processo já não for o da trilha ---------
 def no_registro(): return [c[0] for c in terminais.registro_com_trava()]
