@@ -141,13 +141,16 @@ def trava():
 def registro_vivo():
     """Linhas do registro cujas janelas ainda existem; tira as outras do arquivo e do cache."""
     abertas = so.vivas()
-    linhas = []
-    if so.REGISTRO.exists():
-        for linha in so.REGISTRO.read_text(encoding="utf-8").splitlines():
-            c = linha.split("\t")
-            if len(c) >= 6 and c[0].isdigit() and so.viva(abertas, c):
-                linhas.append(c)
-    so.REGISTRO.write_text("".join("\t".join(c) + "\n" for c in linhas), encoding="utf-8")
+    antes = so.REGISTRO.read_text(encoding="utf-8") if so.REGISTRO.exists() else ""
+    linhas = [c for c in (linha.split("\t") for linha in antes.splitlines())
+              if len(c) >= 6 and c[0].isdigit() and so.viva(abertas, c)]
+    agora = "".join("\t".join(c) + "\n" for c in linhas)
+    if agora != antes:
+        # Troca o arquivo de uma vez: o fechar-terminal.sh lê sem a trava e, pego no meio de uma
+        # escrita, regravaria o registro sem as janelas de todo mundo.
+        novo = Path(f"{so.REGISTRO}.novo")
+        novo.write_text(agora, encoding="utf-8")
+        os.replace(novo, so.REGISTRO)
     donos = {c[5] for c in linhas}
     if so.CACHE.is_dir():
         for f in so.CACHE.iterdir():
