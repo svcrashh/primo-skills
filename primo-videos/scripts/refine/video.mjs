@@ -661,6 +661,12 @@ export function contrasteNaCaixa(px, W, H, { x, y, w, h }) {
   return p(0.95) - p(0.05)
 }
 
+// O OCR do Windows dá a caixa justa das letras: 0,73 da fonte numa linha sem haste acima ou sem perna abaixo, 0,93 com
+// as duas (medido no runner do GitHub em 12/10/2026, Arial de 14 a 120 px). O Vision, em que os limiares foram calibrados,
+// mede ~1,15 disso nas mesmas linhas (1,11 a 1,20 conforme a forma): a caixa do Windows cresce 15% em volta do centro.
+const ALTURA_WINDOWS = 1.15
+const naEscalaDoVision = (l) => { const h = Math.round(l.h * ALTURA_WINDOWS); return { ...l, y: Math.round(l.y - (h - l.h) / 2), h } }
+
 /** OCR do sistema: [{arquivo, w, h, linhas:[{texto, x, y, w, h, contraste}]}], px com origem no topo. */
 export async function ocr(imagens) {
   const o = binarioOcr()
@@ -672,9 +678,10 @@ export async function ocr(imagens) {
   for (let i = 0; i < lotes.length; i += 2) res.push(...(await Promise.all(lotes.slice(i, i + 2).map((l) => rodarOcr(o, l)))).flat())
   return res.map((r) => {
     const linhas = r.linhas || []
-    // o OCR do Windows não mede o contraste: sai dos pixels da mesma imagem
-    const px = o.motor === 'windows' && linhas.length ? cinza(r.arquivo, r.w, r.h) : null
-    return { ...r, linhas: px ? linhas.map((l) => ({ ...l, contraste: contrasteNaCaixa(px, r.w, r.h, l) ?? undefined })) : linhas }
+    if (o.motor !== 'windows') return { ...r, linhas }
+    // o OCR do Windows não mede o contraste: sai dos pixels da mesma imagem, na caixa justa que ele deu
+    const px = linhas.length ? cinza(r.arquivo, r.w, r.h) : null
+    return { ...r, linhas: linhas.map((l) => ({ ...naEscalaDoVision(l), ...(px ? { contraste: contrasteNaCaixa(px, r.w, r.h, l) ?? undefined } : {}) })) }
   })
 }
 
