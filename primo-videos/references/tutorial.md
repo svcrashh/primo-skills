@@ -9,6 +9,11 @@ Contract for how a project makes tutorial videos with the skill:
 
 The skill depends on no product: the app is just one of its clients.
 
+A tutorial has no narration by default: the step caption, the soundtrack and the sound effects tell it, and everything
+runs on the machine. With voice (opt-in and paid: only when the person asks for a voiceover and there is an ElevenLabs
+key), `video.voz` turns on a voiceover that sets the time of each step and becomes the caption. What changes is in
+`references/voice-tutorial.md`; this file says "with voice" at each place where it matters.
+
 ## Contents
 1. How it works (and why)
 2. Structure of a tutorials project
@@ -28,7 +33,7 @@ The skill depends on no product: the app is just one of its clients.
 16. Logo as PNG (`MARCA.png`)
 17. Text outside the image
 18. The example computer tutorial series (and the visual variants)
-19. Recipe: tutorial of a web tool on the computer
+19. Recipe: tutorial of a web tool on the computer (and with voice, when asked)
 
 ---
 
@@ -53,6 +58,10 @@ video.mjs ──record.mjs──▶ output/<device>/frames/*.jpg + frames.json +
   - measured: 47 fps with a blurred dialog open and a spinner running, at 2880×1800;
   - a still screen produces no frame: the previous frame is held;
   - without the `chromium` channel, it falls back to `captureScreenshot`, which is much slower (7–20 fps).
+- **Voice, only when asked.** Without `voz` in `video.mjs`, the pipeline above is the whole story. With it, the recorder
+  holds each step for its line (`voice/<device>/narration.json`, generated beforehand by `scripts/voice.mjs`), the
+  caption becomes the spoken line, and `arrange_series.py` mixes the voice over the soundtrack
+  (`references/voice-tutorial.md`, `references/voice-mix.md`).
 
 ## 2. Structure of a tutorials project
 
@@ -64,7 +73,10 @@ video.mjs ──record.mjs──▶ output/<device>/frames/*.jpg + frames.json +
   01-agendar-aula/
     video.mjs                       the definition (section 3) — versioned
     script.md / NOTAS.md           optional, the project's own
-    output/  *.mp4  *-sheet.png      output — do NOT version
+    voice/                          only with voice: <device>/script.json, narration.json, lines/*.wav and
+                                    _takes/ (the paid takes, the cache) — versioned (references/voice-script.md §7)
+    costs.jsonl                     only with voice: what the video spent (costs.json, if its cap was changed; scripts/costs.mjs)
+    output/  *.mp4  *-sheet.png      output — do NOT version (with voice, also <id>-<device>.srt)
 ```
 
 ## 3. Defining a video: `video.mjs`
@@ -89,6 +101,8 @@ const video = {
   avisos: ['.minha-notificacao'],        // extra notice/toast selectors (the defaults already cover role=status etc.)
   semente: 4242,                         // optional: pins the soundtrack (default: derived from id + version)
   cortarEsperas: { acima: 3, antes: 1, depois: 0.6 },  // optional: hard cut in the middle of long waits (loading, publishing)
+  // only with voice (opt-in, paid; references/voice-tutorial.md §1):
+  // voz: { locucao: 'voice/{versao}/narration.json', roteiro: 'voice/{versao}/script.json', perfil: 'calmo' },
   // hooks (all optional) — they run OUTSIDE the recording
   async entrar({ p, v, ap, dados, check }) { /* demo login or test account; never a password in the code */ },
   async preparar({ p, v, dados, check }) { /* creates the data the video needs, through the screen itself or a test API */ },
@@ -101,6 +115,9 @@ if (principal(import.meta.url)) await rodar(video)
 
 - **One task per video.** Three tasks are three videos in the series.
 - `entrar`: use demo mode or a documented test account. A password never goes in the chat or in the code. If you need one, read it from an environment variable.
+- `voz`: leave it out and the video has no voice, exactly as always. Put it in only when the person asked for a
+  voiceover: each version in `versoes` then needs its `voice/<device>/script.json` and, after `voice.mjs generate`, its
+  `narration.json` (`references/voice-tutorial.md` §1–§2).
 
 ## 4. Script API (`g`)
 
@@ -109,6 +126,8 @@ Each call produces one or more events. Every tap goes through the check in secti
 | Call | What it does |
 |---|---|
 | `g.passo('Tap Save.')` | new caption; makes sure the previous one stayed **≥ 3 s** on screen (`leituraMin`) |
+| `g.passo('…', { junto: true })` | with voice: control comes back at the first sound, and the taps run together with the line (without `junto`, it comes back 0.3 s before the end of the sentence). Without voice and in `--check`, it changes nothing |
+| `g.na('word', { antes })` | with voice: waits until `antes` (0.6 s) before the word is said, so the next tap lands on it. Takes a sequence (`'New sale'`); a repeated word takes the next occurrence; an instant already past goes on without waiting; a step without a line does not wait. A word that is not in the line is an error, already in `--check`. Without voice, it does nothing |
 | `g.toque(alvo, { ponto, depois, realce, rapido })` | moves the indicator to the target, checks, taps/clicks **at the checked point** |
 | `g.toque(alvo, { oculto: true })` | the tap of **the person the product serves** (the customer's message, in a sales video): it goes through the same check, but with no finger, ripple, highlight or sound, and the camera does not go to it. On screen you only see what the tap causes. It is not for hiding the hand of whoever operates the product |
 | `g.aponta(alvo, { ms, ponto, realce })` | moves the indicator and highlights, without tapping (to show where something is) |
@@ -132,6 +151,20 @@ Each call produces one or more events. Every tap goes through the check in secti
   the step's taps run in sequence, each with its `depois` (0.7 s) so the viewer sees what it caused. A step
   with many taps and a short sentence leaves the caption hanging around; a long sentence with a single tap leaves the screen still: balance it
   in the script.
+- **With voice, the line sets the step's time** (`references/voice-tutorial.md` §3), and no stretch of more than
+  ~2.5 s goes without voice in the middle of the video. A step with more than one tap uses `junto` + `g.na`, one
+  `g.na` before each tap. The recording warns at the end about the step that went past it, and what to do.
+
+  ```js
+  const nav = g.p.getByRole('navigation')
+  await g.passo('The bottom bar leads to Sales, Network and Wallet.', { junto: true })
+  await g.na('Sales'); await g.toque(nav.getByRole('link', { name: 'Sales' }))
+  await g.na('Network'); await g.toque(nav.getByRole('link', { name: 'Network' }))
+  await g.na('Wallet'); await g.toque(nav.getByRole('link', { name: 'Wallet' }))
+  ```
+  Each tap takes ~1 s from the `g.na` until it lands, plus its `depois` (0.7 s). Words close together in the line
+  (less than ~1.7 s apart) leave the tap late: use `depois: 300` on those taps, or let the sentence breathe between
+  them.
 - `alvo` is a Playwright locator or a text selector. An ambiguous selector is an error (strict mode): be specific.
 - `ponto: { x, y }` taps on a part of the target, relative to its corner.
 - Available in `g`: `p` (the page), `v` (version), `ap` (device), `dados`, `check`, `toque` (true on the phone).
@@ -206,6 +239,9 @@ node <engine>/scripts/tutorial/compose.mjs <folder> [--device v] [--mode draft|f
 journey does not stop at the first item): the series (`series.json`, `brand.js`, `identity.json`, the look), `cinema` against the
 device, the person, the soundtrack's Python (`environment.mjs --fix`); the `ms` of `g.placar`, the label of `g.prova` and each
 `g.antes` (the file, the screen's aspect ratio, the `ms`, the short clip);
+with voice, against the `narration.json` or, before the voice is generated, the `script.json` next to it (the text
+only): the opening line is the title, the closing line is `fimLinhas`, each `g.na` finds its word in the step's line,
+no line is left over;
 `g.antes` only in series version 2.
 
 **Devices** (`scripts/tutorial/devices.mjs`). The series overrides with `"aparelhos": { "computer": { "dsf": 3 } }` in
@@ -231,6 +267,7 @@ video's format when nothing asks for another (section 14).
    - opening (2.4 s: badge, title and the exit to the screen);
    - the real screen in the recording's real time;
    - closing (2.8 s: entrance, closing line, logo).
+   - With voice, the opening and the closing grow when their line needs it (`references/voice-tutorial.md` §3).
    - What each part looks like is the **series' look** (section 13). A series without `"versao"` uses the old design: a dive in the opening, an iris in the closing, a white card that flips.
 3. **Camera** that follows the action:
    - zoom on the target, with a minimum context of half a screen;
@@ -242,7 +279,7 @@ video's format when nothing asks for another (section 14).
    - a small finger (translucent circle with a white ring) that only appears around the taps, shrinks on the tap and releases a short ripple;
    - an arrow cursor on the computer, with a subtle ripple on the click, following the same curve the real mouse made.
 5. **Highlight:** before each tap and during `aponta`/`escolhe`, in the type the series chose (section 13).
-6. **Caption:** outside the camera, with the step label and the sentence, on the side, in the type and with the change the series chose (section 13). The camera centers the action in the part of the frame the caption leaves free.
+6. **Caption:** outside the camera, with the step label and the sentence, on the side, in the type and with the change the series chose (section 13). The camera centers the action in the part of the frame the caption leaves free. With voice, the sentence is the step's line, and the spoken word is highlighted in the brand accent (`references/voice-tutorial.md` §4).
 7. **Sounds** (`sheet.json` generated from the events, in `sounds.py`), each one at the exact sample:
 
    | Event | Sound |
@@ -258,10 +295,13 @@ video's format when nothing asks for another (section 14).
 
    In the old series, the new caption is `virada` (page), the opening is `whoosh` and the closing is `impacto`, as it always was.
 
-8. **Soundtrack:** `arrange_series.py` with the series identity and the **video's seed** (id + version), at the exact duration. `verify.py` has to pass.
+   With voice, tap, click and typing stay at their level under the speech, and the other effects go down 6 dB
+   (`references/voice-mix.md` §4).
+
+8. **Soundtrack:** `arrange_series.py` with the series identity and the **video's seed** (id + version), at the exact duration. `verify.py` has to pass. With voice, the sheet gains the `voz` block and `mix_voz.py` ducks the music under each line: `soundtrack.wav` becomes the final mix (music, effects and voice) at −14 LUFS (`references/voice-mix.md`).
 9. **Render:** draft at 30 fps; final at 60 fps with 4 motion-blur subframes (configurable in `series.json`).
 10. **Collision/safe-area check** (`frames.cjs`) on every render. A covered caption or title, or one outside the area, fails the composition. With `"texto": "fora-da-imagem"`, the whole timeline also goes through the text-outside-the-image check (section 17).
-11. `finalize.mjs` mixes and checks duration, loudness (−18 LUFS) and true peak.
+11. `finalize.mjs` mixes and checks duration, loudness (−18 LUFS) and true peak. With voice, the target is −14 LUFS, and it also checks each line's sync and how far the voice sits above the soundtrack (`references/voice-mix.md` §6).
 12. **Event sheet:** before, during and after each tap, each step change, each choice, the opening and the closing.
 
 ## 8. What comes out
@@ -294,6 +334,9 @@ video's format when nothing asks for another (section 14).
 - `taps-sheet.png`: from the raw recording. For each tap, the frames before, at the instant and after, with the point marked, the target's rectangle and what the check did. **Look at it before composing.**
 - `<id>-<device>-sheet.png`: from the composed video. **Look at it before showing it.**
 - `check.json` (in `--check`): `ok`, `nativos` and events. On failure: `falha.json` and `failure.png`.
+- With voice, also: `voz` in `events.json` (which narration was recorded) and `fala` in each `passo`;
+  `<id>-<device>.srt` next to the video; `output/<device>/comp/audio/voz.wav`; and the `voz` block in the sync sheet
+  (`references/voice-tutorial.md` §5).
 
 ## 9. Identity of the series
 
@@ -310,6 +353,10 @@ The `serie` folder is decided once and holds for every video:
 
 **Each video has its own soundtrack**: the same identity with the video's seed. Key, BPM, progression, motif and groove change. Never the same soundtrack stretched. To prove it: `python series.py --compare folhaA.json folhaB.json wavA wavB`.
 
+**With voice**, the series' `loudness_lufs` (in `series.json` and `identity.json`) only holds without voice: the mix
+levels the soundtrack (music and effects) as a −18 LUFS bed, ducks it under each line and masters the whole at
+−14 LUFS, ceiling −1 dBTP (`references/voice-mix.md` §1).
+
 ## 10. Copying the engine into a repository
 
 To run without the skill installed (another machine, Windows, CI):
@@ -324,6 +371,10 @@ node <skill>/scripts/tutorial/copy.mjs docs/videos/_motor
 - The `video.mjs` files import from `../_motor/scripts/tutorial/record.mjs`.
 - **Windows:** Node 18+, ffmpeg (`winget install --id Gyan.FFmpeg -e`), `npx playwright install chromium` and `py -3 -m venv .venv; .venv\Scripts\pip install numpy scipy`. The scripts use nothing from the Unix shell.
 - **.gitignore:** `*/output/`, `*.mp4`, `*-sheet.png`, `.venv/`.
+- **With voice:** the copy also takes `scripts/tutorial/locucao.mjs` (it is among the tutorial scripts),
+  `assets/audio/mix_voz.py`, `references/voice-tutorial.md` and `references/voice-mix.md`. It does not take
+  `scripts/voice.mjs`: the voice is generated with the skill, and the copy only reads each video's
+  `voice/<device>/narration.json` and `lines/`. Keep `voice/` in git (`references/voice-script.md` §7).
 
 ## 11. Re-recording when the screen changes
 
@@ -331,6 +382,10 @@ node <skill>/scripts/tutorial/copy.mjs docs/videos/_motor
 2. Fix the script. If the tap got covered because of a bug in the app, tell whoever looks after the app.
 3. Record, **look at the tap sheet**, compose, **look at the event sheet**.
 4. The soundtrack does not change if the seed does not change. It only adjusts to the new duration.
+5. **With voice:** a screen change that does not touch the lines needs no new voice. A button that changed its name
+   changes its line: fix the `script.json` and run `voice.mjs generate` again (only that line and its neighbors are
+   paid for, `references/voice-script.md` §7), then record again. The recording is held by the lines, and
+   `compose.mjs` refuses a line that no longer fits its recorded step.
 
 ## 12. Pitfalls
 
@@ -474,6 +529,11 @@ The four sides work in the four formats. How to choose each one:
 | `subir` | the old text leaves upward, the new one comes in from below | short, low `whoosh` | sober, editorial |
 | `corte` | a dry swap at the instant of the step | none (the cut is the accent) | night, hard cut, pace |
 
+**With voice**, the caption keeps the type, side, label and change the series chose. What changes is the text: each
+step's caption is its line, and the spoken word is highlighted, one at a time, in the brand accent (or as a marker pen
+when the accent does not read over the caption's background). Only the color changes, and the collision and
+safe-area check applies to the line's text (`references/voice-tutorial.md` §4).
+
 ### selo: the series label above the title, in the opening
 
 Fields: `tipo` and `cor` (except in `nenhum` and `proprio`). The text is the `rotulo` from `series.json`. Optional in `pilula`:
@@ -565,6 +625,7 @@ With the touch device (`phone`, `phone-largo`) in 16:9 or in 9:16, the engine do
 - **16:9:** in detail, the screen cut at the top and bottom fades out (never a half line stuck to the
   edge); in the wide shot, none;
 - **live camera:** while the caption is being read and the hand waits, the camera breathes slowly. The frame is never still.
+  With voice, the same holds while the voice speaks and the hand waits.
 
 Do not copy the engine to tweak this: fix it here and copy again with `scripts/tutorial/copy.mjs`.
 
@@ -606,6 +667,7 @@ pessoa: {
 ```
 
 - **entrada** (with the `pouso` opening): the end of the take runs **behind the arriving 3D device**, and blurs quickly.
+  In a narrated video, the person's speech can carry on over it ("Look at this" while the phone comes in).
 - **saida:** the recording gets `volta` s at the end, frozen on the last frame: the device drops out of the frame spinning, the
   scoreboard rises, and the 1st frame of the next take comes from blur into focus.
 - **fecho:** the end of that take runs under the closing's entrance (`iris`, `cortina`, `deslizar`), and the logo assembles
@@ -872,6 +934,10 @@ What the series looks like:
   brand's logo, alone; a sentence or a slogan (`ordem`, section 13) only when the brand has one and the person wants it.
 - Sober soundtrack, 112–118 BPM, role `protagonista`, restrained (low density), −14 LUFS: a video without voice. At −14
   the WAV's peak ceiling goes down to −2.5 dBTP (the MP4's AAC was going over the −0.5 of `finalize.mjs`).
+  With voice, the same identity becomes the bed: −18 LUFS, ducked under each line, the whole mastered at −14 LUFS
+  with a −1 dBTP ceiling (section 9; `references/voice-mix.md` §1).
+- With voice: the closing shows only the logo, with no sentence, so the voice script leaves out the closing line (a
+  closing line has to say `fimLinhas`, which this closing does not show). The opening line says the title.
 - Contrast is checked against `MARCA.pares` (the text pairs the brand lists): caption, label and badge only in an AAA
   or AA pair; AA18 only on large text (title, section card).
 
@@ -993,3 +1059,44 @@ After the video is approved, record its direction (`variety.mjs record --brand <
    the refinement at PASSED, the sheet looked at, and the closing with only the logo. An exception in the drawing (`PAGE ERROR`) fails the composition.
 7. **After approval:** `node $SKILL/scripts/variety.mjs record --brand <brand> --direction _serie/direction.json --video
    <mp4> --title "…"` (section 18, variants).
+
+### With voice (only when the person asks for it)
+
+The steps above make the tutorial without voice, with no API and nothing paid, and that stays the default. When the
+person asks for a voiceover, the same recipe gains the steps below, in this order (1 to 5 before the recording of step
+5 above, 6 to 8 with it and after it). The voice is paid (ElevenLabs): the key is `ELEVENLABS_API_KEY` or
+`~/.claude/secrets/elevenlabs.env`, and without it `voice.mjs` prints the command for the person to save it in their own
+terminal. Never paste a key into the chat (`references/voice-choice.md` §12). For the person: up to about 900 credits
+per minute of narration, against a cap per video (1,500 voice credits by default).
+
+1. **Progress with the voice stage**, if you track it: `node $SKILL/scripts/progress.mjs start 01-<task> --voice`.
+2. **The voice script**, one per version: `01-<task>/voice/computer/script.json`, one line `{ "passo": n }` per
+   `g.passo`, in order; the opening line says `video.titulo` and the closing line says `fimLinhas` (with the example
+   series' logo-only closing, no closing line: section 18). How to write each line: `references/voice-script.md`
+   §2–§6. Then, with no network: `node $SKILL/scripts/voice.mjs review 01-<task>/voice/computer/script.json`.
+3. **`voz` in the `video.mjs`** (section 3), and the script written for the voice: one sentence per step, the button's
+   name as it is on screen, `{ junto: true }` + `g.na` in a step with more than one tap (section 4).
+   `node 01-<task>/video.mjs --check` already checks the lines against the script, before any credit.
+4. **Approval, then the voice:** the approval table (`references/voice-script.md` §5); after the yes, three candidates
+   reading the real line (`voice.mjs samples`, paid; `references/voice-choice.md` §1–§5). The chosen one goes into the
+   `voz` of the `script.json`.
+5. **Generate** (paid):
+   ```sh
+   node $SKILL/scripts/voice.mjs generate 01-<task>/voice/computer/script.json --out 01-<task>/voice/computer
+   ```
+   Exit code 3: an AI tic in a new line, nothing spent (fix the line; `--accept-text` only when the person wants it
+   that way on purpose). Exit code 5: over the video's cap, nothing spent: ask the person, and only with their yes run
+   `node $SKILL/scripts/costs.mjs cap 01-<task> --voice-credits <n>`.
+6. **Record and compose** as in step 5 above. The recording warns about each stretch of more than ~2.5 s without
+   voice: fix it before composing (section 4).
+7. **Before showing**, on top of step 6:
+   - `voice.mjs validate <narration.json>` (no network);
+   - `voice.mjs listen <narration.json> --words "…"` (the risk words) and `voice.mjs check <narration.json>` (forced
+     alignment: each word within ±80 ms of where the caption lights up), both paid;
+   - on each format's MP4, `voice.mjs listen --mix` (`references/voice-mix.md` §6);
+   - on the event sheet, the highlighted word is the one being said;
+   - `refine.mjs` on the folder also fixes the narration's word times by the real pauses and trims leftover silence
+     (the original stays in `narration.before-refine.json`): when it reports a fix, compose again. With more than one
+     version with voice, pass `--narration voice/<device>/narration.json`.
+8. **After each paid call:** `node $SKILL/scripts/costs.mjs board 01-<task>`, and what it prints goes as the `costs`
+   patch on the review board, when there is one (`recipes/board.md`).
