@@ -233,8 +233,8 @@ path** (below); reading everything before acting is what ate the first minutes.
 Below, `progress` is `node $SKILL/scripts/progress.mjs` (write the whole command: `P="node …"` followed by `progress now` does not run in zsh); each of its commands prints the % line that goes to the chat.
 
 1. **The kit:** `node $SKILL/scripts/kit.mjs new-video "<product>" <new folder> --request "<the request, in the
-   owner's words>"`. It creates the folder with `video.mjs`, `recording/` (the base: sign-in, language, tours, write
-   barrier, sample data), the series, the seed,
+   owner's words>"`, with `--voice` only when the person said yes to a voiceover. It creates the folder with
+   `video.mjs`, `recording/` (the base: sign-in, language, tours, write barrier, sample data), the series, the seed,
    the `REQUEST.md` with these steps already filled in with the paths, and starts the stopwatch (target 10 min).
    `kit.mjs show` says what the kit has. The environment is already set (`node $SKILL/scripts/environment.mjs
    --fix`, once per machine).
@@ -242,17 +242,20 @@ Below, `progress` is `node $SKILL/scripts/progress.mjs` (write the whole command
    `fechamento` = the end); the base thesis comes from the kit, only the proof scene changes. Ask the owner only about
    what, if wrong, throws the preview away; everything else is a one-line assumption. `progress done <folder> script`.
 
-   **With a voiceover** (the person said yes): a kit that kept an approved voice already set the folder up with it
-   (`voice/v1/script.json` with the voice, the takes cache, `voz` in `video.mjs` and the `voice` stage on the
-   stopwatch), and the lines go in `voice/v1/script.json` instead of `texts.json`, with the same ids.
+   **With a voiceover** (the person said yes, and step 1 took `--voice`): the folder comes with
+   `voice/v1/script.json` in place of `texts.json`, `voz` in `video.mjs` and the `voice` stage on the stopwatch, and
+   the lines go in `voice/v1/script.json`, with the same ids (`REQUEST.md` says so, with the voice commands).
    `node $SKILL/scripts/voice.mjs review <folder>/voice/v1/script.json --seconds <s>` exits with 0 errors; the script
-   stage closes after the approval (step 3). A kit with no voice: the same lines also go in `voice/v1/script.json`, the
-   voice is chosen as in "Voiceover", below, and `video.mjs` gets the `voz` block (`references/voice-tutorial.md` §1).
-   A kit with a voice and a person who wants none this time: take the `voz` line out of `video.mjs` and
-   `progress skip <folder> voice` (the lines in `voice/v1/script.json` stay as the on-screen texts).
+   stage closes after the approval (step 3). A kit that kept an approved voice puts it in the script, with the takes
+   cache. A kit with no voice leaves `voz` out of the script: the voice is chosen as in "Voiceover", below, before
+   `generate`.
+   **The voice is the video's choice, never the kit's:** without `--voice` (or with `--no-voice`) the video has no
+   voice even from a kit that holds one, and the command says the voice was left out. The folder was created the
+   other way: `new-video` again in a new folder, with the right flag (`references/kit.md`).
 3. **With a voiceover, the one question to the owner:** the script approved in a table (the board's Script phase, or
-   the table in the `preview` of the "Approve" option of `AskUserQuestion`), with the kit's voice already proposed, the
-   estimated seconds and credits, and what this video can still spend. `progress done <folder> script`.
+   the table in the `preview` of the "Approve" option of `AskUserQuestion`), with the kit's voice already proposed
+   when it has one, the estimated seconds and credits, and what this video can still spend. `progress done <folder>
+   script`.
 4. **The journey** in `recording/journey.mjs` (`progress now <folder> recording`), with `g.antes` on the what's-new step
    (`references/tutorial.md`, the recorder table, when you need the API). **With a voiceover, the voice in parallel**
    (`progress now <folder> voice`): `node $SKILL/scripts/voice.mjs account` (free: what the account has left, and
@@ -329,7 +332,7 @@ final at 60 fps.
    - from the preview to the final: preview refine 10 (what runs alongside it), requested adjustments 15, final render 45,
      final refine and critic 20, delivery 10.
 
-   `kit.mjs new-video` already starts the stopwatch (`start --kit`, plus `--voice` when the kit has a voice). Without a
+   `kit.mjs new-video` already starts the stopwatch (`start --kit`, plus `--voice` when it took `--voice`). Without a
    kit, start with `node $SKILL/scripts/progress.mjs start <video folder> [--new] [--voice] [--skip recording]` (`--voice`
    only in a narrated video: it puts the `voice` stage on the scale); parallel stages (voice and recording)
    can be in `now` together; for each stage that starts, `now <folder> <stage> [--remaining <min>]`; for each one that
@@ -834,7 +837,7 @@ a voiceover, also another script, approved again, and a voice native to that lan
 
 | File | When to use it |
 |---|---|
-| `scripts/kit.mjs` + `references/kit.md` | **first, always**: `new-video` starts the ready video from the product's kit (the fast path, at the top); `save` stores the kit of an approved video; `show` and `list` |
+| `scripts/kit.mjs` + `references/kit.md` | **first, always**: `new-video` starts the ready video from the product's kit (the fast path, at the top; `--voice` when the video has a voiceover); `save` stores the kit of an approved video; `show` and `list` |
 | `scripts/environment.mjs --fix` | once per machine: Playwright and the soundtrack's Python in `~/.videostudio/environment.json`; it also says whether the two optional keys exist (ElevenLabs, OpenAI), never their value |
 | `scripts/reading.mjs` + `references/reading.md` + `references/brand.md` | **a brand without a kit**: collect the facts of the product's brand from its repository, then write the reading (the seven sections) before any image or sound decision |
 | `scripts/brand.mjs` | the brand's options (`show`, `set`, `list`): opening logo, closing logo, slogan, call to action, language |
