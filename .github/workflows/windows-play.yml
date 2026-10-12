@@ -23,26 +23,21 @@ jobs:
       matrix:
         node: ['18', 'lts/*']
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-node@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: ${{ matrix.node }}
       - name: ffmpeg pelo winget
         shell: pwsh
         run: |
-          Get-Command ffmpeg -ErrorAction SilentlyContinue | Format-List Source
-          $t = Measure-Command { winget install ffmpeg --accept-source-agreements --accept-package-agreements --disable-interactivity | Out-Host }
-          "winget levou $([int]$t.TotalSeconds) s, saiu com $LASTEXITCODE"
-          $novo = @([Environment]::GetEnvironmentVariable('Path', 'Machine'), [Environment]::GetEnvironmentVariable('Path', 'User')) -join ';' -split ';' | Where-Object { $_ -and ($env:Path -split ';') -notcontains $_ }
-          "no PATH do registro e nao no desta sessao:"; $novo
-          $novo | Add-Content $env:GITHUB_PATH
-      - name: o que o PATH acha
-        shell: pwsh
-        run: |
-          Get-Command ffmpeg, ffprobe | Format-List Name, Source
-          Get-Item (Get-Command ffmpeg).Source | Format-List FullName, LinkType, Target, Length
-          ffmpeg -hide_banner -version | Select-Object -First 1
-          node --version
+          winget install ffmpeg --accept-source-agreements --accept-package-agreements --disable-interactivity | Select-String -Pattern 'Found|alias|Path|installed'
+          "usuario: " + [Environment]::GetEnvironmentVariable('Path', 'User')
+          "maquina: " + [Environment]::GetEnvironmentVariable('Path', 'Machine')
+          "sessao: $env:Path"
+          Get-ChildItem "$env:LOCALAPPDATA\Microsoft\WinGet\Links" -ErrorAction SilentlyContinue | Format-Table Name, LinkType, Target -AutoSize
+          Get-ChildItem "$env:LOCALAPPDATA\Microsoft\WinGet\Packages" -ErrorAction SilentlyContinue | Format-Table Name -AutoSize
+          Get-ChildItem "$env:ProgramFiles\WinGet\Links", "$env:ProgramFiles\WinGet\Packages" -ErrorAction SilentlyContinue | Format-Table FullName, LinkType -AutoSize
+          "$env:LOCALAPPDATA\Microsoft\WinGet\Links", "$env:ProgramFiles\WinGet\Links" | Add-Content $env:GITHUB_PATH
       - name: testes da play
         shell: pwsh
         run: node --test play/tests/play.test.mjs play/tests/requisitos.test.mjs
@@ -50,42 +45,27 @@ jobs:
   explorar:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v5
-      - name: sistema
+      - name: o python da Microsoft Store
         shell: pwsh
         run: |
-          [Environment]::OSVersion.VersionString
-          $PSVersionTable.PSVersion.ToString()
-          winget --version
-          Get-Command node, python, python3, py -ErrorAction SilentlyContinue | Format-Table Name, Source
-          Get-ChildItem "$env:LOCALAPPDATA\Microsoft\WindowsApps" -ErrorAction SilentlyContinue | Select-Object Name, Length, LinkType
-          "TEMP=$env:TEMP"; "USERPROFILE=$env:USERPROFILE"; "LOCALAPPDATA=$env:LOCALAPPDATA"
-      - name: os ids do winget
-        shell: pwsh
-        run: |
-          winget show ffmpeg --accept-source-agreements --disable-interactivity
-          winget show OpenJS.NodeJS.LTS --disable-interactivity | Select-Object -First 12
-          winget show Python.Python.3.12 --disable-interactivity | Select-Object -First 12
-          winget show Microsoft.WindowsTerminal --disable-interactivity | Select-Object -First 6
-      - name: python pelo winget
-        shell: pwsh
-        run: |
-          $antes = [Environment]::GetEnvironmentVariable('Path', 'User') + ';' + [Environment]::GetEnvironmentVariable('Path', 'Machine')
-          winget install Python.Python.3.12 --accept-source-agreements --accept-package-agreements --disable-interactivity | Out-Host
+          $semPython = ($env:Path -split ';' | Where-Object { $_ -and -not (Test-Path (Join-Path $_ 'python.exe')) }) + "$env:LOCALAPPDATA\Microsoft\WindowsApps"
+          $env:Path = $semPython -join ';'
+          Get-Command python -All | Format-Table Name, Source, CommandType
+          & python -c "import sys; print(sys.version)"
           "saiu com $LASTEXITCODE"
-          $depois = [Environment]::GetEnvironmentVariable('Path', 'User') + ';' + [Environment]::GetEnvironmentVariable('Path', 'Machine')
-          "entrou no PATH:"; ($depois -split ';') | Where-Object { $_ -and ($antes -split ';') -notcontains $_ }
+          & python --version
+          "saiu com $LASTEXITCODE"
       - name: console no 5.1
         shell: powershell
         run: |
-          $PSVersionTable.PSVersion.ToString()
-          "OutputEncoding=$([Console]::OutputEncoding.WebName) OEM=$([Console]::OutputEncoding.CodePage)"
+          "OutputEncoding=$([Console]::OutputEncoding.WebName) InputEncoding=$([Console]::InputEncoding.WebName) ACP=$([Text.Encoding]::Default.WebName)"
+          & node -e "console.log('node antes:', String.fromCodePoint(0xe1, 0x2714, 0x2716, 0x25cb))"
           try { [Console]::OutputEncoding = [System.Text.Encoding]::UTF8; "trocou para $([Console]::OutputEncoding.WebName)" } catch { "nao deu: $_" }
-          & node -e "console.log('node direto: áudio ✔ ✖ ○')"
+          & node -e "console.log('node depois:', String.fromCodePoint(0xe1, 0x2714, 0x2716, 0x25cb))"
           Add-Type -AssemblyName PresentationCore
           foreach ($f in 'consola.ttf', 'lucon.ttf', 'CascadiaMono.ttf', 'CascadiaCode.ttf', 'seguisym.ttf') {
             $p = Join-Path $env:WINDIR "Fonts\$f"
             if (-not (Test-Path $p)) { "$f nao existe"; continue }
             $g = New-Object System.Windows.Media.GlyphTypeface ([uri]$p)
-            "$f " + ((0x2714, 0x2716, 0x25CB, 0x2014, 0xE1) | ForEach-Object { '{0:X4}={1}' -f $_, $g.CharacterToGlyphMap.ContainsKey($_) }) -join ' '
+            $f + ' ' + ((0x2714, 0x2716, 0x25CB, 0x2014, 0xE1 | ForEach-Object { '{0:X4}={1}' -f $_, $g.CharacterToGlyphMap.ContainsKey($_) }) -join ' ')
           }

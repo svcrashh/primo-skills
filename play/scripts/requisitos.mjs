@@ -9,8 +9,17 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 export const arquivoDaChave = () => path.join(os.homedir(), '.claude', 'secrets', 'openai.env')
+/** O caminho do arquivo da chave como a pessoa digita naquele sistema. */
+export const arquivoDaChaveMostrado = (so = process.platform) => (so === 'win32' ? '%USERPROFILE%\\.claude\\secrets\\openai.env' : '~/.claude/secrets/openai.env')
 
-const lerTexto = (f) => { try { return fs.readFileSync(f, 'utf8') } catch { return null } }
+// No Windows o arquivo pode vir em UTF-16: é o que o "echo ... > arquivo" do PowerShell 5.1 grava. O Bloco de Notas grava
+// UTF-8, às vezes com BOM, e com CRLF; a leitura da linha da chave já aceita os dois.
+function lerTexto(f) {
+  let b
+  try { b = fs.readFileSync(f) } catch { return null }
+  if (b[0] === 0xff && b[1] === 0xfe) return b.subarray(2).toString('utf16le')
+  return b.toString('utf8').replace(/^﻿/, '')
+}
 
 /** A chave da OpenAI ({ valor, onde }), ou null. A variável de ambiente vem antes do arquivo. */
 export function lerChave(env = process.env) {
@@ -88,7 +97,7 @@ export function relatorio({ env = process.env, so = process.platform, versaoNode
   else item(false, 'ffmpeg (o ffprobe vem junto): converte o áudio e tira os quadros do vídeo', comoInstalarFfmpeg(so, env))
 
   const arq = arquivoDaChave()
-  const mostrado = so === 'win32' ? '%USERPROFILE%\\.claude\\secrets\\openai.env' : '~/.claude/secrets/openai.env'
+  const mostrado = arquivoDaChaveMostrado(so)
   const chave = lerChave(env)
   if (chave?.onde === 'na variável OPENAI_API_KEY') item(true, 'chave da OpenAI (na variável OPENAI_API_KEY)')
   else if (chave) {

@@ -7,10 +7,12 @@ import os from 'node:os'
 import path from 'node:path'
 import { spawnSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
-import { relatorio } from '../scripts/requisitos.mjs'
+import { relatorio, lerChave } from '../scripts/requisitos.mjs'
 
 const SKILL = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const CHAVE = `sk-teste-${Math.random().toString(36).slice(2)}${Math.random().toString(36).slice(2)}`
+const WIN = process.platform === 'win32'
+const MOSTRADO = WIN ? '%USERPROFILE%\\.claude\\secrets\\openai.env' : '~/.claude/secrets/openai.env'
 let base, link, comFfmpeg, semNada
 
 before(() => {
@@ -22,7 +24,8 @@ before(() => {
   semNada = path.join(base, 'vazio')
   fs.mkdirSync(comFfmpeg)
   fs.mkdirSync(semNada)
-  for (const p of ['ffmpeg', 'ffprobe']) {
+  // no Windows o programa só conta com a extensão (PATHEXT): ffmpeg.exe
+  for (const p of WIN ? ['ffmpeg.exe', 'ffprobe.exe'] : ['ffmpeg', 'ffprobe']) {
     fs.writeFileSync(path.join(comFfmpeg, p), '#!/bin/sh\nexit 0\n')
     fs.chmodSync(path.join(comFfmpeg, p), 0o755)
   }
@@ -41,9 +44,19 @@ function casa(nome, arquivoDaChave = null, modo = 0o600) {
   return h
 }
 
+/** Roda fn com a casa de mentira: os.homedir() lê o HOME no Mac e o USERPROFILE no Windows, então vão os dois. */
+function naCasa(h, fn) {
+  const antes = { HOME: process.env.HOME, USERPROFILE: process.env.USERPROFILE }
+  process.env.HOME = process.env.USERPROFILE = h
+  try { return fn() } finally {
+    for (const [k, v] of Object.entries(antes)) { if (v == null) delete process.env[k]; else process.env[k] = v }
+  }
+}
+
 function rodar(home, PATH, extra = {}) {
   const t0 = Date.now()
-  const r = spawnSync(process.execPath, [path.join(link, 'scripts', 'requisitos.mjs')], { encoding: 'utf8', env: { HOME: home, USERPROFILE: home, PATH, ...extra } })
+  const env = { HOME: home, USERPROFILE: home, PATH, ...(process.env.SystemRoot ? { SystemRoot: process.env.SystemRoot } : {}), ...extra }
+  const r = spawnSync(process.execPath, [path.join(link, 'scripts', 'requisitos.mjs')], { encoding: 'utf8', env })
   return { ...r, ms: Date.now() - t0 }
 }
 
@@ -99,12 +112,29 @@ test('com a chave no arquivo (com export e aspas): ✔, sem mostrar a chave', ()
   const r = rodar(h, comFfmpeg)
   assert.equal(r.status, 0, r.stdout)
   confereFormato(r.stdout)
-  assert.match(r.stdout, /^✔ chave da OpenAI \(em ~\/\.claude\/secrets\/openai\.env\)$/m)
+  assert.ok(r.stdout.split('\n').includes(`✔ chave da OpenAI (em ${MOSTRADO})`), r.stdout)
   assert.doesNotMatch(r.stdout, /chmod/, 'arquivo 600 em pasta 700: nada a avisar')
   assert.ok(!r.stdout.includes(CHAVE.slice(-10)))
 })
 
-test('arquivo da chave aberto para outros usuários: avisa como fechar', { skip: process.platform === 'win32' }, () => {
+// O Bloco de Notas grava UTF-8 com CRLF, às vezes com BOM; o "echo ... > arquivo" do PowerShell 5.1 grava UTF-16 com BOM.
+test('arquivo da chave gravado no Windows (BOM, CRLF, UTF-16): ✔', () => {
+  const formas = {
+    'bloco-de-notas': Buffer.from(`OPENAI_API_KEY=${CHAVE}\r\n`, 'utf8'),
+    'bloco-de-notas-bom': Buffer.from(`\uFEFFOPENAI_API_KEY=${CHAVE}\r\n`, 'utf8'),
+    'bom-sem-quebra': Buffer.from(`\uFEFFOPENAI_API_KEY=${CHAVE}`, 'utf8'),
+    'powershell-5': Buffer.concat([Buffer.from([0xff, 0xfe]), Buffer.from(`OPENAI_API_KEY=${CHAVE}\r\n`, 'utf16le')]),
+  }
+  for (const [nome, bytes] of Object.entries(formas)) {
+    const h = casa(`casa-${nome}`, bytes)
+    const r = rodar(h, comFfmpeg)
+    assert.equal(r.status, 0, `${nome}:\n${r.stdout}`)
+    assert.ok(r.stdout.split('\n').includes(`✔ chave da OpenAI (em ${MOSTRADO})`), `${nome}:\n${r.stdout}`)
+    assert.equal(naCasa(h, () => lerChave({}))?.valor, CHAVE, nome)
+  }
+})
+
+test('arquivo da chave aberto para outros usuários: avisa como fechar', { skip: WIN }, () => {
   const h = casa('casa-aberta', `OPENAI_API_KEY=${CHAVE}\n`, 0o644)
   const r = rodar(h, comFfmpeg)
   assert.equal(r.status, 0)
@@ -130,11 +160,8 @@ test('não grava nem cria nada', () => {
 })
 
 test('no Windows o texto fala de winget, do PowerShell e da pasta do usuário', () => {
-  const homeDeVerdade = process.env.HOME
-  process.env.HOME = casa('casa-windows')
-  const { texto, falta } = relatorio({ so: 'win32', env: { PATH: '' } })
-  const velho = relatorio({ so: 'win32', env: { PATH: '' }, versaoNode: '16.20.0' }).texto
-  process.env.HOME = homeDeVerdade
+  const { texto, falta } = naCasa(casa('casa-windows'), () => relatorio({ so: 'win32', env: { PATH: '' } }))
+  const velho = naCasa(casa('casa-windows-velho'), () => relatorio({ so: 'win32', env: { PATH: '' }, versaoNode: '16.20.0' }).texto)
   assert.equal(falta, true)
   confereFormato(texto)
   for (const t of ['winget install ffmpeg', 'feche e abra o PowerShell', 'notepad "$env:USERPROFILE\\.claude\\secrets\\openai.env"', 'New-Item -ItemType Directory']) {

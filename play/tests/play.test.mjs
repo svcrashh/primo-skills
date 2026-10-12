@@ -12,6 +12,7 @@ import { candidatosDoCaminho, resolverCaminho, gradeDaFolha, planejarPartes, jun
 
 const SKILL = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const CHAVE = `sk-teste-${Math.random().toString(36).slice(2)}${Math.random().toString(36).slice(2)}`
+const WIN = process.platform === 'win32'
 const saidas = [] // tudo que a play imprimiu, para a conferência da chave no fim
 
 let base, home, link, midia, api
@@ -58,20 +59,26 @@ function play(args, { env = {}, semChave = false } = {}) {
   return new Promise((resolve) => {
     const p = spawn(process.execPath, [path.join(link, 'scripts', 'play.mjs'), ...args], { env: ambiente })
     let stdout = '', stderr = ''
+    p.stdout.setEncoding('utf8')
+    p.stderr.setEncoding('utf8')
     p.stdout.on('data', (d) => { stdout += d })
     p.stderr.on('data', (d) => { stderr += d })
     p.on('close', (code) => { saidas.push(stdout, stderr); resolve({ code, stdout, stderr }) })
   })
 }
-const cacheDe = () => (process.platform === 'win32' ? path.join(home, 'AppData', 'Local', 'play')
+const cacheDe = () => (WIN ? path.join(home, 'AppData', 'Local', 'play')
   : process.platform === 'darwin' ? path.join(home, 'Library', 'Caches', 'play') : path.join(home, '.cache', 'play'))
 
 test('o caminho colado em todas as formas', async () => {
   const abs = m('Meu áudio (1).opus')
+  // no Mac o Terminal cola o espaço como "\ "; no Windows a barra é separador, e o caminho chega também com barra normal
   const escapado = abs.replace(/([ ()])/g, '\\$1')
-  const formas = [abs, `'${abs}'`, `"${abs}"`, `“${abs}”`, `  ${abs} \n`, `'${abs}'\n`, escapado, ` ${escapado}\n`, pathToFileURL(abs).href]
+  const barraNormal = abs.replace(/\\/g, '/')
+  const formas = [abs, `'${abs}'`, `"${abs}"`, `“${abs}”`, `  ${abs} \n`, `'${abs}'\n`, pathToFileURL(abs).href,
+    ...(WIN ? [barraNormal, `"${barraNormal}"`] : [escapado, ` ${escapado}\n`])]
   for (const f of formas) assert.equal(resolverCaminho(f), abs, `forma: ${JSON.stringify(f)}`)
   assert.equal(resolverCaminho(`~/${path.relative(base, abs)}`, { home: base }), abs, 'com ~')
+  if (WIN) assert.equal(resolverCaminho(`~\\${path.relative(base, abs)}`, { home: base }), abs, 'com ~ e barra invertida')
   assert.equal(resolverCaminho(path.join(midia, 'não existe.opus')), null)
   // caminho do Windows: a barra é separador, não escape
   assert.deepEqual(candidatosDoCaminho('C:\\Users\\Ana\\Desktop\\audio 1.opus'), ['C:\\Users\\Ana\\Desktop\\audio 1.opus'])
@@ -84,8 +91,8 @@ test('o caminho colado em todas as formas', async () => {
   assert.equal(partido.code, 0, partido.stderr)
   assert.match(partido.stdout, /^Meu áudio \(1\)\.opus · áudio · 0:05/)
   assert.equal(api.pedidos.at(-1).nomeArquivo, 'audio.ogg', 'o opus vai como está, só no contêiner ogg')
-  const comEscape = await play([escapado])
-  assert.equal(comEscape.code, 0, comEscape.stderr)
+  const outraForma = await play([WIN ? barraNormal : escapado])
+  assert.equal(outraForma.code, 0, outraForma.stderr)
   assert.equal(api.pedidos.length, 1, 'a segunda vez vem do cache')
 })
 
@@ -260,7 +267,8 @@ test('sem chave: código 3, a explicação de como criar, e nenhum pedido', asyn
   const r = await play([m('Meu áudio (1).opus'), '--refazer'], { semChave: true })
   assert.equal(r.code, 3)
   assert.equal(api.pedidos.length, 0)
-  for (const t of ['platform.openai.com', '"API keys"', '"Billing"', 'separada da assinatura do ChatGPT', '~/.claude/secrets/openai.env', 'não cole na conversa']) {
+  const pasta = WIN ? '$env:USERPROFILE\\.claude\\secrets\\openai.env' : '~/.claude/secrets/openai.env'
+  for (const t of ['platform.openai.com', '"API keys"', '"Billing"', 'separada da assinatura do ChatGPT', pasta, 'não cole na conversa']) {
     assert.ok(r.stderr.includes(t), `falta "${t}" em:\n${r.stderr}`)
   }
 
@@ -275,6 +283,11 @@ test('sem chave: código 3, a explicação de como criar, e nenhum pedido', asyn
   const doArquivo = await play([m('Meu áudio (1).opus'), '--refazer'], { semChave: true })
   assert.equal(doArquivo.code, 0, doArquivo.stderr)
   assert.equal(api.pedidos.at(-1).autorizacao, `Bearer ${CHAVE}`)
+  // como o Bloco de Notas pode salvar: com BOM e CRLF
+  fs.writeFileSync(path.join(home, '.claude', 'secrets', 'openai.env'), `\uFEFFOPENAI_API_KEY=${CHAVE}\r\n`)
+  const doBlocoDeNotas = await play([m('Meu áudio (1).opus'), '--refazer'], { semChave: true })
+  assert.equal(doBlocoDeNotas.code, 0, doBlocoDeNotas.stderr)
+  assert.equal(api.pedidos.at(-1).autorizacao, `Bearer ${CHAVE}`)
   fs.rmSync(path.join(home, '.claude'), { recursive: true, force: true })
 })
 
@@ -284,6 +297,7 @@ test('erros da API dizem o que fazer', async () => {
   assert.equal(recusada.code, 3)
   assert.match(recusada.stderr, /A OpenAI recusou a chave \(401: Incorrect API key provided: \[chave\]\.\)/)
   assert.match(recusada.stderr, /"API keys"/)
+  assert.ok(recusada.stderr.includes(WIN ? '%USERPROFILE%\\.claude\\secrets\\openai.env' : '~/.claude/secrets/openai.env'), recusada.stderr)
 
   api.estado.erro = { status: 429, corpo: { error: { message: 'You exceeded your current quota, please check your plan and billing details.', type: 'insufficient_quota', code: 'insufficient_quota' } } }
   const semCredito = await play([m('Meu áudio (1).opus'), '--refazer'])
@@ -301,7 +315,7 @@ test('erros da API dizem o que fazer', async () => {
   const semFfmpeg = await play([m('Meu áudio (1).opus')], { env: { PATH: vazio } })
   assert.equal(semFfmpeg.code, 1)
   assert.match(semFfmpeg.stderr, /Não achei o ffprobe nesta máquina/)
-  assert.match(semFfmpeg.stderr, process.platform === 'win32' ? /winget install ffmpeg/ : process.platform === 'darwin' ? /brew install ffmpeg/ : /apt install ffmpeg/)
+  assert.match(semFfmpeg.stderr, WIN ? /winget install ffmpeg/ : process.platform === 'darwin' ? /brew install ffmpeg/ : /apt install ffmpeg/)
 
   const uso = await play([m('tela.mp4'), '--quadros', 'muitos'])
   assert.equal(uso.code, 2)

@@ -20,7 +20,7 @@ import crypto from 'node:crypto'
 import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
 import { fileURLToPath } from 'node:url'
-import { lerChave, passosDaChave, comoInstalarFfmpeg } from './requisitos.mjs'
+import { lerChave, passosDaChave, comoInstalarFfmpeg, arquivoDaChaveMostrado } from './requisitos.mjs'
 
 export const MODELO_PADRAO = 'gpt-4o-transcribe-diarize'
 export const LIMITE_LONGO_SEG = 30 * 60
@@ -280,7 +280,7 @@ async function pedirTranscricao(chave, arquivo, { modelo, idioma }) {
     const msg = semChave(j?.error?.message ?? `HTTP ${r.status}`, chave)
     const codigo = String(j?.error?.code ?? j?.error?.type ?? '')
     if (r.status === 401) {
-      throw new Falha(`A OpenAI recusou a chave (401: ${msg}). Crie outra em platform.openai.com, em "API keys", e troque a linha OPENAI_API_KEY=… no arquivo ~/.claude/secrets/openai.env (ou a variável OPENAI_API_KEY).`, 3)
+      throw new Falha(`A OpenAI recusou a chave (401: ${msg}). Crie outra em platform.openai.com, em "API keys", e troque a linha OPENAI_API_KEY=… no arquivo ${arquivoDaChaveMostrado()} (ou a variável OPENAI_API_KEY).`, 3)
     }
     if (/insufficient_quota|billing/i.test(`${codigo} ${msg}`)) {
       throw new Falha(`A conta da API da OpenAI está sem crédito (${msg}). Ponha crédito em platform.openai.com, em "Billing": a API é paga por uso e é separada da assinatura do ChatGPT.`, 3)
