@@ -83,7 +83,10 @@ const dirVoz = path.join(proj, 'voice', 'v1')
 const arqLoc = path.join(dirVoz, 'narration.json')
 const narra = fs.existsSync(path.join(SKILL, 'scripts', 'tutorial', 'locucao.mjs'))   // os níveis da skill com narração
 const comFalas = !!(P.falas && P.falas.length) && !tem('no-voice')
-if (comFalas && narra) {
+// a voz é opcional: liga quando o JSON declara "voz" (ou quando a locução deste projeto já existe); sem isso, as falas são
+// só legenda, no tempo de leitura, como no vídeo sem voz de sempre
+const comVoz = comFalas && narra && (!!P.voz || fs.existsSync(arqLoc))
+if (comVoz) {
   const V = P.voz || {}
   if (!V.voz || !V.voz.id) { console.error('the lines ("falas") need "voz": { "voz": { "id": … } } in the JSON (or run with --no-voice)'); process.exit(1) }
   const roteiro = { idioma: P.idioma || 'en-US', perfil: V.perfil || 'reels', voz: V.voz, ...(V.ajustes ? { ajustes: V.ajustes } : {}), pronuncia: V.pronuncia || {},
@@ -92,21 +95,21 @@ if (comFalas && narra) {
   fs.writeFileSync(path.join(proj, 'voice', 'script.json'), JSON.stringify(roteiro, null, 2))
 }
 if (tem('script')) {
-  if (!comFalas || !narra) { console.error(narra ? 'the JSON has no "falas": there is no voice script to write' : 'this copy of the skill has no voice module (scripts/tutorial/locucao.mjs is missing): reinstall the skill.'); process.exit(1) }
+  if (!comVoz) { console.error(!narra ? 'this copy of the skill has no voice module (scripts/tutorial/locucao.mjs is missing): reinstall the skill.' : !comFalas ? 'the JSON has no "falas": there is no voice script to write' : 'the JSON has no "voz": add "voz": { "voz": { "id": … } } to write the voice script'); process.exit(1) }
   console.log(`script: ${path.join(proj, 'voice', 'script.json')} (the voiceover goes to ${dirVoz})`)
   process.exit(0)
 }
 if (comFalas && !fs.existsSync(arqLoc)) {
   // Falas no JSON e nenhuma locução neste projeto: sem aviso, o vídeo sairia sem a voz (aconteceu ao renderizar o
   // final numa --out nova, longe da voz do draft). Para, e diz como reaproveitar a voz sem gastar de novo.
-  if (narra) {
+  if (comVoz) {
     console.error(`the lines ("falas") exist but ${path.relative(process.cwd(), arqLoc)} does not: the video would come out without the voice.\n` +
       `  the script is in ${path.join(proj, 'voice', 'script.json')}: generate the voiceover in ${dirVoz} before the render (the voice step in SKILL.md),\n` +
       `  or copy the voice/ folder from the draft project to ${path.join(proj, 'voice')} (the takes in voice/_takes are not paid for again),\n` +
       `  or run with --no-voice if the video really has no voice (the soundtrack becomes the lead).`)
     process.exit(1)
   }
-  console.log('this copy of the skill has no voice module (scripts/tutorial/locucao.mjs is missing): the "falas" in the JSON become captions only, timed from the text, and the soundtrack is the lead.')
+  console.log(narra ? 'no "voz" in the JSON: the "falas" become captions only, timed from the text, and the soundtrack is the lead.' : 'this copy of the skill has no voice module (scripts/tutorial/locucao.mjs is missing): the "falas" in the JSON become captions only, timed from the text, and the soundtrack is the lead.')
 }
 if (comFalas && fs.existsSync(arqLoc)) {
   if (!narra) { console.error(`this video has a voiceover (${arqLoc}), but this copy of the skill has no voice module (scripts/tutorial/locucao.mjs is missing): reinstall the skill, or run with --no-voice to output with the soundtrack only`); process.exit(1) }
