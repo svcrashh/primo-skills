@@ -1,5 +1,5 @@
 {
-  "_sobre": "Format example of Counting number, with no brand: the brand-color background with the giant symbol turning slowly ('marca.simbolo'), the label in Bold ('pesoRotulo'), whip between blocks and between cards. The numbers are sample values: replace them with true numbers that have a source. Greys, placeholder texts, symbol and logo stand for the person's brand and content: swap them. Render: node scripts/example-fonts.mjs <folder> && templates/counting-number/render.sh templates/counting-number/example-whip.json <folder> 16x9 final",
+  "_sobre": "Format example of Counting number, with no brand: the brand-color background with the giant symbol turning slowly ('marca.simbolo'), the label in Bold ('pesoRotulo'), whip between blocks and between cards. The numbers are sample values: replace them with true numbers that have a source. Greys, placeholder texts, symbol and logo stand for the person's brand and content: swap them. Render: node scripts/example-fonts.mjs <folder> && node templates/counting-number/render.mjs templates/counting-number/example-whip.json <folder> 16x9 final",
   "aberturaLogo": { "logo": "../../assets/example/logo-placeholder.png", "fundo": "#F5F5F5", "dur": 1 },
   "titulo": "Your product in numbers",
   "idioma": "en-US",

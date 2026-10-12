@@ -125,8 +125,8 @@ test('counting-number: 19:9 e 21:9 com a área esticada na largura, centrada e d
   }
 })
 
-test('counting-number: a folha do render.sh tem escala para 19x9 e 21x9 (270 px de altura, como o 16:9)', () => {
-  const sh = ler(NUMERO, 'render.sh')
-  assert.match(sh, /19x9\) SC=570:-1; TL=6x4;;/)
-  assert.match(sh, /21x9\) SC=630:-1; TL=6x4;;/)
+test('counting-number: a folha do render.mjs tem escala para 19x9 e 21x9 (270 px de altura, como o 16:9)', () => {
+  const src = ler(NUMERO, 'render.mjs')
+  assert.match(src, /'19x9': \['570:-1', '6x4'\]/)
+  assert.match(src, /'21x9': \['630:-1', '6x4'\]/)
 })

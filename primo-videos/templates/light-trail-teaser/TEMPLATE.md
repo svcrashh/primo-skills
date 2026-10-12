@@ -68,18 +68,18 @@ folder of the same name.
 Media paths are relative to the JSON itself (or start with `~`); `assemble.mjs` copies them to `media/`.
 
 ## How to render
-```zsh
+```sh
 # 1. project + loose frames to look at (fast)
 node templates/light-trail-teaser/assemble.mjs meu.json ~/Desktop/teaser/project
 node scripts/frames.cjs --project ~/Desktop/teaser/project --times 0,1.5,4,7,10,13 [--format 9x16]
 node scripts/frames.cjs --project ~/Desktop/teaser/project --check --qps 10 [--format 9x16]
 ```
-```zsh
+```sh
 # 2. voice (optional and paid), before the render: "With voice (optional)", below
 ```
-```zsh
+```sh
 # 3. everything: soundtrack (with the voice, if the narration exists), 60 fps render of each format, sound muxed in, contact sheet
-templates/light-trail-teaser/render.sh meu.json ~/Desktop/teaser 16x9 9x16 [19x9 21x9]
+node templates/light-trail-teaser/render.mjs meu.json ~/Desktop/teaser 16x9 9x16 [19x9 21x9]
 ```
 The soundtrack (`soundtrack.py`) follows the template's timing: a dark bed that opens up until the reveal, a breath on each
 sweep, a low impact on the reveal, a shimmer when the light becomes the button. Without a narration in
@@ -95,9 +95,9 @@ paid, up to about 900 credits per minute of narration, checked against the video
 - **The voice comes before the render** (the template doesn't generate voice). Write
   `<folder>/project/voice/pt/script.json` by hand (`references/voice-script.md` §6), one line per item of `falas`, with
   the same `id`: the promise line with `"onde": "abertura"`, the closing one with `"onde": "fechamento"`. The folder is
-  `voice/pt` whatever the language: it is the path `render.sh` reads. Show the approval table (§5) and choose the voice
+  `voice/pt` whatever the language: it is the path `render.mjs` reads. Show the approval table (§5) and choose the voice
   (`references/voice-choice.md`) before spending, then:
-  ```zsh
+  ```sh
   node $SKILL/scripts/voice.mjs generate ~/Desktop/teaser/project/voice/pt/script.json --out ~/Desktop/teaser/project/voice/pt
   node $SKILL/scripts/voice.mjs listen ~/Desktop/teaser/project/voice/pt/narration.json --words "Brand,Term"
   ```

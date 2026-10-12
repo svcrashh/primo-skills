@@ -1,5 +1,5 @@
 {
-  "_sobre": "Format example of Counting number, with no brand: three formats, a counter with a scrolling list, three numbers on color cards (text color fixed per item, 'tinta') and the closing with the logo alone. The numbers are sample values: replace them with true numbers that have a source. Greys, placeholder texts and the placeholder logo stand for the person's brand and content: swap them. Render: node scripts/example-fonts.mjs <folder> && templates/counting-number/render.sh templates/counting-number/example.json <folder> 16x9,9x16,1x1 draft",
+  "_sobre": "Format example of Counting number, with no brand: three formats, a counter with a scrolling list, three numbers on color cards (text color fixed per item, 'tinta') and the closing with the logo alone. The numbers are sample values: replace them with true numbers that have a source. Greys, placeholder texts and the placeholder logo stand for the person's brand and content: swap them. Render: node scripts/example-fonts.mjs <folder> && node templates/counting-number/render.mjs templates/counting-number/example.json <folder> 16x9,9x16,1x1 draft",
   "aberturaLogo": { "logo": "../../assets/example/logo-placeholder.png", "fundo": "#F5F5F5", "dur": 1 },
   "titulo": "Your product in numbers",
   "idioma": "en-US",

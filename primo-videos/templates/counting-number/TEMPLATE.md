@@ -90,8 +90,8 @@ the giant symbol, whip between blocks and cards) and `example-push.json` (dark b
 between them and the camera moving in).
 
 ## How to render
-```zsh
-templates/counting-number/render.sh <parameters.json> <video-folder> 16x9,9x16 final
+```sh
+node templates/counting-number/render.mjs <parameters.json> <video-folder> 16x9,9x16 final
 ```
 Formats: `16x9`, `19x9`, `21x9`, `9x16`, `1x1`, `4x5`.
 It does, in order: `prepare.mjs` (copies the template and the skill's `engine.js`, downloads the fonts, writes
@@ -137,23 +137,23 @@ paid, up to about 900 credits per minute of narration, checked against the video
   with `fala`, `prepare.mjs` writes `voice/script.json`: one line per block, id `b1`, `b2`… by the block's position,
   `onde` = `{ "passo": n }`. Show the approval table (`references/voice-script.md` §5) and choose the voice
   (`references/voice-choice.md`) before spending; `voz.id` is the chosen voice. Then:
-  ```zsh
+  ```sh
   node templates/counting-number/prepare.mjs <parameters.json> <video-folder>    # writes voice/script.json
   node $SKILL/scripts/voice.mjs generate <video-folder>/voice/script.json --out <video-folder>/voice/pt
   node $SKILL/scripts/voice.mjs listen <video-folder>/voice/pt/narration.json --words "<risk words>"
   ```
-  The folder is `voice/pt` whatever the language: it's where `render.sh` looks for the narration.
-- **With `voice/pt/narration.json` in the folder,** `render.sh` runs `prepare.mjs --narration` (the words' timings in
+  The folder is `voice/pt` whatever the language: it's where `render.mjs` looks for the narration.
+- **With `voice/pt/narration.json` in the folder,** `render.mjs` runs `prepare.mjs --narration` (the words' timings in
   the caption, `audio/voz.wav`, the `voz` block in the sync sheet, `legenda.srt`), the soundtrack ducks under the voice
   (`mix_voz.py`, `references/voice-mix.md`), and `finalize.mjs` also checks each line on time and the voice above what
-  plays under it, in the AAC. With lines and `voice/script.json` but no narration, `render.sh` stops and says what to
+  plays under it, in the AAC. With lines and `voice/script.json` but no narration, `render.mjs` stops and says what to
   do; `SEM_VOZ=1` outputs with the soundtrack only.
 - **The voice sets each block's length:** the line starts `em` s after the block starts, and the block lasts at least
   `em + line duration + 0.5 s`. The caption is the speech, each word lit when it's said.
 - **A `fala` changed after the voice was generated:** `prepare.mjs --narration` stops ("line b2 changed since the
   voiceover"). Run `generate` again: only the changed line and its neighbors are paid (`references/voice-script.md`
   §7).
-- With voice, the soundtrack step needs the Python with numpy and scipy: without it, `render.sh` stops instead of
+- With voice, the soundtrack step needs the Python with numpy and scipy: without it, `render.mjs` stops instead of
   delivering the voice alone.
 - `listen` writes `voice/pt/heard.md` (read it) and each transcription costs credits: run it again only when the
   narration changed. It takes a spelled-out number and the transcription's digits as the same word only in Portuguese

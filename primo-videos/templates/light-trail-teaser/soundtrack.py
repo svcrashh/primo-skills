@@ -18,10 +18,15 @@ from pathlib import Path
 import numpy as np
 from scipy.signal import butter, sosfilt
 
+# No Windows, a saída por pipe (a do Claude Code) sai no código de página do sistema e quebra no primeiro "Δ" ou "→".
+for _s in (sys.stdout, sys.stderr):
+    if hasattr(_s, 'reconfigure') and (_s.encoding or '').lower().replace('-', '') != 'utf8':
+        _s.reconfigure(encoding='utf-8', errors='replace')
+
 SR = 48000
-par = json.loads(Path(sys.argv[1]).read_text())
+par = json.loads(Path(sys.argv[1]).read_text(encoding='utf-8'))   # no Windows o padrão seria cp1252
 loc_p = None if sys.argv[2] == '-' else Path(sys.argv[2])
-loc = json.loads(loc_p.read_text()) if loc_p else None
+loc = json.loads(loc_p.read_text(encoding='utf-8')) if loc_p else None
 saida = Path(sys.argv[3])
 
 D = par.get('duracao', 16)
