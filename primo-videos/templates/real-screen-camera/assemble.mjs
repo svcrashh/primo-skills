@@ -20,7 +20,7 @@ const arg = (k, d) => { const i = argv.indexOf('--' + k); return i >= 0 ? argv[i
 const arqParams = argv.find((a) => a.endsWith('.json'))
 if (!arqParams) { console.error('usage: node assemble.mjs <parametros.json> [--mode draft|final] [--format 16x9] [--no-render] [--no-soundtrack]'); process.exit(1) }
 const BASE = path.dirname(path.resolve(arqParams))
-const cam = (p) => (p ? path.resolve(BASE, p.replace(/^~(?=$|\/)/, os.homedir())) : null)
+const cam = (p) => (p ? path.resolve(BASE, p.replace(/^~(?=$|[\\/])/, os.homedir())) : null)
 const P = JSON.parse(fs.readFileSync(arqParams, 'utf8'))
 const modo = arg('mode', 'draft')
 const formatos = arg('format') ? [arg('format')] : P.formatos || ['16x9', '9x16']
@@ -127,7 +127,8 @@ const PROJ = path.join(SAIDA, P.id, 'proj')
 fs.mkdirSync(PROJ, { recursive: true })
 for (const f of ['index.html', 'scene.js']) fs.copyFileSync(path.join(AQUI, f), path.join(PROJ, f))
 fs.copyFileSync(path.join(SKILL, 'assets/template/engine.js'), path.join(PROJ, 'engine.js'))
-const liga = (de, para) => { try { fs.rmSync(para, { recursive: true, force: true }) } catch {} ; fs.symlinkSync(de, para) }
+// junction: no Windows, link de pasta sem admin nem Modo de Desenvolvedor; fora dele o tipo é ignorado
+const liga = (de, para) => { try { fs.rmSync(para, { recursive: true, force: true }) } catch {} ; fs.symlinkSync(de, para, 'junction') }
 liga(path.join(G, 'frames'), path.join(PROJ, 'frames'))
 const FONTES = cam(P.marca.fontesPasta)
 if (!FONTES || !fs.existsSync(path.join(FONTES, 'fonts.css'))) falha(`the brand needs fontesPasta with fonts.css (generate it with node ${SKILL}/scripts/fonts.mjs <folder> "Family")`)

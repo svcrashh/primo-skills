@@ -59,7 +59,7 @@ fs.mkdirSync(path.join(obra, 'media'), { recursive: true })
 for (const f of ['index.html', 'scene.js']) fs.copyFileSync(path.join(AQUI, f), path.join(obra, f))
 fs.copyFileSync(path.join(SKILL, 'assets', 'template', 'engine.js'), path.join(obra, 'engine.js'))
 try { fs.rmSync(path.join(obra, 'frames'), { recursive: true, force: true }) } catch {}
-fs.symlinkSync(path.join(G, 'frames'), path.join(obra, 'frames'))
+fs.symlinkSync(path.join(G, 'frames'), path.join(obra, 'frames'), 'junction')   // junction: no Windows, sem admin; fora dele o tipo é ignorado
 const logoArq = caminho(base, cfg.fecho.logo)
 fs.copyFileSync(logoArq, path.join(obra, 'media', 'logo.png'))
 const tamPng = (f) => { const b = fs.readFileSync(f); return b.toString('ascii', 1, 4) === 'PNG' ? [b.readUInt32BE(16), b.readUInt32BE(20)] : null }

@@ -4,7 +4,6 @@ Uso: python mix.py som.json   (escrito pelo render.mjs)"""
 import json
 import subprocess
 import sys
-import tempfile
 from pathlib import Path
 
 import numpy as np
@@ -44,11 +43,10 @@ for e in cfg['sons']:
     soma(sfx, y, max(0.0, t), 10 ** (NIVEL.get(nome, -14) / 20))
 
 for f in cfg['falas']:
-    with tempfile.NamedTemporaryFile(suffix='.raw') as tmp:
-        subprocess.run(['ffmpeg', '-v', 'error', '-y', '-i', f['wav'], '-ss', str(f['de']), '-to', str(f['ate']), '-ac', '1', '-ar', str(SR),
-                        '-af', 'afade=t=in:d=0.01,areverse,afade=t=in:d=0.04,areverse', '-f', 'f32le', tmp.name], check=True)
-        y = np.fromfile(tmp.name, dtype='<f4').astype(float)
-    soma(voz, y, f['em'], 1.0)
+    # pelo pipe: no Windows o ffmpeg não abre um NamedTemporaryFile que o Python ainda segura aberto
+    raw = subprocess.run(['ffmpeg', '-v', 'error', '-i', f['wav'], '-ss', str(f['de']), '-to', str(f['ate']), '-ac', '1', '-ar', str(SR),
+                          '-af', 'afade=t=in:d=0.01,areverse,afade=t=in:d=0.04,areverse', '-f', 'f32le', '-'], check=True, stdout=subprocess.PIPE).stdout
+    soma(voz, np.frombuffer(raw, dtype='<f4').astype(float), f['em'], 1.0)
 
 # a voz manda: os efeitos abaixam 6 dB enquanto ela fala
 env = np.abs(voz).mean(0)
