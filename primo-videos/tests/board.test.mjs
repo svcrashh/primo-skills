@@ -141,7 +141,7 @@ describe('board.json: validation', () => {
     const recipe = fs.readFileSync(path.join(HERE, '..', 'recipes', 'board.md'), 'utf8')
     const example = JSON.parse(/```json\n([\s\S]*?)\n```/.exec(recipe)[1])
     assert.deepEqual(validateBoard(example), [])
-    assert.deepEqual(Object.keys(example), ['title', 'subtitle', 'progress', 'choices', 'scenes', 'pieces', 'references'])
+    assert.deepEqual(Object.keys(example), ['title', 'subtitle', 'progress', 'costs', 'script', 'choices', 'scenes', 'pieces', 'references'])
   })
 
   test('what is wrong comes back as "where: what to fix"', () => {
