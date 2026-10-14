@@ -1,16 +1,16 @@
 ---
-name: play
-description: Entende um arquivo de áudio ou de vídeo que eu colo na conversa — transcreve o que é dito (pela OpenAI, com o tempo de cada trecho e quem fala) e, se for vídeo, mostra o que aparece em folhas de contato com quadros espaçados —, para seguir o trabalho sabendo o que tem nele. Use quando eu digitar "/play <caminho>", quando a mensagem for ou trouxer o caminho de um arquivo de áudio ou vídeo (.opus, .ogg, .m4a, .mp3, .wav, .aac, .flac, .mp4, .mov, .webm, .mkv e parecidos, como áudio do WhatsApp, vídeo do celular ou gravação de tela), ou quando eu pedir "ouve esse áudio", "transcreve", "o que diz esse áudio", "assiste esse vídeo", "o que tem nesse vídeo". Vale no Mac e no Windows.
+name: listen
+description: Entende um arquivo de áudio ou de vídeo que eu colo na conversa — transcreve o que é dito (pela OpenAI, com o tempo de cada trecho e quem fala) e, se for vídeo, mostra o que aparece em folhas de contato com quadros espaçados —, para seguir o trabalho sabendo o que tem nele. Use quando eu digitar "/listen <caminho>", quando a mensagem for ou trouxer o caminho de um arquivo de áudio ou vídeo (.opus, .ogg, .m4a, .mp3, .wav, .aac, .flac, .mp4, .mov, .webm, .mkv e parecidos, como áudio do WhatsApp, vídeo do celular ou gravação de tela), ou quando eu pedir "ouve esse áudio", "transcreve", "o que diz esse áudio", "assiste esse vídeo", "o que tem nesse vídeo". Vale no Mac e no Windows.
 ---
 
-# play
+# listen
 
 Entende um arquivo de áudio ou de vídeo: o que é dito e, se for vídeo, o que aparece. A pessoa cola o caminho (um áudio
 do WhatsApp, um vídeo do celular, uma gravação de tela) e você segue o trabalho sabendo o que tem nele.
 
 ```sh
 # Mac (zsh), e no Windows a ferramenta Bash, que roda no Git Bash
-P=~/.claude/skills/play/scripts/play.mjs
+P=~/.claude/skills/listen/scripts/listen.mjs
 node "$P" '<caminho>'                        # o que é dito e o que aparece
 node "$P" quadro '<caminho>' --em 01:23      # um quadro em resolução cheia
 node "$P" limpar ['<caminho>']               # apaga o cache (o de um arquivo, ou todo)
@@ -18,7 +18,7 @@ node "$P" limpar ['<caminho>']               # apaga o cache (o de um arquivo, o
 
 ```powershell
 # Windows, na ferramenta PowerShell: os mesmos comandos
-$P = "$HOME\.claude\skills\play\scripts\play.mjs"
+$P = "$HOME\.claude\skills\listen\scripts\listen.mjs"
 node $P 'C:\caminho\do\video.mp4'
 ```
 
@@ -28,7 +28,7 @@ para rodar: colar o arquivo já é o pedido. A exceção é arquivo longo (seç�
 
 ## 1. Quando entra
 
-- `/play <caminho>`.
+- `/listen <caminho>`.
 - A mensagem é, ou traz, o caminho de um arquivo de áudio ou de vídeo: .opus, .ogg, .m4a, .mp3, .wav, .aac, .flac,
   .mp4, .mov, .m4v, .webm, .mkv e parecidos. Áudio do WhatsApp chega como .opus ou .ogg.
 - Pedidos como "ouve esse áudio", "transcreve", "o que diz esse áudio", "assiste esse vídeo", "o que tem nesse vídeo",
@@ -117,11 +117,11 @@ ou visível a outras pessoas.
 Roda o diagnóstico. Ele não grava nada e não usa a rede:
 
 ```sh
-node ~/.claude/skills/play/scripts/requisitos.mjs                  # Mac e Git Bash
-node "$HOME\.claude\skills\play\scripts\requisitos.mjs"           # PowerShell
+node ~/.claude/skills/listen/scripts/requisitos.mjs                  # Mac e Git Bash
+node "$HOME\.claude\skills\listen\scripts\requisitos.mjs"           # PowerShell
 ```
 
-Cada linha é uma coisa de que a play precisa: `✔` tem, `✖` falta. Embaixo de cada `✖` vêm os passos, escritos para
+Cada linha é uma coisa de que a listen precisa: `✔` tem, `✖` falta. Embaixo de cada `✖` vêm os passos, escritos para
 quem nunca fez isso; repassa à pessoa como estão.
 
 - **Node 18 ou mais novo:** `brew install node` no Mac, `winget install OpenJS.NodeJS.LTS` no Windows.
@@ -160,7 +160,7 @@ Sem a chave, o vídeo ainda mostra o que aparece; só a fala fica de fora.
   seu pedaço do vídeo, montados em folhas de até 9 quadros, com no máximo 2.000 px no lado maior e as células no formato
   do vídeo. Nem todo ffmpeg tem o filtro `drawtext` (o do Homebrew não tem), por isso o tempo de cada célula vai na
   legenda de texto, não na imagem.
-- **Cache:** em `~/Library/Caches/play` no Mac, `%LOCALAPPDATA%\play` no Windows, `~/.cache/play` nos outros; uma
+- **Cache:** em `~/Library/Caches/listen` no Mac, `%LOCALAPPDATA%\listen` no Windows, `~/.cache/listen` nos outros; uma
   pasta por arquivo, pelo caminho, tamanho e data dele. O mesmo arquivo de novo não chama a API; outro `--modelo` ou
   `--idioma` transcreve de novo. `--refazer` ignora o cache, `limpar` apaga.
 - **Arquivo longo:** acima de 30 min o script para antes de mandar qualquer coisa e sai com 5. Ele não estima o preço
@@ -170,10 +170,10 @@ Sem a chave, o vídeo ainda mostra o que aparece; só a fala fica de fora.
   quadros ficam na máquina.
 - **A chave:** `OPENAI_API_KEY`, ou a linha `OPENAI_API_KEY=...` em `~/.claude/secrets/openai.env` (aceita `export `
   na frente e o valor entre aspas). O que a API devolve com cara de chave sai trocado por `[chave]`. `OPENAI_API_BASE`
-  troca o endereço da API, e `PLAY_LIMITE_BYTES` o tamanho máximo de cada parte (os testes usam os dois).
-- **Arquivos:** `scripts/play.mjs` faz o trabalho; `scripts/requisitos.mjs` é o diagnóstico, e dele o `play.mjs` tira a
-  leitura da chave e as instruções, para os dois dizerem a mesma coisa. Testes: `node --test play/tests/*.test.mjs`, sem
-  rede, com uma OpenAI de mentira e arquivos feitos na hora pelo ffmpeg; o `windows.test.mjs`, que chama a play pelo
+  troca o endereço da API, e `LISTEN_LIMITE_BYTES` o tamanho máximo de cada parte (os testes usam os dois).
+- **Arquivos:** `scripts/listen.mjs` faz o trabalho; `scripts/requisitos.mjs` é o diagnóstico, e dele o `listen.mjs` tira a
+  leitura da chave e as instruções, para os dois dizerem a mesma coisa. Testes: `node --test listen/tests/*.test.mjs`, sem
+  rede, com uma OpenAI de mentira e arquivos feitos na hora pelo ffmpeg; o `windows.test.mjs`, que chama a listen pelo
   PowerShell e pelo Git Bash, só roda no Windows.
 
 ### Limites
@@ -193,24 +193,24 @@ Sem a chave, o vídeo ainda mostra o que aparece; só a fala fica de fora.
 
 **Rodou num Windows de verdade em 12/10/2026:** o Windows Server 2025 do GitHub Actions, com o ffmpeg 9.0.2 instalado
 por `winget install ffmpeg`, no Node 18 e no 24, com uma OpenAI de mentira no lugar da de verdade. O workflow
-`.github/workflows/windows-play.yml` roda tudo de novo a cada mudança na play ou no instalador.
+`.github/workflows/windows-listen.yml` roda tudo de novo a cada mudança na listen ou no instalador.
 
-- **O que passou lá:** os testes; a play chamada pelo PowerShell 5.1, pelo PowerShell 7 e pelo Git Bash, numa pasta de
+- **O que passou lá:** os testes; a listen chamada pelo PowerShell 5.1, pelo PowerShell 7 e pelo Git Bash, numa pasta de
   usuário com acento e espaço, com o caminho entre aspas simples ou duplas, com barra normal, colado do "Copiar como
   caminho" (com as aspas dentro), com `~`, como `/c/…` no Git Bash e com aspa simples no nome, e a saída chegando em
-  UTF-8, com os acentos certos; o cache em `%LOCALAPPDATA%\play`, a segunda chamada saindo dele, `quadro --em`,
+  UTF-8, com os acentos certos; o cache em `%LOCALAPPDATA%\listen`, a segunda chamada saindo dele, `quadro --em`,
   `--recorte` e `limpar`; um vídeo deitado e um de celular (o quadro deitado e a rotação guardada à parte), com as folhas
   de contato abertas e conferidas; o `requisitos.mjs` antes e depois do ffmpeg e da chave, seguindo ao pé da letra os
   comandos que ele imprime; a chave lida do arquivo com BOM e CRLF (como o Bloco de Notas pode salvar) e em UTF-16 (como
   o `echo … >` do PowerShell 5.1 grava).
-- **Os testes no Windows:** `node --test play/tests/*.test.mjs` na pasta do repositório, no PowerShell, com o Node 22 ou
-  mais novo (rodou no 24). O Node 18 e o 20 não expandem o `*`: liste os três arquivos (`play.test.mjs`, `requisitos.test.mjs` e
+- **Os testes no Windows:** `node --test listen/tests/*.test.mjs` na pasta do repositório, no PowerShell, com o Node 22 ou
+  mais novo (rodou no 24). O Node 18 e o 20 não expandem o `*`: liste os três arquivos (`listen.test.mjs`, `requisitos.test.mjs` e
   `windows.test.mjs`).
 - **O que ficou sem prova** (o runner não tem tela, nem conta do Claude, nem a OpenAI de verdade): o Bloco de Notas
   abrindo e salvando o arquivo da chave (o teste grava o arquivo como ele salvaria), a transcrição de verdade e o Claude
-  Code chamando a play. Na primeira vez numa máquina de verdade:
+  Code chamando a listen. Na primeira vez numa máquina de verdade:
   1. O diagnóstico (seção 5) com tudo `✔`.
-  2. Um áudio curto: a transcrição faz sentido e a pasta `%LOCALAPPDATA%\play` aparece.
+  2. Um áudio curto: a transcrição faz sentido e a pasta `%LOCALAPPDATA%\listen` aparece.
   3. Um vídeo curto: abre a folha de contato e confere que os quadros estão de pé quando o vídeo está de pé.
 
 ## O que não fazer

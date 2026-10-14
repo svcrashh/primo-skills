@@ -1,8 +1,8 @@
 #!/usr/bin/env node
-// O que a skill play precisa nesta máquina, e o que fazer com o que faltar. O instalador roda isto depois de ligar as
+// O que a skill listen precisa nesta máquina, e o que fazer com o que faltar. O instalador roda isto depois de ligar as
 // skills e mostra a saída. Sem rede e sem dependência; não grava nem cria nada; nunca imprime a chave.
 // Sai com 0 quando nada obrigatório falta e com 1 quando falta.
-// O play.mjs usa daqui a leitura da chave e as instruções, para os dois dizerem a mesma coisa.
+// O listen.mjs usa daqui a leitura da chave e as instruções, para os dois dizerem a mesma coisa.
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
@@ -84,7 +84,7 @@ export function comoInstalarFfmpeg(so = process.platform, env = process.env) {
 }
 
 export function relatorio({ env = process.env, so = process.platform, versaoNode = process.versions.node } = {}) {
-  const linhas = ['play — entende um arquivo de áudio ou de vídeo: transcreve o que é dito e mostra o que aparece na imagem.']
+  const linhas = ['listen — entende um arquivo de áudio ou de vídeo: transcreve o que é dito e mostra o que aparece na imagem.']
   let falta = false
   const item = (tem, titulo, passos = []) => {
     linhas.push(`${tem ? '✔' : '✖'} ${titulo}`)

@@ -1,4 +1,4 @@
-// node --test play/tests/*.test.mjs   (sem rede): o requisitos.mjs com e sem chave, com e sem ffmpeg, numa casa e num
+// node --test listen/tests/*.test.mjs   (sem rede): o requisitos.mjs com e sem chave, com e sem ffmpeg, numa casa e num
 // PATH de mentira, chamado pelo link como o instalador chama.
 import { test, before, after } from 'node:test'
 import assert from 'node:assert/strict'
@@ -16,8 +16,8 @@ const MOSTRADO = WIN ? '%USERPROFILE%\\.claude\\secrets\\openai.env' : '~/.claud
 let base, link, comFfmpeg, semNada
 
 before(() => {
-  base = fs.mkdtempSync(path.join(os.tmpdir(), 'play requisitos '))
-  link = path.join(base, 'skills', 'play')
+  base = fs.mkdtempSync(path.join(os.tmpdir(), 'listen requisitos '))
+  link = path.join(base, 'skills', 'listen')
   fs.mkdirSync(path.dirname(link))
   fs.symlinkSync(SKILL, link, process.platform === 'win32' ? 'junction' : 'dir')
   comFfmpeg = path.join(base, 'bin')
@@ -63,7 +63,7 @@ function rodar(home, PATH, extra = {}) {
 /** Primeira linha: a skill e o que faz. Depois só linhas de item (✔ ✖ ○) e linhas recuadas logo abaixo delas. */
 function confereFormato(saida) {
   const linhas = saida.trimEnd().split('\n')
-  assert.match(linhas[0], /^play — entende um arquivo de áudio ou de vídeo/)
+  assert.match(linhas[0], /^listen — entende um arquivo de áudio ou de vídeo/)
   for (const l of linhas.slice(1)) assert.match(l, /^([✔✖○] \S| {4,}\S)/, `linha fora do formato: "${l}"`)
 }
 

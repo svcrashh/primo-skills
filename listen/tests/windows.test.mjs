@@ -1,4 +1,4 @@
-// node --test play/tests/*.test.mjs   (só no Windows; nos outros sistemas fica de fora): a play chamada como o Claude
+// node --test listen/tests/*.test.mjs   (só no Windows; nos outros sistemas fica de fora): a listen chamada como o Claude
 // chama no Windows, pelo PowerShell 5.1, pelo PowerShell 7 e pelo Git Bash, com o caminho em cada forma que ele chega
 // (aspas simples ou duplas, barra normal, colado do "Copiar como caminho", ~, /c/…), numa casa com acento no nome.
 import { test, before, after } from 'node:test'
@@ -21,14 +21,14 @@ const ff = (...args) => execFileSync('ffmpeg', ['-hide_banner', '-v', 'error', '
 
 before(async () => {
   if (!WIN) return
-  base = fs.mkdtempSync(path.join(os.tmpdir(), 'play windows '))
+  base = fs.mkdtempSync(path.join(os.tmpdir(), 'listen windows '))
   home = path.join(base, 'João Silva')
   midia = path.join(home, 'Mídia da Ana')
   fs.mkdirSync(midia, { recursive: true })
-  const link = path.join(home, '.claude', 'skills', 'play')
+  const link = path.join(home, '.claude', 'skills', 'listen')
   fs.mkdirSync(path.dirname(link), { recursive: true })
   fs.symlinkSync(SKILL, link, 'junction')
-  script = path.join(link, 'scripts', 'play.mjs')
+  script = path.join(link, 'scripts', 'listen.mjs')
   audio = path.join(midia, 'Meu áudio (1).opus')
   apostrofo = path.join(midia, "Áudio da D'Ávila.opus")
   const bipes = ['-f', 'lavfi', '-i', `aevalsrc='if(lt(mod(t\\,2)\\,1)\\,0.5*sin(2*PI*440*t)\\,0)':s=16000:d=3`]
@@ -82,7 +82,7 @@ function formas() {
     )
   }
   if (fs.existsSync(GIT_BASH)) {
-    const bash = (arg) => `P=~/.claude/skills/play/scripts/play.mjs; node "$P" ${arg}`
+    const bash = (arg) => `P=~/.claude/skills/listen/scripts/listen.mjs; node "$P" ${arg}`
     casos.push(
       ['bash', 'caminho do Windows em aspas simples', bash(bashAspas(audio)), audio],
       ['bash', 'caminho /c/…', bash(bashAspas(posix(audio))), audio],
@@ -108,6 +108,6 @@ test('no PowerShell 5.1, no PowerShell 7 e no Git Bash, o caminho em cada forma 
   }
   // um pedido por arquivo: todas as outras formas, em todos os shells, saíram do cache
   assert.equal(api.pedidos.length, 2, api.pedidos.map((p) => p.nomeArquivo).join(', '))
-  const cache = fs.readdirSync(path.join(home, 'AppData', 'Local', 'play'))
-  assert.equal(cache.length, 2, `o cache vai para %LOCALAPPDATA%\\play, uma pasta por arquivo: ${cache}`)
+  const cache = fs.readdirSync(path.join(home, 'AppData', 'Local', 'listen'))
+  assert.equal(cache.length, 2, `o cache vai para %LOCALAPPDATA%\\listen, uma pasta por arquivo: ${cache}`)
 })

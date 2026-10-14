@@ -1,4 +1,4 @@
-// node --test play/tests/*.test.mjs   (sem rede): a play contra uma OpenAI de mentira (api-falsa.mjs), com arquivos feitos na
+// node --test listen/tests/*.test.mjs   (sem rede): a listen contra uma OpenAI de mentira (api-falsa.mjs), com arquivos feitos na
 // hora pelo ffmpeg (tom, silêncio, barras de teste). Chamada como a skill é instalada: por um link para a pasta.
 import { test, before, after } from 'node:test'
 import assert from 'node:assert/strict'
@@ -8,12 +8,12 @@ import path from 'node:path'
 import { spawn, execFileSync } from 'node:child_process'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { subirApiFalsa } from './api-falsa.mjs'
-import { candidatosDoCaminho, resolverCaminho, gradeDaFolha, planejarPartes, juntarLinhas, mmss, lerTempo, LADO_MAX_FOLHA } from '../scripts/play.mjs'
+import { candidatosDoCaminho, resolverCaminho, gradeDaFolha, planejarPartes, juntarLinhas, mmss, lerTempo, LADO_MAX_FOLHA } from '../scripts/listen.mjs'
 
 const SKILL = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const CHAVE = `sk-teste-${Math.random().toString(36).slice(2)}${Math.random().toString(36).slice(2)}`
 const WIN = process.platform === 'win32'
-const saidas = [] // tudo que a play imprimiu, para a conferência da chave no fim
+const saidas = [] // tudo que a listen imprimiu, para a conferência da chave no fim
 
 let base, home, link, midia, api
 const m = (nome) => path.join(midia, nome)
@@ -21,12 +21,12 @@ const ff = (...args) => execFileSync('ffmpeg', ['-hide_banner', '-v', 'error', '
 const dimensoes = (f) => execFileSync('ffprobe', ['-v', 'error', '-show_entries', 'stream=width,height', '-of', 'csv=p=0:s=x', f]).toString().trim()
 
 before(async () => {
-  base = fs.mkdtempSync(path.join(os.tmpdir(), 'play teste '))
+  base = fs.mkdtempSync(path.join(os.tmpdir(), 'listen teste '))
   home = path.join(base, 'casa')
   midia = path.join(base, 'Mídia da Ana')
   fs.mkdirSync(home)
   fs.mkdirSync(midia)
-  link = path.join(base, 'skills', 'play')
+  link = path.join(base, 'skills', 'listen')
   fs.mkdirSync(path.dirname(link))
   fs.symlinkSync(SKILL, link, process.platform === 'win32' ? 'junction' : 'dir')
   // bipes de 1 s a cada 2 s: 11 trechos com som em 21 s, com silêncio digital entre eles
@@ -49,15 +49,15 @@ after(async () => {
   fs.rmSync(base, { recursive: true, force: true })
 })
 
-/** Roda a play pelo link, como a skill instalada. Ambiente montado do zero: nada da chave de verdade passa. */
-function play(args, { env = {}, semChave = false } = {}) {
+/** Roda a listen pelo link, como a skill instalada. Ambiente montado do zero: nada da chave de verdade passa. */
+function listen(args, { env = {}, semChave = false } = {}) {
   const ambiente = {
     PATH: process.env.PATH, HOME: home, USERPROFILE: home, LOCALAPPDATA: path.join(home, 'AppData', 'Local'),
     TMPDIR: process.env.TMPDIR ?? os.tmpdir(), ...(process.env.SystemRoot ? { SystemRoot: process.env.SystemRoot } : {}),
     OPENAI_API_BASE: api.url, ...(semChave ? {} : { OPENAI_API_KEY: CHAVE }), ...env,
   }
   return new Promise((resolve) => {
-    const p = spawn(process.execPath, [path.join(link, 'scripts', 'play.mjs'), ...args], { env: ambiente })
+    const p = spawn(process.execPath, [path.join(link, 'scripts', 'listen.mjs'), ...args], { env: ambiente })
     let stdout = '', stderr = ''
     p.stdout.setEncoding('utf8')
     p.stderr.setEncoding('utf8')
@@ -66,8 +66,8 @@ function play(args, { env = {}, semChave = false } = {}) {
     p.on('close', (code) => { saidas.push(stdout, stderr); resolve({ code, stdout, stderr }) })
   })
 }
-const cacheDe = () => (WIN ? path.join(home, 'AppData', 'Local', 'play')
-  : process.platform === 'darwin' ? path.join(home, 'Library', 'Caches', 'play') : path.join(home, '.cache', 'play'))
+const cacheDe = () => (WIN ? path.join(home, 'AppData', 'Local', 'listen')
+  : process.platform === 'darwin' ? path.join(home, 'Library', 'Caches', 'listen') : path.join(home, '.cache', 'listen'))
 
 test('o caminho colado em todas as formas', async () => {
   const abs = m('Meu áudio (1).opus')
@@ -87,23 +87,23 @@ test('o caminho colado em todas as formas', async () => {
 
   // pela linha de comando: partido em vários argumentos (sem aspas) e com o escape do Terminal
   api.zerar()
-  const partido = await play(abs.split(' '))
+  const partido = await listen(abs.split(' '))
   assert.equal(partido.code, 0, partido.stderr)
   assert.match(partido.stdout, /^Meu áudio \(1\)\.opus · áudio · 0:05/)
   assert.equal(api.pedidos.at(-1).nomeArquivo, 'audio.ogg', 'o opus vai como está, só no contêiner ogg')
-  const outraForma = await play([WIN ? barraNormal : escapado])
+  const outraForma = await listen([WIN ? barraNormal : escapado])
   assert.equal(outraForma.code, 0, outraForma.stderr)
   assert.equal(api.pedidos.length, 1, 'a segunda vez vem do cache')
 })
 
 test('os tipos de arquivo: áudio, vídeo com áudio, vídeo sem áudio, e o que não é mídia', async () => {
   api.zerar()
-  const capa = await play([m('com capa.mp3')])
+  const capa = await listen([m('com capa.mp3')])
   assert.equal(capa.code, 0, capa.stderr)
   assert.match(capa.stdout, /^com capa\.mp3 · áudio · 0:03$/m, 'capa embutida não faz do mp3 um vídeo')
   assert.doesNotMatch(capa.stdout, /O que aparece/)
 
-  const tela = await play([m('tela.mp4')])
+  const tela = await listen([m('tela.mp4')])
   assert.equal(tela.code, 0, tela.stderr)
   // a faixa vai como está (aac → m4a), sem os metadados do arquivo
   const enviado = api.pedidos.at(-1)
@@ -116,35 +116,35 @@ test('os tipos de arquivo: áudio, vídeo com áudio, vídeo sem áudio, e o que
   assert.ok(folha, tela.stdout)
   assert.equal(dimensoes(folha[1]), `${2 * 320 + 3 * 8}x${3 * 180 + 4 * 8}`)
 
-  const emPe = await play([m('em pé.mp4')])
+  const emPe = await listen([m('em pé.mp4')])
   assert.equal(emPe.code, 0, emPe.stderr)
   assert.match(emPe.stdout, /· 180×320, vertical$/m, 'o vídeo girado aparece em pé')
   const folhaEmPe = /^(\S.*folha-1\.jpg) {2}\(3×2\)/m.exec(emPe.stdout)
   assert.ok(folhaEmPe, emPe.stdout)
   assert.equal(dimensoes(folhaEmPe[1]), `${3 * 180 + 4 * 8}x${2 * 320 + 3 * 8}`, 'células no formato do vídeo, em pé')
 
-  const wav = await play([m('gravador.wav')])
+  const wav = await listen([m('gravador.wav')])
   assert.equal(wav.code, 0, wav.stderr)
   assert.equal(api.pedidos.at(-1).nomeArquivo, 'audio.flac', 'formato que a API não aceita vira FLAC')
   assert.match(wav.stdout, /\n\[00:00\] som 1\..*\n/)
 
   const antes = api.pedidos.length
-  const mudo = await play([m('mudo.mp4')])
+  const mudo = await listen([m('mudo.mp4')])
   assert.equal(mudo.code, 0, mudo.stderr)
   assert.match(mudo.stdout, /^mudo\.mp4 · vídeo sem áudio · 0:08 · 320×180, horizontal$/m)
   assert.match(mudo.stdout, /O que é dito: nada, o arquivo não tem áudio\./)
   assert.equal(api.pedidos.length, antes, 'vídeo sem áudio não chama a API')
 
-  const nota = await play([m('nota.txt')])
+  const nota = await listen([m('nota.txt')])
   assert.equal(nota.code, 4)
   assert.match(nota.stderr, /nota\.txt não é áudio nem vídeo/)
-  const imagem = await play([m('capa.png')])
+  const imagem = await listen([m('capa.png')])
   assert.equal(imagem.code, 4)
   assert.match(imagem.stderr, /é uma imagem/)
-  const sumido = await play([m('sumiu.opus')])
+  const sumido = await listen([m('sumiu.opus')])
   assert.equal(sumido.code, 4)
   assert.match(sumido.stderr, /Não achei o arquivo .*sumiu\.opus.*aspas simples/)
-  const pasta = await play([midia])
+  const pasta = await listen([midia])
   assert.equal(pasta.code, 4)
   assert.match(pasta.stderr, /é uma pasta/)
 })
@@ -158,7 +158,7 @@ test('a transcrição montada com os tempos, em cada formato de resposta', async
     [' O prazo é sexta-feira,', 12.25, 13.85], [' às três da tarde.', 14.15, 15.2],
   ]
   api.estado.resposta = () => ({ text: '…', task: 'transcribe', duration: 15.37, segments: segs.map(([text, start, end], i) => ({ type: 'transcript.text.segment', text, speaker: 'A', start, end, id: `seg_${i}` })) })
-  const r = await play([m('bipes.mp3'), '--refazer'])
+  const r = await listen([m('bipes.mp3'), '--refazer'])
   assert.equal(r.code, 0, r.stderr)
   assert.match(r.stdout, /\n\[00:00\] Oi, aqui é a Marina\. Preciso que você troque a cor do botão de entrar para verde\.\n\[00:06\] Depois, confere se a página de preços abre no celular\.\n\[00:12\] O prazo é sexta-feira, às três da tarde\.\n/)
   assert.doesNotMatch(r.stdout, /A: /, 'uma voz só: sem a letra de quem fala')
@@ -167,7 +167,7 @@ test('a transcrição montada com os tempos, em cada formato de resposta', async
   assert.equal(p.nomeArquivo, 'audio.mp3', 'o nome do arquivo da pessoa não vai para a API')
 
   api.estado.resposta = () => ({ text: '…', segments: [{ text: 'Bom dia.', speaker: 'A', start: 0.4, end: 1 }, { text: 'Bom dia, tudo certo?', speaker: 'B', start: 1.5, end: 3 }, { text: 'Tudo.', speaker: 'A', start: 65.2, end: 66 }] })
-  const duas = await play([m('bipes.mp3'), '--idioma', 'PT', '--refazer'])
+  const duas = await listen([m('bipes.mp3'), '--idioma', 'PT', '--refazer'])
   assert.equal(duas.code, 0, duas.stderr)
   assert.match(duas.stdout, /idioma pt; 2 vozes;/)
   assert.match(duas.stdout, /\n\[00:00\] A: Bom dia\.\n\[00:01\] B: Bom dia, tudo certo\?\n\[01:05\] A: Tudo\.\n/)
@@ -179,7 +179,7 @@ test('a transcrição montada com os tempos, em cada formato de resposta', async
     { id: 1, start: 7, end: 11, text: ' Depois, confere se a página de preços abre no celular.' },
     { id: 2, start: 11, end: 15, text: ' O prazo é sexta-feira, às três da tarde.' },
   ] })
-  const whisper = await play([m('bipes.mp3'), '--modelo', 'whisper-1'])
+  const whisper = await listen([m('bipes.mp3'), '--modelo', 'whisper-1'])
   assert.equal(whisper.code, 0, whisper.stderr)
   assert.deepEqual([api.pedidos.at(-1).formato, api.pedidos.at(-1).granularidade], ['verbose_json', 'segment'])
   assert.match(whisper.stdout, /idioma detectado: portuguese/)
@@ -187,7 +187,7 @@ test('a transcrição montada com os tempos, em cada formato de resposta', async
 
   api.estado.resposta = null
 
-  const texto = await play([m('bipes.mp3'), '--modelo', 'gpt-transcribe'])
+  const texto = await listen([m('bipes.mp3'), '--modelo', 'gpt-transcribe'])
   assert.equal(texto.code, 0, texto.stderr)
   assert.equal(api.pedidos.at(-1).formato, 'json')
   assert.match(texto.stdout, /\n\[00:00\] som 1\. som 2\./)
@@ -196,7 +196,7 @@ test('a transcrição montada com os tempos, em cada formato de resposta', async
 
 test('arquivo acima do limite é partido nas pausas, e as partes são emendadas com o tempo certo', async () => {
   api.zerar()
-  const r = await play([m('bipes.mp3'), '--refazer', '--json'], { env: { PLAY_LIMITE_BYTES: '40000' } })
+  const r = await listen([m('bipes.mp3'), '--refazer', '--json'], { env: { LISTEN_LIMITE_BYTES: '40000' } })
   assert.equal(r.code, 0, r.stderr)
   const j = JSON.parse(r.stdout)
   assert.ok(j.transcricao.partes >= 3, `partes: ${j.transcricao.partes}`)
@@ -217,23 +217,23 @@ test('arquivo acima do limite é partido nas pausas, e as partes são emendadas 
 test('cache: o mesmo arquivo de novo não chama a API; --refazer chama', async () => {
   api.zerar()
   const a = m('tela.mp4')
-  const primeira = await play([a, '--refazer'])
+  const primeira = await listen([a, '--refazer'])
   assert.equal(primeira.code, 0, primeira.stderr)
   assert.equal(api.pedidos.length, 1)
   const folha = /^(\S.*folha-1\.jpg)/m.exec(primeira.stdout)[1]
   const quando = fs.statSync(folha).mtimeMs
 
-  const segunda = await play([a])
+  const segunda = await listen([a])
   assert.equal(segunda.code, 0, segunda.stderr)
   assert.equal(api.pedidos.length, 1, 'segunda vez: zero pedidos')
   assert.match(segunda.stdout, /do cache, nada foi enviado agora/)
   assert.equal(fs.statSync(folha).mtimeMs, quando, 'as folhas também vêm do cache')
 
-  const outra = await play([a, '--quadros', '9'])
+  const outra = await listen([a, '--quadros', '9'])
   assert.equal(api.pedidos.length, 1, 'mudar os quadros não transcreve de novo')
   assert.match(outra.stdout, /O que aparece: 9 quadros em 1 folha/)
 
-  const refeita = await play([a, '--refazer'])
+  const refeita = await listen([a, '--refazer'])
   assert.equal(refeita.code, 0, refeita.stderr)
   assert.equal(api.pedidos.length, 2)
   assert.match(refeita.stdout, /0:12 de áudio enviados à OpenAI/)
@@ -241,21 +241,21 @@ test('cache: o mesmo arquivo de novo não chama a API; --refazer chama', async (
   // arquivo que mudou é outro arquivo para o cache
   const copia = m('copia.mp4')
   fs.copyFileSync(a, copia)
-  await play([copia])
+  await listen([copia])
   assert.equal(api.pedidos.length, 3)
   fs.appendFileSync(copia, Buffer.alloc(16))
-  await play([copia])
+  await listen([copia])
   assert.equal(api.pedidos.length, 4)
 })
 
 test('arquivo longo para antes de qualquer pedido (código 5) e só segue com --longo', async () => {
   api.zerar()
-  const r = await play([m('longo.mp3')])
+  const r = await listen([m('longo.mp3')])
   assert.equal(r.code, 5, r.stderr)
   assert.match(r.stderr, /longo\.mp3 tem 31:00\. Acima de 30 min eu paro antes de mandar.*--longo/)
   assert.equal(api.pedidos.length, 0)
 
-  const sim = await play([m('longo.mp3'), '--longo'])
+  const sim = await listen([m('longo.mp3'), '--longo'])
   assert.equal(sim.code, 0, sim.stderr)
   assert.equal(api.pedidos.length, 2, 'acima de 20 min vai em partes')
   assert.match(sim.stdout, /31:00 de áudio enviados à OpenAI em 2 partes/)
@@ -264,7 +264,7 @@ test('arquivo longo para antes de qualquer pedido (código 5) e só segue com --
 
 test('sem chave: código 3, a explicação de como criar, e nenhum pedido', async () => {
   api.zerar()
-  const r = await play([m('Meu áudio (1).opus'), '--refazer'], { semChave: true })
+  const r = await listen([m('Meu áudio (1).opus'), '--refazer'], { semChave: true })
   assert.equal(r.code, 3)
   assert.equal(api.pedidos.length, 0)
   const pasta = WIN ? '$env:USERPROFILE\\.claude\\secrets\\openai.env' : '~/.claude/secrets/openai.env'
@@ -273,19 +273,19 @@ test('sem chave: código 3, a explicação de como criar, e nenhum pedido', asyn
   }
 
   // num vídeo, os quadros saem mesmo sem chave
-  const v = await play([m('em pé.mp4'), '--refazer'], { semChave: true })
+  const v = await listen([m('em pé.mp4'), '--refazer'], { semChave: true })
   assert.equal(v.code, 3)
   assert.match(v.stdout, /folha-1\.jpg/)
 
   // a chave no arquivo, com export e aspas, como os scripts vizinhos aceitam
   fs.mkdirSync(path.join(home, '.claude', 'secrets'), { recursive: true })
   fs.writeFileSync(path.join(home, '.claude', 'secrets', 'openai.env'), `# chave de teste\nexport OPENAI_API_KEY="${CHAVE}"\n`)
-  const doArquivo = await play([m('Meu áudio (1).opus'), '--refazer'], { semChave: true })
+  const doArquivo = await listen([m('Meu áudio (1).opus'), '--refazer'], { semChave: true })
   assert.equal(doArquivo.code, 0, doArquivo.stderr)
   assert.equal(api.pedidos.at(-1).autorizacao, `Bearer ${CHAVE}`)
   // como o Bloco de Notas pode salvar: com BOM e CRLF
   fs.writeFileSync(path.join(home, '.claude', 'secrets', 'openai.env'), `\uFEFFOPENAI_API_KEY=${CHAVE}\r\n`)
-  const doBlocoDeNotas = await play([m('Meu áudio (1).opus'), '--refazer'], { semChave: true })
+  const doBlocoDeNotas = await listen([m('Meu áudio (1).opus'), '--refazer'], { semChave: true })
   assert.equal(doBlocoDeNotas.code, 0, doBlocoDeNotas.stderr)
   assert.equal(api.pedidos.at(-1).autorizacao, `Bearer ${CHAVE}`)
   fs.rmSync(path.join(home, '.claude'), { recursive: true, force: true })
@@ -293,52 +293,52 @@ test('sem chave: código 3, a explicação de como criar, e nenhum pedido', asyn
 
 test('erros da API dizem o que fazer', async () => {
   api.zerar()
-  const recusada = await play([m('Meu áudio (1).opus'), '--refazer'], { env: { OPENAI_API_KEY: `${CHAVE}-velha` } })
+  const recusada = await listen([m('Meu áudio (1).opus'), '--refazer'], { env: { OPENAI_API_KEY: `${CHAVE}-velha` } })
   assert.equal(recusada.code, 3)
   assert.match(recusada.stderr, /A OpenAI recusou a chave \(401: Incorrect API key provided: \[chave\]\.\)/)
   assert.match(recusada.stderr, /"API keys"/)
   assert.ok(recusada.stderr.includes(WIN ? '%USERPROFILE%\\.claude\\secrets\\openai.env' : '~/.claude/secrets/openai.env'), recusada.stderr)
 
   api.estado.erro = { status: 429, corpo: { error: { message: 'You exceeded your current quota, please check your plan and billing details.', type: 'insufficient_quota', code: 'insufficient_quota' } } }
-  const semCredito = await play([m('Meu áudio (1).opus'), '--refazer'])
+  const semCredito = await listen([m('Meu áudio (1).opus'), '--refazer'])
   assert.equal(semCredito.code, 3)
   assert.match(semCredito.stderr, /sem crédito.*"Billing"/)
   assert.equal(api.pedidos.length, 2, 'sem crédito não tenta de novo')
 
   api.estado.erro = { status: 400, corpo: { error: { message: 'The model `gpt-que-nao-existe` does not exist.', code: 'model_not_found' } } }
-  const modelo = await play([m('Meu áudio (1).opus'), '--modelo', 'gpt-que-nao-existe'])
+  const modelo = await listen([m('Meu áudio (1).opus'), '--modelo', 'gpt-que-nao-existe'])
   assert.equal(modelo.code, 1)
   assert.match(modelo.stderr, /não aceitou o modelo gpt-que-nao-existe.*Rode sem --modelo/)
   api.estado.erro = null
 
   const vazio = fs.mkdtempSync(path.join(base, 'path-'))
-  const semFfmpeg = await play([m('Meu áudio (1).opus')], { env: { PATH: vazio } })
+  const semFfmpeg = await listen([m('Meu áudio (1).opus')], { env: { PATH: vazio } })
   assert.equal(semFfmpeg.code, 1)
   assert.match(semFfmpeg.stderr, /Não achei o ffprobe nesta máquina/)
   assert.match(semFfmpeg.stderr, WIN ? /winget install ffmpeg/ : process.platform === 'darwin' ? /brew install ffmpeg/ : /apt install ffmpeg/)
 
-  const uso = await play([m('tela.mp4'), '--quadros', 'muitos'])
+  const uso = await listen([m('tela.mp4'), '--quadros', 'muitos'])
   assert.equal(uso.code, 2)
-  const desconhecida = await play([m('tela.mp4'), '--rapido'])
+  const desconhecida = await listen([m('tela.mp4'), '--rapido'])
   assert.equal(desconhecida.code, 2)
   assert.match(desconhecida.stderr, /opção que não conheço: --rapido/)
 })
 
 test('quadro em resolução cheia num tempo dado, e recorte', async () => {
-  const r = await play(['quadro', m('em pé.mp4'), '--em', '[00:02]'])
+  const r = await listen(['quadro', m('em pé.mp4'), '--em', '[00:02]'])
   assert.equal(r.code, 0, r.stderr)
   const f = /\(180×320\): (\S.*\.jpg)$/m.exec(r.stdout)
   assert.ok(f, r.stdout)
   assert.equal(dimensoes(f[1]), '180x320')
 
-  const recorte = await play(['quadro', m('em pé.mp4'), '--em', '2', '--recorte', '0,0,100,50'])
+  const recorte = await listen(['quadro', m('em pé.mp4'), '--em', '2', '--recorte', '0,0,100,50'])
   assert.equal(recorte.code, 0, recorte.stderr)
   assert.equal(dimensoes(/: (\S.*\.jpg)$/m.exec(recorte.stdout)[1]), '180x160')
 
-  assert.equal((await play(['quadro', m('em pé.mp4'), '--em', '05:00'])).code, 2)
-  assert.equal((await play(['quadro', m('em pé.mp4')])).code, 2)
-  assert.equal((await play(['quadro', m('em pé.mp4'), '--em', '1', '--recorte', '50,0,60,10'])).code, 2)
-  assert.equal((await play(['quadro', m('bipes.mp3'), '--em', '1'])).code, 4)
+  assert.equal((await listen(['quadro', m('em pé.mp4'), '--em', '05:00'])).code, 2)
+  assert.equal((await listen(['quadro', m('em pé.mp4')])).code, 2)
+  assert.equal((await listen(['quadro', m('em pé.mp4'), '--em', '1', '--recorte', '50,0,60,10'])).code, 2)
+  assert.equal((await listen(['quadro', m('bipes.mp3'), '--em', '1'])).code, 4)
 })
 
 test('peças soltas: grade da folha, linhas, tempos', () => {
@@ -377,16 +377,16 @@ test('a chave nunca aparece: nem na saída, nem no erro, nem em arquivo gravado'
 })
 
 test('limpar: o cache de um arquivo, ou todo', async () => {
-  await play([m('mudo.mp4')])
-  await play([m('tela.mp4')])
+  await listen([m('mudo.mp4')])
+  await listen([m('tela.mp4')])
   const n = () => fs.readdirSync(cacheDe()).length
   const antes = n()
-  const um = await play(['limpar', m('mudo.mp4')])
+  const um = await listen(['limpar', m('mudo.mp4')])
   assert.equal(um.code, 0, um.stderr)
   assert.match(um.stdout, /Apaguei o cache de mudo\.mp4/)
   assert.equal(n(), antes - 1)
-  const todo = await play(['limpar'])
-  assert.match(todo.stdout, /Apaguei o cache da play/)
+  const todo = await listen(['limpar'])
+  assert.match(todo.stdout, /Apaguei o cache da listen/)
   assert.ok(!fs.existsSync(cacheDe()))
-  assert.match((await play(['limpar'])).stdout, /já está vazio/)
+  assert.match((await listen(['limpar'])).stdout, /já está vazio/)
 })

@@ -1,16 +1,16 @@
 #!/usr/bin/env node
-// play: entende um arquivo de áudio ou de vídeo. Diz o que é dito (transcrição pela OpenAI, com o tempo de cada trecho)
+// listen: entende um arquivo de áudio ou de vídeo. Diz o que é dito (transcrição pela OpenAI, com o tempo de cada trecho)
 // e, se for vídeo, o que aparece (quadros espaçados por igual, montados em folhas de contato).
 //
-//   node play.mjs <arquivo> [--modelo <id>] [--idioma pt] [--quadros N] [--refazer] [--longo] [--json]
-//   node play.mjs quadro <arquivo> --em <tempo> [--recorte X,Y,L,A]   um quadro em resolução cheia (recorte em % do quadro)
-//   node play.mjs limpar [<arquivo>]                                  apaga o cache: todo, ou só o do arquivo
+//   node listen.mjs <arquivo> [--modelo <id>] [--idioma pt] [--quadros N] [--refazer] [--longo] [--json]
+//   node listen.mjs quadro <arquivo> --em <tempo> [--recorte X,Y,L,A]   um quadro em resolução cheia (recorte em % do quadro)
+//   node listen.mjs limpar [<arquivo>]                                  apaga o cache: todo, ou só o do arquivo
 //
 // O caminho vem como a pessoa colou: com aspas, espaço escapado, ~, file:// ou caminho do Windows, e pode vir partido
 // em vários argumentos. O resultado fica em cache por arquivo (caminho, tamanho e data): o mesmo arquivo de novo não
 // chama a API. Acima de 30 min ele para antes de mandar qualquer coisa e pede --longo.
 // A chave: OPENAI_API_KEY, ou a linha OPENAI_API_KEY=… em ~/.claude/secrets/openai.env; nunca é impressa.
-// OPENAI_API_BASE troca o endereço da API e PLAY_LIMITE_BYTES o tamanho máximo de cada parte (os testes usam os dois).
+// OPENAI_API_BASE troca o endereço da API e LISTEN_LIMITE_BYTES o tamanho máximo de cada parte (os testes usam os dois).
 // Saída: 0 ok, 1 outra falha, 2 uso errado, 3 OpenAI indisponível agora (sem chave, chave recusada, sem crédito),
 // 4 arquivo que não existe ou não é áudio nem vídeo, 5 arquivo longo (confirmar com a pessoa e rodar com --longo).
 import fs from 'node:fs'
@@ -31,9 +31,9 @@ export const POR_FOLHA_MAX = 9
 const VAO = 8
 const FUNDO = '0x202020'
 
-const USO = `uso: node play.mjs <arquivo> [--modelo <id>] [--idioma pt] [--quadros N] [--refazer] [--longo] [--json]
-     node play.mjs quadro <arquivo> --em <mm:ss> [--recorte X,Y,L,A]
-     node play.mjs limpar [<arquivo>]`
+const USO = `uso: node listen.mjs <arquivo> [--modelo <id>] [--idioma pt] [--quadros N] [--refazer] [--longo] [--json]
+     node listen.mjs quadro <arquivo> --em <mm:ss> [--recorte X,Y,L,A]
+     node listen.mjs limpar [<arquivo>]`
 
 export class Falha extends Error {
   constructor(msg, code = 1) { super(msg); this.code = code }
@@ -103,7 +103,7 @@ async function rodar(programa, args) {
   try {
     return await execFileP(programa, args, { maxBuffer: 256 << 20, windowsHide: true })
   } catch (e) {
-    if (e.code === 'ENOENT') throw new Falha(`Não achei o ${programa} nesta máquina: a play precisa dele para ler o arquivo.\n${comoInstalarFfmpeg().join('\n')}`, 1)
+    if (e.code === 'ENOENT') throw new Falha(`Não achei o ${programa} nesta máquina: a listen precisa dele para ler o arquivo.\n${comoInstalarFfmpeg().join('\n')}`, 1)
     throw e
   }
 }
@@ -163,9 +163,9 @@ export function linhaDoArquivo(i) {
 
 // ── cache ──────────────────────────────────────────────────────────────────────────────────────────────────────────
 export function pastaCache() {
-  if (process.platform === 'win32' && process.env.LOCALAPPDATA) return path.join(process.env.LOCALAPPDATA, 'play')
-  if (process.platform === 'darwin') return path.join(os.homedir(), 'Library', 'Caches', 'play')
-  return path.join(os.homedir(), '.cache', 'play')
+  if (process.platform === 'win32' && process.env.LOCALAPPDATA) return path.join(process.env.LOCALAPPDATA, 'listen')
+  if (process.platform === 'darwin') return path.join(os.homedir(), 'Library', 'Caches', 'listen')
+  return path.join(os.homedir(), '.cache', 'listen')
 }
 
 function pastaDoArquivo(abs) {
@@ -342,7 +342,7 @@ async function transcrever(info, dir, op) {
     const ext = extensaoDoAudio(info.codecAudio)
     const inteiro = path.join(tmp, `audio.${ext}`)
     const stderr = await extrairAudio(info, inteiro, { pausas: true })
-    const limiteBytes = Number(process.env.PLAY_LIMITE_BYTES) || LIMITE_BYTES
+    const limiteBytes = Number(process.env.LISTEN_LIMITE_BYTES) || LIMITE_BYTES
     const partes = planejarPartes(info.duracaoAudio, fs.statSync(inteiro).size, lerPausas(stderr, info.duracaoAudio), { limiteBytes })
     const arquivos = partes.length === 1 ? [inteiro] : await emParalelo(partes.map((p, i) => async () => {
       const f = path.join(tmp, `parte-${i + 1}.${ext}`)
@@ -542,11 +542,11 @@ const mb = (b) => `${(b / 1024 / 1024).toFixed(1).replace('.', ',')} MB`
 
 function limpar(bruto) {
   const raiz = pastaCache()
-  if (!fs.existsSync(raiz)) return `O cache da play já está vazio (${raiz}).`
+  if (!fs.existsSync(raiz)) return `O cache da listen já está vazio (${raiz}).`
   if (!String(bruto ?? '').trim()) {
     const total = tamanhoDe(raiz)
     fs.rmSync(raiz, { recursive: true, force: true })
-    return `Apaguei o cache da play (${mb(total)}): ${raiz}`
+    return `Apaguei o cache da listen (${mb(total)}): ${raiz}`
   }
   const abs = resolverCaminho(bruto) ?? path.resolve(candidatosDoCaminho(bruto).at(-1))
   let total = 0, quantas = 0
@@ -612,7 +612,7 @@ export async function principal(argv, script = process.argv[1]) {
 // caminho real dos dois lados: a skill é instalada por link simbólico, e aí o argv[1] não bate com o import.meta.url
 if (process.argv[1] && (() => { try { return fs.realpathSync(process.argv[1]) === fs.realpathSync(fileURLToPath(import.meta.url)) } catch { return false } })()) {
   principal(process.argv.slice(2)).then((code) => { process.exitCode = code }, (e) => {
-    console.error(`Erro inesperado na play: ${e?.stack ?? e}`)
+    console.error(`Erro inesperado na listen: ${e?.stack ?? e}`)
     process.exitCode = 1
   })
 }
