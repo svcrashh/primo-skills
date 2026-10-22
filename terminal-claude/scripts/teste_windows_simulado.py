@@ -223,5 +223,38 @@ confere("a janela do dono não foi tocada pelo fechar", 1001 in fake.jan)
 confere("registro e cache limpos depois", roda("status").startswith("Nenhuma janela") and sorted(p.name for p in so.CACHE.iterdir()) == ["hooks.json", "uso.json"], str(list(so.CACHE.iterdir())))
 confere("fechar com opção errada diz quais valem", "Valem --todas" in roda("fechar", "--tudo"))
 
+# --- perfis: --perfil, "outras" em rodízio, perfil por trilha e --continuar entre perfis ------
+casa = raiz / "casa"
+for nome, usado in ((".claude", False), (".claude-devin", True), (".claude-insiders", True), (".claude-velho", False)):
+    (casa / nome).mkdir(parents=True)
+    if usado:
+        (casa / nome / ".claude.json").write_text("{}", encoding="utf-8")
+devin, insiders = str(casa / ".claude-devin"), str(casa / ".claude-insiders")
+terminais.CASA, terminais.MEU_PERFIL = casa, insiders
+confere("perfis: o padrão e os ~/.claude-* já usados", terminais.perfis() == [None, devin, insiders], str(terminais.perfis()))
+confere("outras: todos menos o desta sessão", terminais.expandir_perfis("outras") == [None, devin], str(terminais.expandir_perfis("outras")))
+confere("lista de nomes, com o padrão", terminais.expandir_perfis("devin, padrao") == [devin, None], str(terminais.expandir_perfis("devin, padrao")))
+confere("perfil que não existe diz quais valem", "Valem: outras, padrao, devin, insiders." in roda("abrir", pasta, "--perfil", "xpto"))
+antes = set(glob.glob(str(raiz / "saida-*.json")))
+roda("abrir", pasta, "-n", "3", "--prompt", "x", "--perfil", "outras")
+novas = sorted((le(f) for f in set(glob.glob(str(raiz / "saida-*.json"))) - antes), key=lambda s: s["argv"][s["argv"].index("--name") + 1])
+confere("outras em rodízio: padrão, devin, padrão", [s["config"] for s in novas] == [None, devin, None], str([s["config"] for s in novas]))
+confere("a janela do padrão vai sem CLAUDE_CONFIG_DIR", novas and "CLAUDE_CONFIG_DIR" not in novas[0]["env"], str(novas[0]["env"] if novas else ""))
+lote.write_text(json.dumps([{"titulo": "P · fixa", "prompt": "p", "perfil": "insiders"}, {"titulo": "Q · rodízio", "prompt": "q"}]), encoding="utf-8")
+antes = set(glob.glob(str(raiz / "saida-*.json")))
+roda("abrir", pasta, "--lote", str(lote), "--perfil", "devin")
+novas = {s["argv"][s["argv"].index("--name") + 1]: s["config"] for s in (le(f) for f in set(glob.glob(str(raiz / "saida-*.json"))) - antes)}
+confere("o perfil da trilha vence o --perfil do lote", novas == {"P · fixa": insiders, "Q · rodízio": devin}, str(novas))
+conversa = Path(insiders) / "projects" / "-projeto" / "sessao-teste.jsonl"
+conversa.parent.mkdir(parents=True); conversa.write_text(json.dumps({"cwd": pasta}) + "\n", encoding="utf-8")
+(conversa.with_suffix("") / "tool-results").mkdir(parents=True); (conversa.with_suffix("") / "tool-results" / "r.txt").write_text("r")
+terminais.levar_conversa(devin)
+copia = Path(devin) / "projects" / "-projeto" / "sessao-teste.jsonl"
+confere("--continuar em outro perfil leva a conversa e a pasta dela pro projects de lá", copia.read_text(encoding="utf-8") == conversa.read_text(encoding="utf-8") and (copia.with_suffix("") / "tool-results" / "r.txt").exists())
+if not NO_WINDOWS:   # link de pasta no Windows pede privilégio
+    (casa / ".claude-ligado").mkdir(); (casa / ".claude-ligado" / "projects").symlink_to(Path(insiders) / "projects")
+    terminais.levar_conversa(str(casa / ".claude-ligado"))
+    confere("perfil com o projects ligado ao desta sessão não copia em cima do próprio arquivo", conversa.exists())
+
 shutil.rmtree(raiz, ignore_errors=True)
 sys.exit(f"\n{len(falhas)} FALHA(S): {'; '.join(falhas)}" if falhas else print("\nTUDO OK"))

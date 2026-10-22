@@ -4,7 +4,7 @@ acompanha. No Mac as janelas são do Terminal.app; no Windows, do Windows Termin
 
 Uso: terminais.py abrir [pasta ...] [-n N] [--prompt TEXTO]... [--lote trilhas.json]
                         [--modelo M] [--esforco E] [--modo MODO] [--monitor M]
-                        [--worktree] [--continuar] [--dry-run]
+                        [--perfil P] [--worktree] [--continuar] [--dry-run]
      terminais.py status [--todas]
      terminais.py esperar [--minutos N]
      terminais.py ver <id>
@@ -12,7 +12,8 @@ Uso: terminais.py abrir [pasta ...] [-n N] [--prompt TEXTO]... [--lote trilhas.j
      terminais.py fechar [--listar] [--todas] [--forcar] [id ...]
 
 Um só motor para os perfis ~/.claude, ~/.claude-devin (via link) e ~/.claude-insiders: a janela
-nasce no perfil da sessão que chamou. O que muda de um sistema para o outro (abrir, achar e fechar
+nasce no perfil da sessão que chamou, ou no que o --perfil disser ("outras" reparte as janelas
+entre os perfis que não são o desta sessão, pra elas gastarem das outras contas). O que muda de um sistema para o outro (abrir, achar e fechar
 janela) está em so_mac.py e so_windows.py; aqui fica o que é igual nos dois.
 """
 import argparse
@@ -20,6 +21,7 @@ import json
 import os
 import re
 import shlex
+import shutil
 import subprocess
 import sys
 import time
@@ -40,7 +42,8 @@ else:
     import so_mac as so
 
 SESSAO = os.environ.get("CLAUDE_CODE_SESSION_ID", "sem-sessao")
-CAMPOS = {"titulo", "prompt", "pasta", "modelo", "esforco", "worktree"}
+CAMPOS = {"titulo", "prompt", "pasta", "modelo", "esforco", "worktree", "perfil"}
+CASA = Path.home()
 # Depois de tantos lotes ou dias de uso numa pasta, o abrir lembra de perguntar pela limpeza dos .md
 # que as trilhas deixam pelo projeto. Quem responde "agora não" volta a ser perguntado em LIMPEZA_ADIA dias.
 LIMPEZA_LOTES, LIMPEZA_DIAS, LIMPEZA_ADIA = 10, 14, 3
@@ -163,18 +166,81 @@ def slug(texto):
     return re.sub(r"[^a-z0-9]+", "-", ascii_).strip("-")
 
 
+def mesmo_perfil(a, b):
+    return a == b or bool(a and b and Path(a).resolve() == Path(b).resolve())
+
+
+def normalizar_perfil(cfg):
+    """O ~/.claude vira None: a janela dele vai sem CLAUDE_CONFIG_DIR (veja o lancador)."""
+    cfg = cfg and os.path.expanduser(cfg)
+    return None if not cfg or mesmo_perfil(cfg, str(CASA / ".claude")) else cfg
+
+
+MEU_PERFIL = normalizar_perfil(os.environ.get("CLAUDE_CONFIG_DIR"))
+
+
+def perfis():
+    """O ~/.claude (None) e cada ~/.claude-* que o claude já usou (tem .claude.json dentro)."""
+    return [None, *sorted(str(p) for p in CASA.glob(".claude-*") if (p / ".claude.json").is_file())]
+
+
+def nome_do_perfil(cfg):
+    return "padrão (~/.claude)" if not cfg else cfg.replace(str(CASA), "~", 1)
+
+
+def expandir_perfis(texto):
+    """"devin", "insiders,padrao", "~/.claude-x" ou "outras" → pastas de config, na ordem do rodízio."""
+    lista = []
+    for nome in (n.strip() for n in texto.split(",") if n.strip()):
+        if nome == "outras":
+            outras = [p for p in perfis() if not mesmo_perfil(p, MEU_PERFIL)]
+            if not outras:
+                sys.exit(f"Não há outro perfil nesta máquina além do desta sessão ({nome_do_perfil(MEU_PERFIL)}). "
+                         "Cria um com  CLAUDE_CONFIG_DIR=~/.claude-<nome> claude  e faz login na outra conta.")
+            lista += outras
+            continue
+        if nome.lower() in ("padrao", "padrão", "claude"):
+            lista.append(None)
+            continue
+        p = Path(os.path.expanduser(nome)) if any(c in nome for c in "/\\~") else \
+            CASA / (nome if nome.startswith(".claude") else f".claude-{nome}")
+        if not p.is_dir():
+            sys.exit(f"Perfil não existe: {p}. Valem: outras, padrao, "
+                     + ", ".join(Path(c).name[len(".claude-"):] for c in perfis() if c) + ".")
+        lista.append(normalizar_perfil(str(p)))
+    return lista
+
+
+def transcript_da_conversa():
+    config = Path(MEU_PERFIL or CASA / ".claude")
+    arq = next(config.glob(f"projects/*/{SESSAO}.jsonl"), None)
+    if not arq:
+        sys.exit("--continuar não achou o transcript desta conversa: sem ele não há o que copiar.")
+    return arq
+
+
 def pasta_da_conversa():
-    config = Path(os.environ.get("CLAUDE_CONFIG_DIR") or Path.home() / ".claude")
-    for arq in config.glob(f"projects/*/{SESSAO}.jsonl"):
-        with arq.open(encoding="utf-8") as f:
-            for linha in f:
-                try:
-                    cwd = json.loads(linha).get("cwd")
-                except ValueError:
-                    continue
-                if cwd:
-                    return Path(cwd).resolve()
-    sys.exit("--continuar não achou o transcript desta conversa: sem ele não há o que copiar.")
+    with transcript_da_conversa().open(encoding="utf-8") as f:
+        for linha in f:
+            try:
+                cwd = json.loads(linha).get("cwd")
+            except ValueError:
+                continue
+            if cwd:
+                return Path(cwd).resolve()
+    sys.exit("--continuar não achou a pasta desta conversa no transcript dela.")
+
+
+def levar_conversa(cfg):
+    """O --resume só acha a conversa nos projects do perfil da janela: copia ela pra lá."""
+    origem = transcript_da_conversa()
+    destino = Path(cfg or CASA / ".claude") / "projects" / origem.parent.name / origem.name
+    if destino.exists() and destino.samefile(origem):
+        return  # perfil com o projects ligado ao desta sessão (o devin, por exemplo)
+    destino.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(origem, destino)
+    if origem.with_suffix("").is_dir():
+        shutil.copytree(origem.with_suffix(""), destino.with_suffix(""), dirs_exist_ok=True)
 
 
 def montar_trilhas(a):
@@ -203,8 +269,13 @@ def montar_trilhas(a):
             sys.exit(f"Com --continuar as janelas abrem na pasta desta conversa ({conversa}). "
                      "Tira a pasta do comando, ou abre sem --continuar e passa o contexto no prompt.")
     sem_titulo = Counter(t["pasta"].name for t in trilhas if not t.get("titulo"))
-    vez, extras, repo = Counter(), {}, {}
+    vez, extras, repo, rodizio = Counter(), {}, {}, Counter()
     for t in trilhas:
+        # Cada lista de perfis é um rodízio: "outras" com 3 janelas e 2 perfis dá A, B, A.
+        texto = t.get("perfil") or a.perfil
+        lista = tuple(expandir_perfis(texto)) if texto else (MEU_PERFIL,)
+        t["config"] = lista[rodizio[lista] % len(lista)]
+        rodizio[lista] += 1
         nome = t["pasta"].name
         if not t.get("titulo"):
             vez[nome] += 1
@@ -246,21 +317,31 @@ def args_claude(t, claude, modo, continuar):
 
 def cmd_abrir(a):
     trilhas = montar_trilhas(a)
-    cfg = os.environ.get("CLAUDE_CONFIG_DIR")
     claude = so.achar_claude() or "claude"
+    usados = {t["config"] for t in trilhas}
     with trava():
         registro_vivo()
         destinos, outras, ondes, avisos = organizar.plano_novas(len(trilhas), a.monitor)
-        print(f"Perfil: {cfg or '~/.claude (padrão)'}")
+        if len(usados) == 1:
+            print(f"Perfil: {nome_do_perfil(next(iter(usados)))}")
+        else:
+            print(f"Perfis: um por trilha (esta sessão está no {nome_do_perfil(MEU_PERFIL)})")
         for aviso in avisos:
             print(f"Aviso: {aviso}")
         if not a.dry_run:
             so.CACHE.mkdir(parents=True, exist_ok=True)
             (so.CACHE / "hooks.json").write_text(json.dumps(HOOKS), encoding="utf-8")
+            if a.continuar:
+                for cfg in usados:
+                    if not mesmo_perfil(cfg, MEU_PERFIL):
+                        levar_conversa(cfg)
         carimbo, abertas = f"{time.strftime('%Y%m%d-%H%M%S')}-{os.getpid()}", []
         for k, (t, destino, onde) in enumerate(zip(trilhas, destinos, ondes), 1):
             args = args_claude(t, claude, a.modo, SESSAO if a.continuar else None)
+            cfg = t["config"]
             resumo = f"{t['titulo']} · {t['pasta']} · {onde}"
+            if len(usados) > 1:
+                resumo += f" · {nome_do_perfil(cfg)}"
             if t["extras"]:
                 resumo += f" · +{len(t['extras'])} pasta(s) do workspace"
             if a.dry_run:
@@ -511,6 +592,7 @@ def main():
     ab.add_argument("--esforco")
     ab.add_argument("--modo", choices=["plan", "acceptEdits", "auto", "manual", "dontAsk"])
     ab.add_argument("--monitor")
+    ab.add_argument("--perfil")
     ab.add_argument("--worktree", action="store_true")
     ab.add_argument("--continuar", action="store_true")
     ab.add_argument("--dry-run", action="store_true")

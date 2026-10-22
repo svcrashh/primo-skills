@@ -1,6 +1,6 @@
 ---
 name: terminal-claude
-description: Abre uma ou várias janelas de terminal (Terminal.app no Mac, Windows Terminal no Windows), cada uma com o Claude em bypass (--dangerously-skip-permissions) e sem deixar a máquina dormir, para dividir o trabalho em trilhas paralelas — um prompt por janela, todas numa chamada só —, acompanha em que pé está cada uma e fecha cada uma quando termina. Use quando eu digitar "/terminal-claude" ou pedir "abre um terminal com o claude", "abre N terminais", "divide isso em terminais", "abre as trilhas", "abre as sessões com os prompts", "claude em bypass no terminal", "abre o claude no notebook/no monitor". Vale igual no Mac e no Windows e nos perfis ~/.claude (VS Code e claude no terminal), ~/.claude-devin e ~/.claude-insiders.
+description: Abre uma ou várias janelas de terminal (Terminal.app no Mac, Windows Terminal no Windows), cada uma com o Claude em bypass (--dangerously-skip-permissions) e sem deixar a máquina dormir, para dividir o trabalho em trilhas paralelas — um prompt por janela, todas numa chamada só —, acompanha em que pé está cada uma e fecha cada uma quando termina. Use quando eu digitar "/terminal-claude" ou pedir "abre um terminal com o claude", "abre N terminais", "divide isso em terminais", "abre as trilhas", "abre as sessões com os prompts", "claude em bypass no terminal", "abre o claude no notebook/no monitor", e quando eu pedir pra trilha gastar de outra conta: "usa as outras contas", "nas outras contas", "com o token/limite das outras contas", "no perfil devin/insiders". Vale igual no Mac e no Windows e nos perfis ~/.claude (VS Code e claude no terminal), ~/.claude-devin e ~/.claude-insiders.
 ---
 
 # terminal-claude
@@ -12,7 +12,8 @@ prompt, rodando ao mesmo tempo. Uma janela só também vale, mas o caso que impo
 `~/.claude/skills/terminal-claude/scripts/terminais.py`. No Mac as janelas são do Terminal.app; no
 Windows, do Windows Terminal. A Devin enxerga esta pasta pelo link `~/.claude-devin/skills →
 ~/.claude/skills`, e o `~/.claude-insiders/skills/terminal-claude/SKILL.md` é link para este
-arquivo. A janela nasce no perfil da sessão que chamou. Mudou algo? Muda só aqui.
+arquivo. A janela nasce no perfil da sessão que chamou, a menos que o `--perfil` mande para outro
+(veja "Outras contas"). Mudou algo? Muda só aqui.
 
 ```sh
 # Mac (zsh)
@@ -55,16 +56,17 @@ Quando o pedido é dividir um trabalho, antes de abrir:
 **Quantas janelas.** Vale o limite que o CLAUDE.md de quem usa disser (ou "sem limite", se for o
 que ele diz). Se o CLAUDE.md não fala disso e ninguém pediu um número, não passa de 3 abertas ao
 mesmo tempo por conta própria. O que não couber vai em levas: espera uma terminar, colhe, fecha e
-abre a próxima. Cada janela é uma sessão inteira do Claude gastando do mesmo plano, então N janelas
-gastam mais ou menos N vezes. Antes de abrir, diz em uma linha quantas vão subir e o que cada uma
-faz.
+abre a próxima. Cada janela é uma sessão inteira do Claude gastando do plano do perfil dela, então
+N janelas no mesmo perfil gastam mais ou menos N vezes; com `--perfil outras` o gasto sai das outras
+contas. Antes de abrir, diz em uma linha quantas vão subir, o que cada uma faz e, se for o caso, em
+que conta.
 
 Escreve as trilhas num JSON (com o Write, no scratchpad) e abre todas de uma vez:
 
 ```json
 [
   {"titulo": "A · schema", "prompt": "…"},
-  {"titulo": "B · docs", "prompt": "…", "modelo": "sonnet"},
+  {"titulo": "B · docs", "prompt": "…", "modelo": "sonnet", "perfil": "devin"},
   {"titulo": "C · api", "prompt": "…", "pasta": "~/Documents/GitHub/outro-repo", "worktree": true}
 ]
 ```
@@ -73,9 +75,9 @@ Escreve as trilhas num JSON (com o Write, no scratchpad) e abre todas de uma vez
 python3 $T abrir <pasta> --lote <trilhas.json>
 ```
 
-Campos de cada trilha: `titulo`, `prompt`, `pasta`, `modelo`, `esforco`, `worktree`. Só `prompt`
-costuma ser preciso; o que a trilha não disser vem da linha de comando (a pasta e as opções valem
-como padrão do lote). O prompt vai inteiro, com aspas, acento e várias linhas.
+Campos de cada trilha: `titulo`, `prompt`, `pasta`, `modelo`, `esforco`, `worktree`, `perfil`. Só
+`prompt` costuma ser preciso; o que a trilha não disser vem da linha de comando (a pasta e as
+opções valem como padrão do lote). O prompt vai inteiro, com aspas, acento e várias linhas.
 
 ## 2. Abrir
 
@@ -107,10 +109,40 @@ de um `.code-workspace` aberto no VS Code, as outras pastas dele entram sozinhas
 - `--continuar` — cada janela nasce como **cópia desta conversa** e recebe só a parte dela como
   prompt. Use quando as trilhas precisam do que já foi discutido aqui (plano fechado, arquivos
   lidos). Cada cópia carrega a conversa inteira, então conversa longa custa por janela. Abre sempre
-  na pasta desta conversa; combina com `--worktree`.
+  na pasta desta conversa; combina com `--worktree` e com `--perfil`.
+- `--perfil outras|devin|insiders|padrao|<caminho>` — em que conta a janela roda. Veja abaixo.
 - `--modo plan` (ou `manual`, `acceptEdits`, `auto`, `dontAsk`) — troca o bypass por outro modo de
   permissão. Só quando eu pedir ("abre em plan mode").
 - `--dry-run` — mostra o plano, o quadrado de cada janela e o comando, sem abrir nada.
+
+### Outras contas: esta sessão supervisiona, as janelas trabalham
+
+Pedi em 22/10/2026: quando eu disser "usa as outras contas" (ou "nas outras contas", "com o limite
+das outras contas"), a sessão que chamou continua a principal, na conta dela, e só supervisiona; o
+trabalho das trilhas sai das outras contas. É o `--perfil outras`.
+
+- `--perfil outras` reparte as janelas, em rodízio, entre os perfis desta máquina que não são o da
+  sessão que chamou. Daqui do `~/.claude`, 3 janelas vão para devin, insiders e devin. Conta como
+  perfil o `~/.claude` e cada `~/.claude-<nome>` com `.claude.json` dentro (o claude já rodou nele).
+- `--perfil devin` (ou `insiders`, `padrao`, um caminho, ou uma lista como `devin,insiders`) fixa o
+  perfil ou o rodízio. No lote, o `"perfil"` da trilha vence o do comando.
+- O `abrir` diz o perfil de cada janela. O resto do ciclo não muda: o registro é um só, e o `ver`
+  lê a conversa no perfil da janela.
+- **Com `--continuar`:** antes de abrir, a conversa desta sessão é copiada para o `projects` do
+  outro perfil, que é onde o `--resume` procura. O devin divide o `projects` com o `~/.claude` por
+  link e não precisa da cópia. Provado em 22/10/2026: uma cópia aberta no insiders respondeu sobre o
+  que estava sendo discutido aqui.
+- **Perfil só é outra conta se estiver logado nela.** Dois perfis na mesma conta dividem o mesmo
+  limite. Para conferir: `CLAUDE_CONFIG_DIR=~/.claude-devin claude auth status`. Perfil novo:
+  `CLAUDE_CONFIG_DIR=~/.claude-<nome> claude` e `/login` na outra conta; daí em diante ele entra no
+  `outras`.
+- **A janela lê o perfil dela:** o CLAUDE.md global, as skills, os MCP e as configurações daquele
+  perfil. O devin aponta para o CLAUDE.md e as skills do `~/.claude` (links); o insiders tem os
+  seus. Trilha que precisa de um MCP que só existe aqui fica no perfil daqui.
+- **Confiar na pasta é por perfil:** pasta que aquele perfil nunca abriu para na tela de confiar
+  (`abrindo` no status) até eu confirmar na janela.
+- **Conta que bater no limite** (sem prova ainda): a janela para e o `ver` mostra o aviso. Fecha e
+  reabre a trilha em outro perfil.
 
 ## 3. Acompanhar e fechar — obrigatório
 
@@ -218,9 +250,10 @@ do script: o caminho pra liberar já vem nela.
 
 Nos dois sistemas:
 
-- **Perfil:** o mesmo da sessão que chamou. Com `CLAUDE_CONFIG_DIR` vazio (perfil `~/.claude`) a
-  janela nasce com ele vazio; **nunca** com `CLAUDE_CONFIG_DIR=~/.claude`, que faria o claude ler
-  `~/.claude/.claude.json` (um arquivo velho) e outra credencial.
+- **Perfil:** o da sessão que chamou, ou o do `--perfil`, um por janela. Com `CLAUDE_CONFIG_DIR`
+  vazio (perfil `~/.claude`) a janela nasce com ele vazio; **nunca** com
+  `CLAUDE_CONFIG_DIR=~/.claude`, que faria o claude ler `~/.claude/.claude.json` (um arquivo velho)
+  e outra credencial.
 - **Ambiente limpo nas duas pontas.** Uma sessão carrega `CLAUDECODE`, `CLAUDE_CODE_CHILD_SESSION`
   e companhia; com elas o claude novo vira sessão-filha e **não salva a conversa** ("Transcript
   saving is off"). A janela tira tudo que começa com `CLAUDE` antes de chamar o claude, e o
