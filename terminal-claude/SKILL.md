@@ -127,6 +127,9 @@ na mão vence o auto e abre mesmo acima de 80%. A regra, janela por janela:
   que acabou de zerar fica por último.
 - Cada janela conta 5 pontos da semana e 15 da sessão. A que levaria a conta além de 80% vai para a
   próxima da fila, e a janela que eu mandei na mão para uma conta também entra na conta dela.
+- As janelas que já rodam contam do mesmo jeito: antes de escolher, o auto soma na conta de cada uma
+  as janelas abertas no registro, de qualquer sessão (a `encerrada` não conta). O `contas` mostra
+  quantas há em cada conta.
 - Lote que não cabe inteiro não abre nenhuma janela: o motor mostra o uso e quando cada conta zera.
   Abre em levas ou me pergunta.
 

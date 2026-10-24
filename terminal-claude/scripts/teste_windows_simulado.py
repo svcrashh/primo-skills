@@ -350,6 +350,29 @@ roda("abrir", pasta, "--prompt", "x", "--perfil", "padrao")
 novas = [le(f)["config"] for f in set(glob.glob(str(raiz / "saida-*.json"))) - antes]
 confere("escolhendo na mão abre mesmo acima de 80%, sem ler o uso", novas == [None] and api["chamadas"] == [], f"{novas} {api['chamadas']}")
 
+def ja_aberta(cfg, estado="trabalhando", sessao="outra-sessao"):
+    """Uma janela que já roda, no registro, como a de qualquer sessão."""
+    hwnd = 9001 + len([h for h in fake.jan if h > 9000])
+    base = str(so.CACHE / f"ja-aberta-{hwnd}")
+    Path(base + ".estado").write_text(estado, encoding="utf-8")
+    Path(base + ".json").write_text(json.dumps({"titulo": f"já aberta {hwnd}", "sessao": f"s-{hwnd}", "config": cfg}), encoding="utf-8")
+    with so.REGISTRO.open("a", encoding="utf-8") as f:
+        f.write("\t".join([str(hwnd), str(os.getpid()), pasta, sessao, "2026-10-24 10:00", base]) + "\n")
+    fake.jan[hwnd] = (0, 0, 10, 10)
+cory(("padrao", 10, 65, 1.5), ("devin", 10, 20, 5), ("insiders", 10, 10, 6.5))
+ja_aberta(None); ja_aberta(None, sessao="sessao-teste"); ja_aberta(None, estado="encerrada")
+escolha, saida = auto("-n", "2", "--prompt", "x")
+confere("o auto soma as janelas que já rodam, de qualquer sessão: a 65% com 2 abertas (75%) recebe só mais uma",
+        escolha == ["padrao", "devin"], saida)
+confere("e diz quantas já rodam na conta escolhida", "Prime (padrao) · 65% da semana" in saida and "2 janela(s) já aberta(s) nela" in saida, saida)
+contas = roda("contas")
+confere("o contas mostra as abertas de cada conta e conta com elas na ordem", re.search(r"Prime \(padrao\) .*\)\s+2\s+Cory, ", contas) and re.search(r"Lumma \(devin\) .*\)\s+0\s+Cory, ", contas)
+        and "1º Prime (1)" in contas, contas)
+for h in [h for h in fake.jan if h > 9000]:
+    fake.jan.pop(h)
+escolha, saida = auto("-n", "2", "--prompt", "x")
+confere("fechadas as janelas, a conta volta a receber as duas", escolha == ["padrao", "padrao"], saida)
+
 cory(("padrao", 10, 65, 1.5), ("devin", 10, 20, 5), ("insiders", 10, 10, 6.5), idade=20 * 60)
 api["respostas"] = {"tok-padrao": resposta(30, 82, 1.5), "tok-devin": resposta(5, 20, 5), "tok-insiders": resposta(0, 10, 6.5)}
 escolha, saida = auto("--prompt", "x")

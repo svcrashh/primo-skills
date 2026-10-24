@@ -421,13 +421,40 @@ def uso_em_uma_linha(c):
     if "semana" not in c:
         return f"{rotulo(c)}: sem número ({c['erro']})"
     sessao = f"sessão {c['sessao']}%" + (f", zera {quando(c['zera'])}" if c["zera"] else "")
-    return f"{rotulo(c)}: {sessao} · semana {c['semana']}%, zera {quando(c['zera_semana'])}"
+    return f"{rotulo(c)}: {sessao} · semana {c['semana']}%, zera {quando(c['zera_semana'])}" + (
+        f" · {c['abertas']} janela(s) aberta(s)" if c.get("abertas") else "")
+
+
+def abertas_por_perfil():
+    """Quantas janelas ainda rodam em cada perfil, pelo registro, as de todas as sessões. A encerrada não
+    conta: o claude dela já saiu."""
+    abertas = Counter()
+    for c in registro_com_trava():
+        try:
+            if ler_estado(Path(c[5] + ".estado")) != "encerrada":
+                abertas[json.loads(Path(c[5] + ".json").read_text(encoding="utf-8"))["config"]] += 1
+        except (OSError, ValueError, KeyError):
+            pass
+    return abertas
+
+
+def somar_abertas(contas):
+    """Anota em cada conta as janelas que ainda rodam nela e devolve a previsão de cada uma com o gasto
+    delas somado: a janela aberta continua gastando (em 24/10/2026 o auto mandou duas para a Prime sem
+    contar as duas que já rodavam lá)."""
+    abertas, previsto = abertas_por_perfil(), {}
+    for c in contas:
+        c["abertas"] = sum(n for cfg, n in abertas.items() if mesmo_perfil(cfg, c["cfg"]))
+        if "semana" in c:
+            previsto[c["cfg"]] = {**c, "semana": c["semana"] + c["abertas"] * GASTO_SEMANA,
+                                  "sessao": c["sessao"] + c["abertas"] * GASTO_SESSAO}
+    return previsto
 
 
 def escolher_auto(trilhas):
     """Dá a cada trilha de perfil auto a conta dela e o motivo. Cada janela soma GASTO_* na conta em que
-    vai abrir, inclusive a de perfil escolhido na mão; a que não cabe passa para a próxima da fila. Se o
-    lote não couber inteiro, não abre nenhuma."""
+    vai abrir, inclusive a de perfil escolhido na mão e as que já rodam (de qualquer sessão); a que não
+    cabe passa para a próxima da fila. Se o lote não couber inteiro, não abre nenhuma."""
     contas, avisos = ler_contas()
     for aviso in avisos:
         print(f"Aviso: {aviso}")
@@ -438,7 +465,7 @@ def escolher_auto(trilhas):
         for k, t in enumerate(autos):
             t["config"] = lista[k % len(lista)]
         return
-    previsto = {c["cfg"]: dict(c) for c in contas if "semana" in c}
+    previsto = somar_abertas(contas)
     for t in trilhas:
         if t["config"] is not AUTO and t["config"] in previsto:
             previsto[t["config"]]["semana"] += GASTO_SEMANA
@@ -448,8 +475,8 @@ def escolher_auto(trilhas):
         por_que = f"cabe{'' if vagas == 1 else 'm'} só {vagas} das {len(autos)} janelas" if vagas else \
             "nenhuma conta tem folga para mais uma janela"
         sys.exit("\n".join([
-            f"O --perfil auto não abriu nada: {por_que} sem passar de {TETO}% (cada janela conta "
-            f"{GASTO_SEMANA} pontos da semana e {GASTO_SESSAO} da sessão de 5 h).",
+            f"O --perfil auto não abriu nada: {por_que} sem passar de {TETO}% (cada janela, aberta ou por "
+            f"abrir, conta {GASTO_SEMANA} pontos da semana e {GASTO_SESSAO} da sessão de 5 h).",
             *(f"  {uso_em_uma_linha(c)}" for c in contas),
             "Abre menos janelas agora e o resto em outra leva, espera uma conta zerar, ou escolhe a conta "
             "na mão com --perfil <nome>."]))
@@ -460,6 +487,7 @@ def escolher_auto(trilhas):
         c = real[alvo["cfg"]]
         t["config"] = alvo["cfg"]
         t["motivo"] = f"{rotulo(c)} · {c['semana']}% da semana, zera {quando(c['zera_semana'])}" + (
+            f" · {c['abertas']} janela(s) já aberta(s) nela" if c["abertas"] else "") + (
             f" · {' e '.join(cheias)} passaria{'' if len(cheias) == 1 else 'm'} de {TETO}%" if cheias else "")
         alvo["semana"] += GASTO_SEMANA
         alvo["sessao"] += GASTO_SESSAO
@@ -469,38 +497,39 @@ def cmd_contas(a):
     contas, avisos = ler_contas()
     for aviso in avisos:
         print(f"Aviso: {aviso}")
-    linhas = [("Conta", "Sessão 5 h", "Semana", "Lido")]
+    previsto = somar_abertas(contas)
+    linhas = [("Conta", "Sessão 5 h", "Semana", "Abertas", "Lido")]
     for c in contas:
         if "semana" not in c:
-            linhas.append((rotulo(c), "—", "—", f"sem número: {c['erro']}"))
+            linhas.append((rotulo(c), "—", "—", str(c["abertas"]), f"sem número: {c['erro']}"))
             continue
         lido = "agora" if time.time() - c["lido"] < 60 else f"há {ha(c['lido'])}"
         linhas.append((rotulo(c),
                        f"{c['sessao']:>3}%" + (f"  zera {quando(c['zera'])}" if c["zera"] else ""),
                        f"{c['semana']:>3}%  zera {quando(c['zera_semana'])}"
                        + (f" (em {falta(c['zera_semana'])})" if c["zera_semana"] else ""),
-                       f"{c['fonte']}, {lido}"))
-    larguras = [max(len(linha[i]) for linha in linhas) for i in range(3)]
+                       str(c["abertas"]), f"{c['fonte']}, {lido}"))
+    larguras = [max(len(linha[i]) for linha in linhas) for i in range(4)]
     for linha in linhas:
-        print("  ".join(x.ljust(w) for x, w in zip(linha, larguras)) + "  " + linha[3])
+        print("  ".join(x.ljust(w) for x, w in zip(linha, larguras)) + "  " + linha[4])
     print()
     if not any("semana" in c for c in contas):
         print("Sem o uso de nenhuma conta: o --perfil auto cairia no rodízio do --perfil outras.")
         return
     fila = fila_auto(contas)
-    com_vaga = [c for c in fila if cabem(c)]
+    com_vaga = [c for c in fila if cabem(previsto[c["cfg"]])]
     if not com_vaga:
         print(f"Ordem do --perfil auto agora: nenhuma conta tem folga para uma janela sem passar de {TETO}%: "
               "o auto não abre nada.")
     else:
         print("Ordem do --perfil auto agora, com as janelas que cabem em cada: " + " → ".join(
-            f"{k}º {c['nome']} ({cabem(c)})" for k, c in enumerate(fila, 1)))
+            f"{k}º {c['nome']} ({cabem(previsto[c['cfg']])})" for k, c in enumerate(fila, 1)))
         p = com_vaga[0]
         print(f"Por quê: a {p['nome']} é a que zera a semana primeiro ({quando(p['zera_semana'])}, com "
               f"{p['semana']}%), e o que sobrar dela até lá se perde"
               + (f"; a {fila[0]['nome']} zera antes, mas mais uma janela passaria de {TETO}%" if p is not fila[0] else "")
-              + f". Cada janela conta {GASTO_SEMANA} pontos da semana e {GASTO_SESSAO} da sessão, e nenhuma "
-              f"conta passa de {TETO}%.")
+              + f". Cada janela, aberta ou por abrir, conta {GASTO_SEMANA} pontos da semana e {GASTO_SESSAO} "
+              f"da sessão, e nenhuma conta passa de {TETO}%.")
     for c in contas:
         if "semana" in c and c not in fila:
             print(f"Fora do auto: {uso_em_uma_linha(c)} (passou de {TETO}%).")
