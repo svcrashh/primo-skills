@@ -1,6 +1,6 @@
 ---
 name: terminal-claude
-description: Abre uma ou várias janelas de terminal (Terminal.app no Mac, Windows Terminal no Windows), cada uma com o Claude em bypass (--dangerously-skip-permissions) e sem deixar a máquina dormir, para dividir o trabalho em trilhas paralelas — um prompt por janela, todas numa chamada só —, acompanha em que pé está cada uma e fecha cada uma quando termina. Use quando eu digitar "/terminal-claude" ou pedir "abre um terminal com o claude", "abre N terminais", "divide isso em terminais", "abre as trilhas", "abre as sessões com os prompts", "claude em bypass no terminal", "abre o claude no notebook/no monitor", e quando eu pedir pra trilha gastar de outra conta: "usa as outras contas", "nas outras contas", "com o token/limite das outras contas", "no perfil devin/insiders". Vale igual no Mac e no Windows e nos perfis ~/.claude (VS Code e claude no terminal), ~/.claude-devin e ~/.claude-insiders.
+description: Abre uma ou várias janelas de terminal (Terminal.app no Mac, Windows Terminal no Windows), cada uma com o Claude em bypass (--dangerously-skip-permissions) e sem deixar a máquina dormir, para dividir o trabalho em trilhas paralelas — um prompt por janela, todas numa chamada só —, acompanha em que pé está cada uma e fecha cada uma quando termina. Use quando eu digitar "/terminal-claude" ou pedir "abre um terminal com o claude", "abre N terminais", "divide isso em terminais", "abre as trilhas", "abre as sessões com os prompts", "claude em bypass no terminal", "abre o claude no notebook/no monitor", e quando eu pedir pra trilha gastar de outra conta: "usa as outras contas", "nas outras contas", "com o token/limite das outras contas", "no perfil devin/insiders", "em que conta roda", "qual conta usar". Vale igual no Mac e no Windows e nos perfis ~/.claude (VS Code e claude no terminal), ~/.claude-devin e ~/.claude-insiders.
 ---
 
 # terminal-claude
@@ -22,6 +22,7 @@ python3 $T abrir  [pasta ...] [opções]     # abre as janelas
 python3 $T status [--todas]                # em que pé está cada uma
 python3 $T esperar                         # segura até uma janela parar, e diz qual (pra rodar em segundo plano)
 python3 $T ver <id>                        # a última resposta de uma trilha
+python3 $T contas                          # o uso de cada conta e a ordem do --perfil auto
 python3 $T fechar [id ...]                 # fecha as que esta sessão abriu
 python3 $T limpeza                         # conta de lotes por pasta, pro aviso de limpeza
 ```
@@ -110,10 +111,31 @@ de um `.code-workspace` aberto no VS Code, as outras pastas dele entram sozinhas
   prompt. Use quando as trilhas precisam do que já foi discutido aqui (plano fechado, arquivos
   lidos). Cada cópia carrega a conversa inteira, então conversa longa custa por janela. Abre sempre
   na pasta desta conversa; combina com `--worktree` e com `--perfil`.
-- `--perfil outras|devin|insiders|padrao|<caminho>` — em que conta a janela roda. Veja abaixo.
+- `--perfil auto|outras|devin|insiders|padrao|<caminho>` — em que conta a janela roda. Veja abaixo.
 - `--modo plan` (ou `manual`, `acceptEdits`, `auto`, `dontAsk`) — troca o bypass por outro modo de
   permissão. Só quando eu pedir ("abre em plan mode").
 - `--dry-run` — mostra o plano, o quadrado de cada janela e o comando, sem abrir nada.
+
+### Qual conta: `--perfil auto` é o padrão
+
+Pedi em 24/10/2026: quando eu não disser a conta, abre com `--perfil auto` (no lote, `"perfil":
+"auto"`). Se eu disser ("na Lumma", "no devin", "usa as outras contas"), vale o que eu disse: a escolha
+na mão vence o auto e abre mesmo acima de 80%. A regra, janela por janela:
+
+- Fica fora a conta com 80% ou mais da semana ou da sessão de 5 h.
+- Das que sobram, primeiro a que zera a semana mais cedo, porque o que sobrar dela até lá se perde. A
+  que acabou de zerar fica por último.
+- Cada janela conta 5 pontos da semana e 15 da sessão. A que levaria a conta além de 80% vai para a
+  próxima da fila, e a janela que eu mandei na mão para uma conta também entra na conta dela.
+- Lote que não cabe inteiro não abre nenhuma janela: o motor mostra o uso e quando cada conta zera.
+  Abre em levas ou me pergunta.
+
+O uso vem do Cory (`~/.cory/uso.json`) ou do que a skill já leu da API, se tiver menos de 15 min;
+senão, da API de uso com o login do perfil (só lê, nunca renova o token). Se a API falhar, vale o
+número velho, com a idade no `Aviso:`; sem número nenhum, cai no rodízio do `outras`, com aviso. O
+`abrir` diz a conta de cada janela e o motivo (`Prime (padrao) · 66% da semana, zera amanhã 16h`), e o
+`contas` mostra a tabela e a ordem de agora, para eu saber antes de abrir em que conta as janelas vão.
+Os casos estão no `teste_windows_simulado.py`, que roda no Mac também.
 
 ### Outras contas: esta sessão supervisiona, as janelas trabalham
 
