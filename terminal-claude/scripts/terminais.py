@@ -8,16 +8,20 @@ Uso: terminais.py abrir [pasta ...] [-n N] [--prompt TEXTO]... [--lote trilhas.j
      terminais.py status [--todas]
      terminais.py esperar [--minutos N]
      terminais.py ver <id>
+     terminais.py contas
      terminais.py limpeza [pasta --feita | pasta --adiar | --nunca | --perguntar]
      terminais.py fechar [--listar] [--todas] [--forcar] [id ...]
 
 Um só motor para os perfis ~/.claude, ~/.claude-devin (via link) e ~/.claude-insiders: a janela
 nasce no perfil da sessão que chamou, ou no que o --perfil disser ("outras" reparte as janelas
-entre os perfis que não são o desta sessão, pra elas gastarem das outras contas). O que muda de um sistema para o outro (abrir, achar e fechar
-janela) está em so_mac.py e so_windows.py; aqui fica o que é igual nos dois.
+entre os perfis que não são o desta sessão, pra elas gastarem das outras contas; "auto" escolhe a
+conta de cada janela pelo uso de cada uma, que o `contas` mostra). O que muda de um sistema para o
+outro (abrir, achar e fechar janela) está em so_mac.py e so_windows.py; aqui fica o que é igual nos dois.
 """
 import argparse
+import hashlib
 import json
+import math
 import os
 import re
 import shlex
@@ -29,9 +33,11 @@ import unicodedata
 import uuid
 from collections import Counter
 from contextlib import contextmanager
+from datetime import datetime
 from pathlib import Path
+from urllib.error import HTTPError
 from urllib.parse import unquote, urlparse
-from urllib.request import url2pathname
+from urllib.request import Request, url2pathname, urlopen
 
 AQUI = Path(__file__).resolve().parent
 sys.path.insert(0, str(AQUI.parents[1] / "terminal-organizar/scripts"))
@@ -156,7 +162,7 @@ def registro_vivo():
     donos = {c[5] for c in linhas}
     if so.CACHE.is_dir():
         for f in so.CACHE.iterdir():
-            if f.name not in ("hooks.json", "uso.json") and str(f.with_suffix("")) not in donos:
+            if f.name not in ("hooks.json", "uso.json", "contas.json") and str(f.with_suffix("")) not in donos:
                 f.unlink()
     return linhas
 
@@ -205,10 +211,297 @@ def expandir_perfis(texto):
         p = Path(os.path.expanduser(nome)) if any(c in nome for c in "/\\~") else \
             CASA / (nome if nome.startswith(".claude") else f".claude-{nome}")
         if not p.is_dir():
-            sys.exit(f"Perfil não existe: {p}. Valem: outras, padrao, "
+            sys.exit(f"Perfil não existe: {p}. Valem: auto, outras, padrao, "
                      + ", ".join(Path(c).name[len(".claude-"):] for c in perfis() if c) + ".")
         lista.append(normalizar_perfil(str(p)))
     return lista
+
+
+# --perfil auto, a regra que o dono pediu em 24/10/2026: entre as contas abaixo do TETO na semana e na
+# sessão de 5 h, primeiro a que zera a semana mais cedo, porque o que sobrar dela até lá se perde; a que
+# acabou de zerar fica por último. GASTO_* é um palpite do que uma janela gasta, pra um lote não ir todo
+# para a conta que está quase no teto: com 66% da semana cabem duas janelas (71% e 76%) e a terceira,
+# que passaria de 80%, vai para a próxima da fila.
+TETO, GASTO_SEMANA, GASTO_SESSAO = 80, 5, 15
+AUTO = object()
+# O Cory, o app do dono, lê o uso das contas a cada 3 min e grava aqui; o que a API deu nas chamadas
+# daqui fica em contas.json no cache. Vale o mais novo dos dois. Mais velho que USO_FRESCO, pergunta à
+# API (que recusa quem pergunta seguido); se ela falhar, vale o guardado mesmo velho, com aviso.
+CORY = Path.home() / ".cory/uso.json"
+USO_FRESCO = 15 * 60
+USO_API = "https://api.anthropic.com/api/oauth/usage"
+DIAS = ["seg", "ter", "qua", "qui", "sex", "sáb", "dom"]
+
+
+def chave_do_perfil(cfg):
+    """O nome que o --perfil aceita e que o Cory usa: padrao, devin, insiders."""
+    return Path(cfg).name[len(".claude-"):] if cfg else "padrao"
+
+
+def nome_da_conta(cfg):
+    """Quem está logado no perfil ("PRIME" vira "Prime"), lido do .claude.json dele (o do padrão fica fora
+    do ~/.claude)."""
+    arquivo = Path(cfg) / ".claude.json" if cfg else CASA / ".claude.json"
+    try:
+        conta = json.loads(arquivo.read_text(encoding="utf-8")).get("oauthAccount") or {}
+    except (OSError, ValueError):
+        conta = {}
+    nome = " ".join((conta.get("displayName") or "").split())
+    return (nome.title() if nome.isupper() or nome.islower() else nome) or chave_do_perfil(cfg)
+
+
+def rotulo(c):
+    return c["nome"] if c["nome"] == c["chave"] else f"{c['nome']} ({c['chave']})"
+
+
+def instante(iso):
+    try:
+        return datetime.fromisoformat(iso.replace("Z", "+00:00")).timestamp()
+    except (AttributeError, ValueError):
+        return None
+
+
+def quando(t, agora=None):
+    """'hoje 14h20', 'amanhã 09h', 'sáb 16h' (até 6 dias) ou '31/10 09h', na hora local."""
+    if not t:
+        return "—"
+    alvo = datetime.fromtimestamp(round(t / 60) * 60)
+    dias = (alvo.date() - datetime.fromtimestamp(agora or time.time()).date()).days
+    hora = f"{alvo:%H}h" + (f"{alvo:%M}" if alvo.minute else "")
+    if dias == 0:
+        return f"hoje {hora}"
+    if dias == 1:
+        return f"amanhã {hora}"
+    return f"{DIAS[alvo.weekday()]} {hora}" if 1 < dias < 7 else f"{alvo:%d/%m} {hora}"
+
+
+def falta(t):
+    """'1d14h', '3h05', '45min'."""
+    m = max(0, math.ceil((t - time.time()) / 60))
+    d, h, m = m // 1440, m % 1440 // 60, m % 60
+    return (f"{d}d{h}h" if h else f"{d}d") if d else f"{h}h{m:02d}" if h else f"{m}min"
+
+
+def servico_chaveiro(cfg):
+    """O nome que o próprio claude dá ao login no Chaveiro: o do padrão sem sufixo, o dos outros com o
+    sha256 da pasta do perfil."""
+    return "Claude Code-credentials" + (f"-{hashlib.sha256(cfg.encode()).hexdigest()[:8]}" if cfg else "")
+
+
+def ler_token(cfg):
+    """(accessToken, quando expira) do login do perfil: no Mac do Chaveiro, senão do .credentials.json.
+    Só lê. Renovar o token troca o refreshToken e pode deslogar o claude daquela conta."""
+    texto = ""
+    if sys.platform == "darwin":
+        try:
+            r = subprocess.run(["security", "find-generic-password", "-s", servico_chaveiro(cfg), "-w"],
+                               capture_output=True, text=True, timeout=10)
+            texto = r.stdout if r.returncode == 0 else ""
+        except (OSError, subprocess.TimeoutExpired):
+            pass
+    arquivo = Path(cfg or CASA / ".claude") / ".credentials.json"
+    if not texto and arquivo.is_file():
+        texto = arquivo.read_text(encoding="utf-8")
+    try:
+        login = json.loads(texto)["claudeAiOauth"]
+        return login["accessToken"], (login.get("expiresAt") or math.inf) / 1000
+    except (ValueError, KeyError, TypeError):
+        return None, None
+
+
+def uso_da_api(cfg):
+    """(números, None) ou (None, por que não vieram)."""
+    token, expira = ler_token(cfg)
+    if not token:
+        return None, "sem login neste perfil"
+    if expira <= time.time():
+        return None, "login vencido: abre o claude nessa conta"
+    pedido = Request(USO_API, headers={"Authorization": f"Bearer {token}", "anthropic-beta": "oauth-2025-04-20"})
+    try:
+        with urlopen(pedido, timeout=10) as r:
+            resposta = json.load(r)
+    except HTTPError as e:
+        return None, {401: "login vencido: abre o claude nessa conta",
+                      429: "a API recusou: muitas consultas"}.get(e.code, f"a API respondeu {e.code}")
+    except (OSError, ValueError):
+        return None, "a API não respondeu"
+
+    def janela(nome):
+        j = resposta.get(nome) or {}
+        uso = j.get("utilization")
+        return (round(uso) if isinstance(uso, (int, float)) else None), instante(j.get("resets_at"))
+    sessao, zera = janela("five_hour")
+    semana, zera_semana = janela("seven_day")
+    if semana is None:
+        return None, "a API não trouxe o uso da semana"
+    return {"sessao": sessao or 0, "zera": zera, "semana": semana, "zera_semana": zera_semana,
+            "lido": time.time(), "fonte": "API"}, None
+
+
+def ler_json(arquivo, padrao):
+    try:
+        return json.loads(arquivo.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return padrao
+
+
+def uso_guardado():
+    """{chave do perfil: números}, o mais novo entre o arquivo do Cory e o que a API deu aqui por último."""
+    usos = {}
+    lista = ler_json(CORY, [])
+    for e in lista if isinstance(lista, list) else []:
+        lido = instante(e.get("atualizadoEm")) if isinstance(e, dict) else None
+        if lido and isinstance(e.get("semana7d"), (int, float)):
+            usos[e.get("contaId") or e.get("conta")] = {
+                "sessao": round(e.get("sessao5h") or 0), "zera": instante(e.get("zeraEm")),
+                "semana": round(e["semana7d"]), "zera_semana": instante(e.get("zeraSemanaEm")),
+                "lido": lido, "fonte": "Cory"}
+    for chave, n in ler_json(so.CACHE / "contas.json", {}).items():
+        if n["lido"] > usos.get(chave, {}).get("lido", 0):
+            usos[chave] = n
+    return usos
+
+
+def ler_contas():
+    """O uso de cada perfil desta máquina, e os avisos do que não é de agora."""
+    guardado, contas, avisos, novos = uso_guardado(), [], [], {}
+    for cfg in perfis():
+        c = {"cfg": cfg, "chave": chave_do_perfil(cfg), "nome": nome_da_conta(cfg)}
+        velho = guardado.get(c["chave"])
+        if velho and time.time() - velho["lido"] < USO_FRESCO:
+            c.update(velho)
+        else:
+            numeros, erro = uso_da_api(cfg)
+            if numeros:
+                c.update(numeros)
+                novos[c["chave"]] = numeros
+            elif velho:
+                c.update(velho)
+                avisos.append(f"o uso da {rotulo(c)} é o lido há {ha(velho['lido'])} ({velho['fonte']}); "
+                              f"a leitura de agora falhou: {erro}.")
+            else:
+                c["erro"] = erro
+                avisos.append(f"sem o uso da {rotulo(c)} ({erro}): ela fica fora do --perfil auto.")
+        agora = time.time()
+        # Número velho com a hora de zerar já passada: aquela janela já zerou.
+        if c.get("zera") and c["zera"] <= agora:
+            c["sessao"], c["zera"] = 0, None
+        if c.get("zera_semana") and c["zera_semana"] <= agora:
+            c["semana"] = 0
+            while c["zera_semana"] <= agora:
+                c["zera_semana"] += 7 * 86400
+        contas.append(c)
+    if novos:
+        # Com a trava: o registro_vivo apaga do cache o que não é de janela nenhuma, como o .novo.
+        so.CACHE.mkdir(parents=True, exist_ok=True)
+        arquivo = so.CACHE / "contas.json"
+        with trava():
+            novo = arquivo.with_suffix(".novo")
+            novo.write_text(json.dumps({**ler_json(arquivo, {}), **novos}), encoding="utf-8")
+            os.replace(novo, arquivo)
+    return contas, avisos
+
+
+def cabem(c):
+    """Quantas janelas ainda cabem na conta sem ela passar do TETO, na semana e na sessão."""
+    return max(0, min((TETO - c["semana"]) // GASTO_SEMANA, (TETO - c["sessao"]) // GASTO_SESSAO))
+
+
+def fila_auto(contas):
+    """As contas com número e abaixo do TETO, a que zera a semana antes primeiro."""
+    return sorted((c for c in contas if "semana" in c and c["semana"] < TETO and c["sessao"] < TETO),
+                  key=lambda c: (c["zera_semana"] or math.inf, c["semana"]))
+
+
+def uso_em_uma_linha(c):
+    if "semana" not in c:
+        return f"{rotulo(c)}: sem número ({c['erro']})"
+    sessao = f"sessão {c['sessao']}%" + (f", zera {quando(c['zera'])}" if c["zera"] else "")
+    return f"{rotulo(c)}: {sessao} · semana {c['semana']}%, zera {quando(c['zera_semana'])}"
+
+
+def escolher_auto(trilhas):
+    """Dá a cada trilha de perfil auto a conta dela e o motivo. Cada janela soma GASTO_* na conta em que
+    vai abrir, inclusive a de perfil escolhido na mão; a que não cabe passa para a próxima da fila. Se o
+    lote não couber inteiro, não abre nenhuma."""
+    contas, avisos = ler_contas()
+    for aviso in avisos:
+        print(f"Aviso: {aviso}")
+    autos = [t for t in trilhas if t["config"] is AUTO]
+    if not any("semana" in c for c in contas):
+        print("Aviso: sem o uso de nenhuma conta: o --perfil auto caiu no rodízio do --perfil outras.")
+        lista = expandir_perfis("outras")
+        for k, t in enumerate(autos):
+            t["config"] = lista[k % len(lista)]
+        return
+    previsto = {c["cfg"]: dict(c) for c in contas if "semana" in c}
+    for t in trilhas:
+        if t["config"] is not AUTO and t["config"] in previsto:
+            previsto[t["config"]]["semana"] += GASTO_SEMANA
+            previsto[t["config"]]["sessao"] += GASTO_SESSAO
+    fila = [previsto[c["cfg"]] for c in fila_auto(contas)]
+    if (vagas := sum(map(cabem, fila))) < len(autos):
+        por_que = f"cabe{'' if vagas == 1 else 'm'} só {vagas} das {len(autos)} janelas" if vagas else \
+            "nenhuma conta tem folga para mais uma janela"
+        sys.exit("\n".join([
+            f"O --perfil auto não abriu nada: {por_que} sem passar de {TETO}% (cada janela conta "
+            f"{GASTO_SEMANA} pontos da semana e {GASTO_SESSAO} da sessão de 5 h).",
+            *(f"  {uso_em_uma_linha(c)}" for c in contas),
+            "Abre menos janelas agora e o resto em outra leva, espera uma conta zerar, ou escolhe a conta "
+            "na mão com --perfil <nome>."]))
+    real = {c["cfg"]: c for c in contas}
+    for t in autos:
+        alvo = next(c for c in fila if cabem(c))
+        cheias = [c["nome"] for c in fila[:fila.index(alvo)]]
+        c = real[alvo["cfg"]]
+        t["config"] = alvo["cfg"]
+        t["motivo"] = f"{rotulo(c)} · {c['semana']}% da semana, zera {quando(c['zera_semana'])}" + (
+            f" · {' e '.join(cheias)} passaria{'' if len(cheias) == 1 else 'm'} de {TETO}%" if cheias else "")
+        alvo["semana"] += GASTO_SEMANA
+        alvo["sessao"] += GASTO_SESSAO
+
+
+def cmd_contas(a):
+    contas, avisos = ler_contas()
+    for aviso in avisos:
+        print(f"Aviso: {aviso}")
+    linhas = [("Conta", "Sessão 5 h", "Semana", "Lido")]
+    for c in contas:
+        if "semana" not in c:
+            linhas.append((rotulo(c), "—", "—", f"sem número: {c['erro']}"))
+            continue
+        lido = "agora" if time.time() - c["lido"] < 60 else f"há {ha(c['lido'])}"
+        linhas.append((rotulo(c),
+                       f"{c['sessao']:>3}%" + (f"  zera {quando(c['zera'])}" if c["zera"] else ""),
+                       f"{c['semana']:>3}%  zera {quando(c['zera_semana'])}"
+                       + (f" (em {falta(c['zera_semana'])})" if c["zera_semana"] else ""),
+                       f"{c['fonte']}, {lido}"))
+    larguras = [max(len(linha[i]) for linha in linhas) for i in range(3)]
+    for linha in linhas:
+        print("  ".join(x.ljust(w) for x, w in zip(linha, larguras)) + "  " + linha[3])
+    print()
+    if not any("semana" in c for c in contas):
+        print("Sem o uso de nenhuma conta: o --perfil auto cairia no rodízio do --perfil outras.")
+        return
+    fila = fila_auto(contas)
+    com_vaga = [c for c in fila if cabem(c)]
+    if not com_vaga:
+        print(f"Ordem do --perfil auto agora: nenhuma conta tem folga para uma janela sem passar de {TETO}%: "
+              "o auto não abre nada.")
+    else:
+        print("Ordem do --perfil auto agora, com as janelas que cabem em cada: " + " → ".join(
+            f"{k}º {c['nome']} ({cabem(c)})" for k, c in enumerate(fila, 1)))
+        p = com_vaga[0]
+        print(f"Por quê: a {p['nome']} é a que zera a semana primeiro ({quando(p['zera_semana'])}, com "
+              f"{p['semana']}%), e o que sobrar dela até lá se perde"
+              + (f"; a {fila[0]['nome']} zera antes, mas mais uma janela passaria de {TETO}%" if p is not fila[0] else "")
+              + f". Cada janela conta {GASTO_SEMANA} pontos da semana e {GASTO_SESSAO} da sessão, e nenhuma "
+              f"conta passa de {TETO}%.")
+    for c in contas:
+        if "semana" in c and c not in fila:
+            print(f"Fora do auto: {uso_em_uma_linha(c)} (passou de {TETO}%).")
+        elif "semana" not in c:
+            print(f"Fora do auto: {uso_em_uma_linha(c)}.")
 
 
 def transcript_da_conversa():
@@ -273,9 +566,12 @@ def montar_trilhas(a):
     for t in trilhas:
         # Cada lista de perfis é um rodízio: "outras" com 3 janelas e 2 perfis dá A, B, A.
         texto = t.get("perfil") or a.perfil
-        lista = tuple(expandir_perfis(texto)) if texto else (MEU_PERFIL,)
-        t["config"] = lista[rodizio[lista] % len(lista)]
-        rodizio[lista] += 1
+        if texto and texto.strip().lower() == "auto":
+            t["config"] = AUTO
+        else:
+            lista = tuple(expandir_perfis(texto)) if texto else (MEU_PERFIL,)
+            t["config"] = lista[rodizio[lista] % len(lista)]
+            rodizio[lista] += 1
         nome = t["pasta"].name
         if not t.get("titulo"):
             vez[nome] += 1
@@ -295,6 +591,8 @@ def montar_trilhas(a):
             extras[t["pasta"]] = extras_do_workspace(t["pasta"])
         t["extras"] = extras[t["pasta"]]
         t["sessao"] = str(uuid.uuid4())
+    if any(t["config"] is AUTO for t in trilhas):
+        escolher_auto(trilhas)
     return trilhas
 
 
@@ -340,7 +638,9 @@ def cmd_abrir(a):
             args = args_claude(t, claude, a.modo, SESSAO if a.continuar else None)
             cfg = t["config"]
             resumo = f"{t['titulo']} · {t['pasta']} · {onde}"
-            if len(usados) > 1:
+            if t.get("motivo"):
+                resumo += f" · {t['motivo']}"
+            elif len(usados) > 1:
                 resumo += f" · {nome_do_perfil(cfg)}"
             if t["extras"]:
                 resumo += f" · +{len(t['extras'])} pasta(s) do workspace"
@@ -612,6 +912,7 @@ def main():
     ve = sub.add_parser("ver")
     ve.add_argument("id", type=int)
     ve.set_defaults(func=cmd_ver)
+    sub.add_parser("contas").set_defaults(func=cmd_contas)
     sub.add_parser("fechar")
     so.subcomandos(sub)
     a = p.parse_args()
