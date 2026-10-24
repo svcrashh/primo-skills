@@ -268,6 +268,29 @@ Uma linha por janela, como a saída do `abrir` (título, pasta, monitor e quadra
 se vieram e o perfil usado. Se falhar por permissão de Automação (erro -1743), repassa a mensagem
 do script: o caminho pra liberar já vem nela.
 
+## Dentro do Cory
+
+Desde 24/10/2026, numa sessão que roda dentro do Cory (o app que junta as conversas do Claude Code),
+as trilhas abrem como terminais do Cory, embaixo da conversa que as abriu, e não como janelas do
+Terminal. O resto deste arquivo vale igual.
+
+- **Quando:** com `CORY_TERMINAIS` e `CORY_TERMINAIS_TOKEN` no ambiente, que o Cory põe nas sessões
+  dele. Sem eles nada muda.
+- **O que roda:** o mesmo que a janela rodaria (o claude em bypass, os hooks, o perfil, o worktree, o
+  prompt), aberto por `POST /terminais` com o título da trilha e a `CORY_CONVERSA`. O id da trilha é
+  o pid do processo do terminal, e no registro a marca dela é `cory:<id do terminal>`.
+- **`status`, `esperar` e `ver`** iguais, pelos hooks. O `ver` só mostra a resposta gravada, porque o
+  Cory não deixa ler a tela.
+- **`fechar`:** `DELETE` no terminal, sem osascript e sem diálogo. A guarda de servidor vale igual,
+  pelo processo do terminal. O `fechar-terminal.sh` chamado pelo nome não fecha terminal do Cory.
+- **Grade e `--monitor`** não valem dentro do Cory, e o `abrir` diz isso.
+- **Cory fora do ar ou token recusado:** o `abrir` avisa e abre as trilhas em janelas, como fora do
+  Cory. Se o Cory cair com a trilha aberta, o registro a segue pelo processo e o `fechar` a encerra.
+- **Linhagem:** a linha de cada trilha leva também o id do terminal (`cory`). A trilha recebe
+  `CORY_CONVERSA` com a própria sessão, para as trilhas que ela abrir ficarem embaixo dela.
+- Provado com um Cory de mentira (`scripts/cory_falso.py`) nos dois testes simulados. Com o Cory de
+  verdade ainda não.
+
 ## Como funciona
 
 Nos dois sistemas:
