@@ -234,7 +234,7 @@ terminais.CASA, terminais.MEU_PERFIL = casa, insiders
 confere("perfis: o padrão e os ~/.claude-* já usados", terminais.perfis() == [None, devin, insiders], str(terminais.perfis()))
 confere("outras: todos menos o desta sessão", terminais.expandir_perfis("outras") == [None, devin], str(terminais.expandir_perfis("outras")))
 confere("lista de nomes, com o padrão", terminais.expandir_perfis("devin, padrao") == [devin, None], str(terminais.expandir_perfis("devin, padrao")))
-confere("perfil que não existe diz quais valem", "Valem: outras, padrao, devin, insiders." in roda("abrir", pasta, "--perfil", "xpto"))
+confere("perfil que não existe diz quais valem", "Valem: auto, outras, padrao, devin, insiders." in roda("abrir", pasta, "--perfil", "xpto"))
 antes = set(glob.glob(str(raiz / "saida-*.json")))
 roda("abrir", pasta, "-n", "3", "--prompt", "x", "--perfil", "outras")
 novas = sorted((le(f) for f in set(glob.glob(str(raiz / "saida-*.json"))) - antes), key=lambda s: s["argv"][s["argv"].index("--name") + 1])
@@ -255,6 +255,135 @@ if not NO_WINDOWS:   # link de pasta no Windows pede privilégio
     (casa / ".claude-ligado").mkdir(); (casa / ".claude-ligado" / "projects").symlink_to(Path(insiders) / "projects")
     terminais.levar_conversa(str(casa / ".claude-ligado"))
     confere("perfil com o projects ligado ao desta sessão não copia em cima do próprio arquivo", conversa.exists())
+
+# --- contas e --perfil auto: primeiro a que zera a semana antes, nenhuma passa de 80% ----------------
+from datetime import datetime, timezone
+import urllib.error
+for arq, nome in ((casa / ".claude.json", "PRIME"), (Path(devin) / ".claude.json", "LUMMA"), (Path(insiders) / ".claude.json", "Tech Ynova")):
+    arq.write_text(json.dumps({"oauthAccount": {"displayName": nome}}), encoding="utf-8")
+CFG = {"padrao": None, "devin": devin, "insiders": insiders}
+DIA = 86400
+def iso(segundos): return datetime.fromtimestamp(time.time() + segundos, timezone.utc).isoformat().replace("+00:00", "Z")
+terminais.CORY = raiz / "cory-uso.json"
+def cory(*contas, idade=60):
+    """O uso.json do Cory, uma (contaId, sessão, semana, dias até zerar a semana) por conta. Zera o guardado da API."""
+    terminais.CORY.write_text(json.dumps([{"contaId": cid, "sessao5h": s, "zeraEm": iso(2 * 3600), "semana7d": w,
+                                           "zeraSemanaEm": iso(d * DIA), "atualizadoEm": iso(-idade)} for cid, s, w, d in contas]), encoding="utf-8")
+    (so.CACHE / "contas.json").unlink(missing_ok=True)
+    api["chamadas"].clear()
+def login(chave, expira_em=3600):
+    arq = Path(CFG[chave] or casa / ".claude") / ".credentials.json"
+    arq.write_text(json.dumps({"claudeAiOauth": {"accessToken": f"tok-{chave}", "refreshToken": "nao-renova",
+                                                 "expiresAt": (time.time() + expira_em) * 1000}}), encoding="utf-8")
+for chave in CFG: login(chave)
+def resposta(sessao, semana, dias):
+    """No formato que a API devolveu em 24/10/2026: porcentagem em float, hora com microssegundos e +00:00."""
+    hora = lambda s: datetime.fromtimestamp(time.time() + s, timezone.utc).isoformat()
+    return {"five_hour": {"utilization": float(sessao), "resets_at": hora(2 * 3600)},
+            "seven_day": {"utilization": float(semana), "resets_at": hora(dias * DIA)}, "seven_day_sonnet": None, "limits": []}
+api = {"chamadas": [], "respostas": {}}   # token → resposta, ou o código HTTP do erro
+def urlopen_falso(pedido, timeout=None):
+    token = pedido.get_header("Authorization").split()[-1]
+    api["chamadas"].append(token)
+    assert pedido.full_url == "https://api.anthropic.com/api/oauth/usage" and pedido.get_header("Anthropic-beta") == "oauth-2025-04-20"
+    r = api["respostas"].get(token, 500)
+    if isinstance(r, int):
+        raise urllib.error.HTTPError(pedido.full_url, r, "erro", {}, None)
+    return io.BytesIO(json.dumps(r).encode())
+terminais.urlopen = urlopen_falso
+def auto(*extra):
+    """O dry-run do --perfil auto: (a conta de cada janela, a saída)."""
+    saida = roda("abrir", pasta, "--perfil", "auto", "--dry-run", *extra)
+    return re.findall(r"\((padrao|devin|insiders)\) · \d+% da semana", saida), saida
+
+base = datetime(2026, 10, 24, 2, 0).timestamp()
+zeras = [terminais.quando(datetime(2026, 10, d, h, m).timestamp(), base) for d, h, m in ((24, 14, 20), (25, 16, 0), (29, 5, 0), (31, 9, 0))]
+confere("quando zera, na hora local: hoje, amanhã, dia da semana e data", zeras == ["hoje 14h20", "amanhã 16h", "qui 05h", "31/10 09h"], str(zeras))
+confere("o nome do login no Chaveiro do Mac é o que o claude usa (conferido no Chaveiro em 24/10/2026)",
+        terminais.servico_chaveiro("/Users/gustavogarcia/.claude-devin") == "Claude Code-credentials-048da4c2"
+        and terminais.servico_chaveiro(None) == "Claude Code-credentials")
+
+cory(("padrao", 10, 65, 1.5), ("devin", 10, 20, 5), ("insiders", 10, 10, 6.5))
+escolha, saida = auto("--prompt", "x")
+confere("a conta a 65% que zera em 1,5 dia vem antes da de 20% que zera em 5", escolha == ["padrao"], saida)
+confere("o abrir diz a conta, o uso da semana e quando zera", re.search(r"· Prime \(padrao\) · 65% da semana, zera \S+ \d\dh", saida), saida)
+confere("com o uso do Cory fresco a API não é chamada", api["chamadas"] == [], str(api["chamadas"]))
+escolha, saida = auto("-n", "4", "--prompt", "x")
+confere("a 65% recebe as 3 janelas que a deixam em até 80% e a quarta vai para a próxima da fila", escolha == ["padrao"] * 3 + ["devin"], saida)
+confere("e a janela que mudou de conta diz por quê", "Lumma (devin) · 20% da semana" in saida and "Prime passaria de 80%" in saida, saida)
+
+cory(("padrao", 10, 75, 1), ("devin", 10, 20, 2), ("insiders", 10, 10, 6))
+escolha, saida = auto("-n", "3", "--prompt", "x")
+confere("a 75% recebe só a janela que cabe (80%), as outras vão para a próxima", escolha == ["padrao", "devin", "devin"], saida)
+cory(("padrao", 10, 79, 1), ("devin", 10, 20, 2), ("insiders", 10, 10, 6))
+escolha, saida = auto("-n", "3", "--prompt", "x")
+confere("a 79% não recebe nenhuma: uma janela a mais passaria de 80%", escolha == ["devin"] * 3, saida)
+cory(("padrao", 60, 30, 1), ("devin", 10, 20, 2), ("insiders", 10, 10, 6))
+escolha, saida = auto("-n", "2", "--prompt", "x")
+confere("a sessão de 5 h também limita: com 60% cabe uma janela", escolha == ["padrao", "devin"], saida)
+cory(("padrao", 10, 85, 0.5), ("devin", 80, 20, 2), ("insiders", 10, 10, 6))
+escolha, saida = auto("--prompt", "x")
+confere("acima de 80% na semana ou na sessão fica fora, mesmo zerando antes", escolha == ["insiders"], saida)
+contas = roda("contas")
+confere("o contas mostra cada conta, a ordem e o motivo", all(n in contas for n in ("Prime (padrao)", "Lumma (devin)", "Tech Ynova (insiders)", "Ordem do --perfil auto agora", "Por quê:")), contas)
+confere("e quem ficou fora, com o uso", "Fora do auto: Prime (padrao): sessão 10%" in contas and "semana 85%" in contas and "Fora do auto: Lumma (devin): sessão 80%" in contas, contas)
+
+cory(("padrao", 10, 85, 0.5), ("devin", 80, 20, 2), ("insiders", 10, 79, 6))
+antes = len(chamadas)
+saida = roda("abrir", pasta, "--prompt", "x", "--perfil", "auto")
+confere("nenhuma conta com folga: não abre e diz o uso e quando zera cada uma", len(chamadas) == antes and "não abriu nada: nenhuma conta tem folga" in saida
+        and all(f"{n}: sessão" in saida for n in ("Prime (padrao)", "Lumma (devin)", "Tech Ynova (insiders)")) and saida.count(", zera ") >= 6, saida)
+cory(("padrao", 10, 75, 1), ("devin", 10, 78, 2), ("insiders", 10, 70, 6))
+saida = roda("abrir", pasta, "-n", "4", "--prompt", "x", "--perfil", "auto")
+confere("lote que não cabe inteiro: não abre nenhuma e diz quantas cabem", len(chamadas) == antes and "cabem só 3 das 4 janelas" in saida, saida)
+
+cory(("padrao", 10, 70, 1), ("devin", 10, 20, 2), ("insiders", 10, 10, 6))
+lote.write_text(json.dumps([{"titulo": "M · na mão", "prompt": "m", "perfil": "padrao"}, {"titulo": "N · auto", "prompt": "n"},
+                            {"titulo": "O · auto", "prompt": "o"}, {"titulo": "P · na mão", "prompt": "p", "perfil": "insiders"}]), encoding="utf-8")
+antes = set(glob.glob(str(raiz / "saida-*.json")))
+saida = roda("abrir", pasta, "--lote", str(lote), "--perfil", "auto")
+novas = {s["argv"][s["argv"].index("--name") + 1]: s["config"] for s in (le(f) for f in set(glob.glob(str(raiz / "saida-*.json"))) - antes)}
+confere("a escolha na mão vence o auto, e a janela dela conta no gasto da conta", novas == {"M · na mão": None, "N · auto": None, "O · auto": devin, "P · na mão": insiders}, f"{novas}\n{saida}")
+cory(("padrao", 10, 95, 1), ("devin", 10, 20, 2), ("insiders", 10, 10, 6), idade=3600)
+antes = set(glob.glob(str(raiz / "saida-*.json")))
+roda("abrir", pasta, "--prompt", "x", "--perfil", "padrao")
+novas = [le(f)["config"] for f in set(glob.glob(str(raiz / "saida-*.json"))) - antes]
+confere("escolhendo na mão abre mesmo acima de 80%, sem ler o uso", novas == [None] and api["chamadas"] == [], f"{novas} {api['chamadas']}")
+
+cory(("padrao", 10, 65, 1.5), ("devin", 10, 20, 5), ("insiders", 10, 10, 6.5), idade=20 * 60)
+api["respostas"] = {"tok-padrao": resposta(30, 82, 1.5), "tok-devin": resposta(5, 20, 5), "tok-insiders": resposta(0, 10, 6.5)}
+escolha, saida = auto("--prompt", "x")
+confere("uso.json com mais de 15 min: lê da API, que manda", escolha == ["devin"] and sorted(api["chamadas"]) == ["tok-devin", "tok-insiders", "tok-padrao"], f"{api['chamadas']}\n{saida}")
+api["chamadas"].clear()
+escolha, saida = auto("--prompt", "x")
+confere("e guarda o que a API deu: logo depois não pergunta de novo", escolha == ["devin"] and api["chamadas"] == [], str(api["chamadas"]))
+contas = roda("contas")
+confere("o contas diz de onde veio cada número", contas.count("API, ") == 3 and re.search(r"Prime \(padrao\)\s+30%\s+zera \S+ \d\dh\S*\s+82%", contas), contas)
+
+cory(("padrao", 10, 65, 1.5), ("devin", 10, 20, 5), ("insiders", 10, 10, 6.5), idade=40 * 60)
+api["respostas"] = {"tok-padrao": 429, "tok-devin": 429, "tok-insiders": 429}
+escolha, saida = auto("--prompt", "x")
+confere("API recusou (429): vale o uso.json velho, com a idade no aviso", escolha == ["padrao"] and "o uso da Prime (padrao) é o lido há 40 min (Cory); a leitura de agora falhou: a API recusou: muitas consultas." in saida, saida)
+cory(("padrao", 10, 79, -0.5), ("devin", 10, 20, 5), ("insiders", 10, 10, 6.5), idade=6 * 3600)
+escolha, saida = auto("--prompt", "x")
+contas = roda("contas")
+confere("número velho com a semana já zerada conta como 0%, e zera de novo 7 dias depois", escolha == ["devin"]
+        and re.search(r"Prime \(padrao\)\s+10%\s+zera \S+ \S+\s+0%\s+zera \S+ \S+ \(em 6d\d+h\)", contas), f"{escolha}\n{contas}")
+
+terminais.CORY.unlink()
+(so.CACHE / "contas.json").unlink(missing_ok=True)
+api["respostas"] = {"tok-padrao": resposta(30, 50, 1.5), "tok-insiders": resposta(0, 10, 6.5)}
+login("devin", expira_em=-60)
+api["chamadas"].clear()
+escolha, saida = auto("--prompt", "x")
+confere("login vencido não vai à API (e nunca renova o token): a conta fica fora, com aviso",
+        "tok-devin" not in api["chamadas"] and "sem o uso da Lumma (devin) (login vencido: abre o claude nessa conta): ela fica fora do --perfil auto." in saida and escolha == ["padrao"], saida)
+login("devin")
+api["respostas"] = {}
+(so.CACHE / "contas.json").unlink(missing_ok=True)
+saida = roda("abrir", pasta, "-n", "3", "--prompt", "x", "--perfil", "auto", "--dry-run")
+nomes = re.findall(r"· (padrão \(~/\.claude\)|~/\.claude-\w+)\n", saida)
+confere("API falhou e sem uso.json: cai no rodízio do outras e avisa", "caiu no rodízio do --perfil outras" in saida and nomes == ["padrão (~/.claude)", "~/.claude-devin", "padrão (~/.claude)"], f"{nomes}\n{saida}")
 
 shutil.rmtree(raiz, ignore_errors=True)
 sys.exit(f"\n{len(falhas)} FALHA(S): {'; '.join(falhas)}" if falhas else print("\nTUDO OK"))
