@@ -20,6 +20,7 @@ outro (abrir, achar e fechar janela) está em so_mac.py e so_windows.py; aqui fi
 """
 import argparse
 import hashlib
+import http.client
 import json
 import math
 import os
@@ -32,11 +33,11 @@ import time
 import unicodedata
 import uuid
 from collections import Counter
-from contextlib import contextmanager
+from contextlib import contextmanager, suppress
 from datetime import datetime
 from pathlib import Path
 from urllib.error import HTTPError
-from urllib.parse import unquote, urlparse
+from urllib.parse import quote, unquote, urlparse
 from urllib.request import Request, url2pathname, urlopen
 
 AQUI = Path(__file__).resolve().parent
@@ -151,10 +152,10 @@ def trava():
 
 def registro_vivo():
     """Linhas do registro cujas janelas ainda existem; tira as outras do arquivo e do cache."""
-    abertas = so.vivas()
+    abertas, vistos = so.vivas(), {}
     antes = so.REGISTRO.read_text(encoding="utf-8") if so.REGISTRO.exists() else ""
     linhas = [c for c in (linha.split("\t") for linha in antes.splitlines())
-              if len(c) >= 6 and c[0].isdigit() and so.viva(abertas, c)]
+              if len(c) >= 6 and c[0].isdigit() and (cory_viva(c, vistos) if do_cory(c) else so.viva(abertas, c))]
     agora = "".join("\t".join(c) + "\n" for c in linhas)
     if agora != antes:
         # Troca o arquivo de uma vez: o fechar-terminal.sh lê sem a trava e, pego no meio de uma
@@ -420,13 +421,40 @@ def uso_em_uma_linha(c):
     if "semana" not in c:
         return f"{rotulo(c)}: sem número ({c['erro']})"
     sessao = f"sessão {c['sessao']}%" + (f", zera {quando(c['zera'])}" if c["zera"] else "")
-    return f"{rotulo(c)}: {sessao} · semana {c['semana']}%, zera {quando(c['zera_semana'])}"
+    return f"{rotulo(c)}: {sessao} · semana {c['semana']}%, zera {quando(c['zera_semana'])}" + (
+        f" · {c['abertas']} janela(s) aberta(s)" if c.get("abertas") else "")
+
+
+def abertas_por_perfil():
+    """Quantas janelas ainda rodam em cada perfil, pelo registro, as de todas as sessões. A encerrada não
+    conta: o claude dela já saiu."""
+    abertas = Counter()
+    for c in registro_com_trava():
+        try:
+            if ler_estado(Path(c[5] + ".estado")) != "encerrada":
+                abertas[json.loads(Path(c[5] + ".json").read_text(encoding="utf-8"))["config"]] += 1
+        except (OSError, ValueError, KeyError):
+            pass
+    return abertas
+
+
+def somar_abertas(contas):
+    """Anota em cada conta as janelas que ainda rodam nela e devolve a previsão de cada uma com o gasto
+    delas somado: a janela aberta continua gastando (em 24/10/2026 o auto mandou duas para a Prime sem
+    contar as duas que já rodavam lá)."""
+    abertas, previsto = abertas_por_perfil(), {}
+    for c in contas:
+        c["abertas"] = sum(n for cfg, n in abertas.items() if mesmo_perfil(cfg, c["cfg"]))
+        if "semana" in c:
+            previsto[c["cfg"]] = {**c, "semana": c["semana"] + c["abertas"] * GASTO_SEMANA,
+                                  "sessao": c["sessao"] + c["abertas"] * GASTO_SESSAO}
+    return previsto
 
 
 def escolher_auto(trilhas):
     """Dá a cada trilha de perfil auto a conta dela e o motivo. Cada janela soma GASTO_* na conta em que
-    vai abrir, inclusive a de perfil escolhido na mão; a que não cabe passa para a próxima da fila. Se o
-    lote não couber inteiro, não abre nenhuma."""
+    vai abrir, inclusive a de perfil escolhido na mão e as que já rodam (de qualquer sessão); a que não
+    cabe passa para a próxima da fila. Se o lote não couber inteiro, não abre nenhuma."""
     contas, avisos = ler_contas()
     for aviso in avisos:
         print(f"Aviso: {aviso}")
@@ -437,7 +465,7 @@ def escolher_auto(trilhas):
         for k, t in enumerate(autos):
             t["config"] = lista[k % len(lista)]
         return
-    previsto = {c["cfg"]: dict(c) for c in contas if "semana" in c}
+    previsto = somar_abertas(contas)
     for t in trilhas:
         if t["config"] is not AUTO and t["config"] in previsto:
             previsto[t["config"]]["semana"] += GASTO_SEMANA
@@ -447,8 +475,8 @@ def escolher_auto(trilhas):
         por_que = f"cabe{'' if vagas == 1 else 'm'} só {vagas} das {len(autos)} janelas" if vagas else \
             "nenhuma conta tem folga para mais uma janela"
         sys.exit("\n".join([
-            f"O --perfil auto não abriu nada: {por_que} sem passar de {TETO}% (cada janela conta "
-            f"{GASTO_SEMANA} pontos da semana e {GASTO_SESSAO} da sessão de 5 h).",
+            f"O --perfil auto não abriu nada: {por_que} sem passar de {TETO}% (cada janela, aberta ou por "
+            f"abrir, conta {GASTO_SEMANA} pontos da semana e {GASTO_SESSAO} da sessão de 5 h).",
             *(f"  {uso_em_uma_linha(c)}" for c in contas),
             "Abre menos janelas agora e o resto em outra leva, espera uma conta zerar, ou escolhe a conta "
             "na mão com --perfil <nome>."]))
@@ -459,6 +487,7 @@ def escolher_auto(trilhas):
         c = real[alvo["cfg"]]
         t["config"] = alvo["cfg"]
         t["motivo"] = f"{rotulo(c)} · {c['semana']}% da semana, zera {quando(c['zera_semana'])}" + (
+            f" · {c['abertas']} janela(s) já aberta(s) nela" if c["abertas"] else "") + (
             f" · {' e '.join(cheias)} passaria{'' if len(cheias) == 1 else 'm'} de {TETO}%" if cheias else "")
         alvo["semana"] += GASTO_SEMANA
         alvo["sessao"] += GASTO_SESSAO
@@ -468,38 +497,39 @@ def cmd_contas(a):
     contas, avisos = ler_contas()
     for aviso in avisos:
         print(f"Aviso: {aviso}")
-    linhas = [("Conta", "Sessão 5 h", "Semana", "Lido")]
+    previsto = somar_abertas(contas)
+    linhas = [("Conta", "Sessão 5 h", "Semana", "Abertas", "Lido")]
     for c in contas:
         if "semana" not in c:
-            linhas.append((rotulo(c), "—", "—", f"sem número: {c['erro']}"))
+            linhas.append((rotulo(c), "—", "—", str(c["abertas"]), f"sem número: {c['erro']}"))
             continue
         lido = "agora" if time.time() - c["lido"] < 60 else f"há {ha(c['lido'])}"
         linhas.append((rotulo(c),
                        f"{c['sessao']:>3}%" + (f"  zera {quando(c['zera'])}" if c["zera"] else ""),
                        f"{c['semana']:>3}%  zera {quando(c['zera_semana'])}"
                        + (f" (em {falta(c['zera_semana'])})" if c["zera_semana"] else ""),
-                       f"{c['fonte']}, {lido}"))
-    larguras = [max(len(linha[i]) for linha in linhas) for i in range(3)]
+                       str(c["abertas"]), f"{c['fonte']}, {lido}"))
+    larguras = [max(len(linha[i]) for linha in linhas) for i in range(4)]
     for linha in linhas:
-        print("  ".join(x.ljust(w) for x, w in zip(linha, larguras)) + "  " + linha[3])
+        print("  ".join(x.ljust(w) for x, w in zip(linha, larguras)) + "  " + linha[4])
     print()
     if not any("semana" in c for c in contas):
         print("Sem o uso de nenhuma conta: o --perfil auto cairia no rodízio do --perfil outras.")
         return
     fila = fila_auto(contas)
-    com_vaga = [c for c in fila if cabem(c)]
+    com_vaga = [c for c in fila if cabem(previsto[c["cfg"]])]
     if not com_vaga:
         print(f"Ordem do --perfil auto agora: nenhuma conta tem folga para uma janela sem passar de {TETO}%: "
               "o auto não abre nada.")
     else:
         print("Ordem do --perfil auto agora, com as janelas que cabem em cada: " + " → ".join(
-            f"{k}º {c['nome']} ({cabem(c)})" for k, c in enumerate(fila, 1)))
+            f"{k}º {c['nome']} ({cabem(previsto[c['cfg']])})" for k, c in enumerate(fila, 1)))
         p = com_vaga[0]
         print(f"Por quê: a {p['nome']} é a que zera a semana primeiro ({quando(p['zera_semana'])}, com "
               f"{p['semana']}%), e o que sobrar dela até lá se perde"
               + (f"; a {fila[0]['nome']} zera antes, mas mais uma janela passaria de {TETO}%" if p is not fila[0] else "")
-              + f". Cada janela conta {GASTO_SEMANA} pontos da semana e {GASTO_SESSAO} da sessão, e nenhuma "
-              f"conta passa de {TETO}%.")
+              + f". Cada janela, aberta ou por abrir, conta {GASTO_SEMANA} pontos da semana e {GASTO_SESSAO} "
+              f"da sessão, e nenhuma conta passa de {TETO}%.")
     for c in contas:
         if "semana" in c and c not in fila:
             print(f"Fora do auto: {uso_em_uma_linha(c)} (passou de {TETO}%).")
@@ -539,11 +569,13 @@ def levar_conversa(cfg):
         shutil.copytree(origem.with_suffix(""), destino.with_suffix(""), dirs_exist_ok=True)
 
 
-def anotar_linhagem(t, cfg):
+def anotar_linhagem(t, cfg, cory=None):
     LINHAGEM.parent.mkdir(parents=True, exist_ok=True)
     linha = {"quando": time.strftime("%Y-%m-%dT%H:%M:%S%z"), "filho": t["sessao"],
              "pai": None if SESSAO == "sem-sessao" else SESSAO, "titulo": t["titulo"], "pasta": str(t["pasta"]),
              "perfil": nome_do_perfil(cfg), "worktree": t["worktree"] or None}
+    if cory:
+        linha["cory"] = cory  # o id do terminal do Cory em que a trilha roda
     with LINHAGEM.open("a", encoding="utf-8") as f:
         f.write(json.dumps(linha, ensure_ascii=False) + "\n")
 
@@ -625,17 +657,206 @@ def args_claude(t, claude, modo, continuar):
     return args
 
 
+# Dentro do Cory, o app do dono que junta as conversas do Claude Code, cada sessão recebe CORY_TERMINAIS
+# (http://127.0.0.1:<porta>), CORY_TERMINAIS_TOKEN e CORY_CONVERSA, e as trilhas abrem como terminais
+# dele em vez de janelas: o mesmo comando, os mesmos hooks, o mesmo registro. Na linha do registro a
+# marca é "cory:<id do terminal>" e o id é o pid do processo que o terminal roda: é por ele que vão a
+# guarda de servidor e a prova de vida quando o Cory não responde.
+class CoryFalhou(Exception):
+    def __init__(self, motivo, codigo=None):
+        super().__init__(motivo)
+        self.codigo = codigo
+
+
+class Cory:
+    def __init__(self, url, token):
+        self.url, self.token = url.rstrip("/"), token
+
+    def pedir(self, metodo, caminho, corpo=None):
+        # http.client direto: o Cory é local, e o urllib mandaria o pedido pelo proxy do sistema.
+        alvo = urlparse(self.url)
+        conexao = http.client.HTTPConnection(alvo.hostname or "127.0.0.1", alvo.port or 80, timeout=5)
+        try:
+            conexao.request(metodo, alvo.path.rstrip("/") + caminho, None if corpo is None else json.dumps(corpo),
+                            {"Authorization": f"Bearer {self.token}", "Content-Type": "application/json"})
+            r = conexao.getresponse()
+            texto = r.read()
+        except (OSError, http.client.HTTPException) as e:
+            raise CoryFalhou(f"o Cory não respondeu em {self.url} ({e})")
+        finally:
+            conexao.close()
+        if r.status >= 400:
+            raise CoryFalhou("o Cory recusou o token" if r.status in (401, 403) else
+                             f"o Cory respondeu {r.status} a {metodo} {caminho}", r.status)
+        try:
+            return json.loads(texto) if texto.strip() else None
+        except ValueError:
+            raise CoryFalhou(f"o Cory respondeu a {metodo} {caminho} com algo que não é JSON")
+
+    def terminais(self):
+        """{id: vivo} dos terminais que abriu por aqui. O que saiu continua na lista, com vivo falso."""
+        lista = self.pedir("GET", "/terminais")
+        if not isinstance(lista, list):
+            raise CoryFalhou("o Cory respondeu a GET /terminais sem a lista")
+        return {str(t["id"]): t.get("vivo") for t in lista if isinstance(t, dict) and "id" in t}
+
+    def abrir(self, titulo, pasta, comando, env, conversa):
+        corpo = {"titulo": titulo, "pasta": pasta, "comando": comando, "env": env}
+        if conversa:
+            corpo["conversa"] = conversa
+        resposta = self.pedir("POST", "/terminais", corpo)
+        if not isinstance(resposta, dict) or resposta.get("id") in (None, ""):
+            raise CoryFalhou("o Cory respondeu a POST /terminais sem o id do terminal")
+        return str(resposta["id"])
+
+    def fechar(self, cid):
+        try:
+            self.pedir("DELETE", f"/terminais/{quote(cid, safe='')}")
+        except CoryFalhou as e:
+            if e.codigo != 404:  # 404: a aba já não existia
+                raise
+
+
+def cory_no_ar():
+    """O Cory em que esta sessão roda, se ele atende; senão None, dizendo por quê."""
+    url, token = os.environ.get("CORY_TERMINAIS"), os.environ.get("CORY_TERMINAIS_TOKEN")
+    if not (url and token):
+        return None
+    cory = Cory(url, token)
+    try:
+        cory.terminais()
+        return cory
+    except CoryFalhou as e:
+        dica = " (o Cory reiniciou depois que esta conversa abriu? Abre a conversa de novo nele)" if e.codigo in (401, 403) else ""
+        print(f"Aviso: esta sessão roda dentro do Cory, mas {e}{dica}: as trilhas abrem em janelas do terminal, como fora dele.")
+        return None
+
+
+def esperar_pid(base, segundos=20):
+    arquivo, fim = Path(base + ".pid"), time.time() + segundos
+    while time.time() < fim:
+        if arquivo.exists() and (texto := arquivo.read_text().strip()).isdigit():
+            return int(texto)
+        time.sleep(0.1)
+    return None
+
+
+def abrir_no_cory(cory, t, base, cfg, args):
+    """Abre a trilha como terminal do Cory. Devolve (pid do processo dele, marca, id do terminal)."""
+    # O Cory aceita como conversa o id dele ou o da sessão do claude. A trilha leva o da própria sessão: o
+    # Cory põe no terminal o CORY_CONVERSA de quem abriu, e com ele as trilhas que ela abrisse iriam para
+    # baixo da conversa avó. O CLAUDE_CONFIG_DIR diz ao Cory a conta do terminal.
+    env = {"CORY_TERMINAIS": cory.url, "CORY_TERMINAIS_TOKEN": cory.token, "CORY_CONVERSA": t["sessao"],
+           **({"CLAUDE_CONFIG_DIR": cfg} if cfg else {})}
+    conversa = os.environ.get("CORY_CONVERSA") or (None if SESSAO == "sem-sessao" else SESSAO)
+    cid = cory.abrir(t["titulo"], str(t["pasta"]), so.comando(t, base, cfg, args), env, conversa)
+    pid = esperar_pid(base)
+    if not pid:
+        with suppress(CoryFalhou):
+            cory.fechar(cid)
+        raise CoryFalhou("o terminal do Cory abriu, mas o comando da trilha não começou em 20 s")
+    return pid, f"cory:{cid}", cid
+
+
+def do_cory(c):
+    return c[1].startswith("cory:")
+
+
+def cory_da_linha(c):
+    """O Cory que abriu o terminal da linha (guardado no .json dela) e o id do terminal."""
+    cid = c[1][len("cory:"):]
+    try:
+        meta = json.loads(Path(c[5] + ".json").read_text(encoding="utf-8"))["cory"]
+        return Cory(meta["url"], meta["token"]), cid
+    except (OSError, ValueError, KeyError, TypeError):
+        return None, cid
+
+
+def cory_viva(c, vistos):
+    """O Cory diz que o terminal está vivo, ou o processo dele ainda roda. Vale o processo quando o Cory não
+    responde (fora do ar, token velho) e quando ele dá o terminal por encerrado com o processo rodando:
+    assim o fechar ainda o alcança."""
+    cory, cid = cory_da_linha(c)
+    if cory and cory.url not in vistos:
+        try:
+            vistos[cory.url] = cory.terminais()
+        except CoryFalhou:
+            vistos[cory.url] = {}
+    return bool(cory and vistos[cory.url].get(cid, False) is not False) or so.processo_da_trilha(int(c[0]), c[5])
+
+
+def servidores(pid):
+    """Portas em escuta de processos nascidos dentro do terminal (dev server, proxy, watcher)."""
+    pai, escuta = so.processos()
+
+    def nasceu_dentro(p):
+        for _ in range(50):
+            if p == pid:
+                return True
+            p = pai.get(p)
+            if not p:
+                return False
+        return False
+    return sorted({porta for dono, porta in escuta if nasceu_dentro(dono)})
+
+
+def fechar_no_cory(linhas, opcoes):
+    """O fechar das trilhas que rodam em terminal do Cory: DELETE no terminal, sem osascript e sem diálogo."""
+    fechadas = 0
+    for c in linhas:
+        pid, (cory, cid) = int(c[0]), cory_da_linha(c)
+        vivo = so.processo_da_trilha(pid, c[5])
+        # O servidor nasce dentro do terminal e morre com ele.
+        if vivo and (portas := servidores(pid)) and "--forcar" not in opcoes:
+            print(f"janela {c[0]} (terminal do Cory): segura servidor na porta {', '.join(map(str, portas))} — não fechei.\n"
+                  "   relance o servidor fora da janela antes, ou use --forcar para derrubar junto.")
+            continue
+        if "--listar" in opcoes:
+            print(f"fecharia janela {c[0]} (terminal do Cory)")
+            continue
+        if vivo and "--forcar" in opcoes:
+            so.matar(pid)  # o servidor que ignoraria o fim da aba cai junto
+        try:
+            if not cory:
+                raise CoryFalhou("não achei o endereço do Cory no .json da janela")
+            cory.fechar(cid)
+            # O Cory encerra o processo ao tirar a aba. Se ele demorar, quem encerra é o fechar: com ele
+            # vivo a linha ficaria no registro.
+            fim = time.time() + 3
+            while so.processo_da_trilha(pid, c[5]) and time.time() < fim:
+                time.sleep(0.1)
+            if so.processo_da_trilha(pid, c[5]):
+                so.matar(pid)
+        except CoryFalhou as e:
+            # Sem o Cory o terminal fecha pelo processo; se a aba ainda existir, fica lá como encerrada.
+            if so.processo_da_trilha(pid, c[5]):
+                so.matar(pid)
+            print(f"janela {c[0]}: {e}; encerrei o processo dela.")
+        fechadas += 1
+        print(f"janela {c[0]} fechada")
+    if "--listar" not in opcoes:
+        print(f"{fechadas} janela(s) do Cory fechada(s)")
+
+
 def cmd_abrir(a):
     trilhas = montar_trilhas(a)
     claude = so.achar_claude() or "claude"
     usados = {t["config"] for t in trilhas}
+    cory = cory_no_ar()
     with trava():
         registro_vivo()
-        destinos, outras, ondes, avisos = organizar.plano_novas(len(trilhas), a.monitor)
+        if cory:
+            plano, outras, avisos = [(None, "terminal do Cory")] * len(trilhas), {}, []
+        else:
+            destinos, outras, ondes, avisos = organizar.plano_novas(len(trilhas), a.monitor)
+            plano = list(zip(destinos, ondes))
         if len(usados) == 1:
             print(f"Perfil: {nome_do_perfil(next(iter(usados)))}")
         else:
             print(f"Perfis: um por trilha (esta sessão está no {nome_do_perfil(MEU_PERFIL)})")
+        if cory:
+            print("Dentro do Cory: cada trilha abre como terminal dele, embaixo desta conversa. "
+                  "Grade e --monitor não valem aqui.")
         for aviso in avisos:
             print(f"Aviso: {aviso}")
         if not a.dry_run:
@@ -645,37 +866,51 @@ def cmd_abrir(a):
                 for cfg in usados:
                     if not mesmo_perfil(cfg, MEU_PERFIL):
                         levar_conversa(cfg)
-        carimbo, abertas = f"{time.strftime('%Y%m%d-%H%M%S')}-{os.getpid()}", []
-        for k, (t, destino, onde) in enumerate(zip(trilhas, destinos, ondes), 1):
+        # O sufixo separa dois abrir do mesmo processo no mesmo segundo: com o mesmo nome, a janela nova
+        # regravava os arquivos da anterior.
+        carimbo, abertas, no_cory = f"{time.strftime('%Y%m%d-%H%M%S')}-{os.getpid()}-{uuid.uuid4().hex[:4]}", [], 0
+        for k, t in enumerate(trilhas, 1):
             args = args_claude(t, claude, a.modo, SESSAO if a.continuar else None)
             cfg = t["config"]
-            resumo = f"{t['titulo']} · {t['pasta']} · {onde}"
-            if t.get("motivo"):
-                resumo += f" · {t['motivo']}"
-            elif len(usados) > 1:
-                resumo += f" · {nome_do_perfil(cfg)}"
+            detalhe = f" · {t['motivo']}" if t.get("motivo") else f" · {nome_do_perfil(cfg)}" if len(usados) > 1 else ""
             if t["extras"]:
-                resumo += f" · +{len(t['extras'])} pasta(s) do workspace"
+                detalhe += f" · +{len(t['extras'])} pasta(s) do workspace"
             if a.dry_run:
                 linha = subprocess.list2cmdline(args) if sys.platform == "win32" else " ".join(map(shlex.quote, args))
-                print(f"[simulação] {resumo}\n    {linha}")
+                print(f"[simulação] {t['titulo']} · {t['pasta']} · {plano[k - 1][1]}{detalhe}\n    {linha}")
                 continue
             base = str(so.CACHE / f"{carimbo}-{k}")
             Path(base + ".estado").write_text("abrindo", encoding="utf-8")
-            Path(base + ".json").write_text(json.dumps({
-                "titulo": t["titulo"], "sessao": t["sessao"], "config": cfg, "pasta": str(t["pasta"]), "args": args,
-                "inicio": "trabalhando" if t.get("prompt") else "parada",
-            }), encoding="utf-8")
-            jid, marca = so.abrir(t, base, cfg, args, destino)
+            meta = {"titulo": t["titulo"], "sessao": t["sessao"], "config": cfg, "pasta": str(t["pasta"]), "args": args,
+                    "inicio": "trabalhando" if t.get("prompt") else "parada"}
+            Path(base + ".json").write_text(json.dumps(meta), encoding="utf-8")
+            cid = None
+            if cory:
+                try:
+                    jid, marca, cid = abrir_no_cory(cory, t, base, cfg, args)
+                    meta["cory"] = {"url": cory.url, "token": cory.token, "id": cid}
+                    Path(base + ".json").write_text(json.dumps(meta), encoding="utf-8")
+                    no_cory += 1
+                except CoryFalhou as e:
+                    print(f"Aviso: {e}: esta trilha e as que faltam abrem em janelas do terminal, como fora do Cory.")
+                    cory = None
+                    destinos, outras, ondes, avisos = organizar.plano_novas(len(trilhas) - k + 1, a.monitor)
+                    plano[k - 1:] = zip(destinos, ondes)
+                    for aviso in avisos:
+                        print(f"Aviso: {aviso}")
+            destino, onde = plano[k - 1]
+            if not cid:
+                jid, marca = so.abrir(t, base, cfg, args, destino)
+                abertas.append(jid)
             with so.REGISTRO.open("a", encoding="utf-8") as f:
                 f.write("\t".join([str(jid), marca, str(t["pasta"]), SESSAO, time.strftime("%Y-%m-%d %H:%M"), base]) + "\n")
-            abertas.append(jid)
-            anotar_linhagem(t, cfg)
-            print(f"Janela {jid} · {resumo}")
+            anotar_linhagem(t, cfg, cid)
+            print(f"Janela {jid} · {t['titulo']} · {t['pasta']} · {onde}{detalhe}")
         if not a.dry_run:
             organizar.aplicar(outras)
-            so.ativar(abertas)
-            print(f"{len(trilhas)} janela(s) aberta(s).")
+            if abertas:
+                so.ativar(abertas)
+            print(f"{len(trilhas)} janela(s) aberta(s)" + (f", {no_cory} como terminal do Cory" if no_cory else "") + ".")
             contar_lote({str(t["pasta"]) for t in trilhas})
 
 
@@ -879,8 +1114,9 @@ def cmd_ver(a):
         sys.exit(f"A janela {a.id} não está no registro (já fechou?). O status lista as abertas.")
     meta = json.loads(Path(linha[5] + ".json").read_text(encoding="utf-8"))
     print(f"{meta['titulo']} · {ler_estado(Path(linha[5] + '.estado'))}\n")
-    # Sem resposta gravada ainda, o que dá pra ver é a tela (onde o sistema deixa ler).
-    print(ultima_resposta(meta) or so.tela(a.id) or "A trilha ainda não gravou nenhuma resposta.")
+    # Sem resposta gravada ainda, o que dá pra ver é a tela (onde o sistema deixa ler; o Cory não deixa).
+    print(ultima_resposta(meta) or (None if do_cory(linha) else so.tela(a.id))
+          or "A trilha ainda não gravou nenhuma resposta.")
 
 
 def registro_com_trava():
@@ -888,11 +1124,35 @@ def registro_com_trava():
         return registro_vivo()
 
 
+def cmd_fechar(args):
+    """Fecha as trilhas que rodam em terminal do Cory e passa as outras ao fechar do sistema."""
+    linhas = registro_com_trava()
+    if not any(map(do_cory, linhas)):
+        return so.fechar(args, registro_com_trava, SESSAO)
+    opcoes = [x for x in args if x.startswith("--")]
+    ids = [x for x in args if not x.startswith("--")]
+    if sobra := set(opcoes) - {"--todas", "--listar", "--forcar"}:
+        sys.exit(f"Opção desconhecida: {', '.join(sorted(sobra))}. Valem --todas, --listar e --forcar.")
+
+    def escolhida(c):
+        return c[0] in ids if ids else "--todas" in opcoes or c[3] == SESSAO
+    if alvo := [c for c in linhas if do_cory(c) and escolhida(c)]:
+        fechar_no_cory(alvo, opcoes)
+    # Id de terminal do Cory nunca vai ao fechar do sistema: no Mac ele fecharia a janela do Terminal de
+    # mesmo número.
+    resto = [x for x in ids if x not in {c[0] for c in linhas if do_cory(c)}]
+    if resto or (not ids and any(escolhida(c) for c in linhas if not do_cory(c))):
+        return so.fechar(opcoes + resto, lambda: [c for c in registro_com_trava() if not do_cory(c)], SESSAO)
+    registro_com_trava()  # a que fechou sai do registro já
+    if not alvo:
+        print("nenhuma janela registrada para fechar")
+
+
 def main():
     for saida in (sys.stdout, sys.stderr):
         saida.reconfigure(encoding="utf-8")  # no Windows o padrão não tem "·" nem as marcas
     if sys.argv[1:2] == ["fechar"]:
-        return so.fechar(sys.argv[2:], registro_com_trava, SESSAO)
+        return cmd_fechar(sys.argv[2:])
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = p.add_subparsers(dest="cmd", required=True)
     ab = sub.add_parser("abrir")

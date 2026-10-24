@@ -127,6 +127,9 @@ na mão vence o auto e abre mesmo acima de 80%. A regra, janela por janela:
   que acabou de zerar fica por último.
 - Cada janela conta 5 pontos da semana e 15 da sessão. A que levaria a conta além de 80% vai para a
   próxima da fila, e a janela que eu mandei na mão para uma conta também entra na conta dela.
+- As janelas que já rodam contam do mesmo jeito: antes de escolher, o auto soma na conta de cada uma
+  as janelas abertas no registro, de qualquer sessão e também as que rodam em terminal do Cory (a
+  `encerrada` não conta). O `contas` mostra quantas há em cada conta.
 - Lote que não cabe inteiro não abre nenhuma janela: o motor mostra o uso e quando cada conta zera.
   Abre em levas ou me pergunta.
 
@@ -268,6 +271,29 @@ Uma linha por janela, como a saída do `abrir` (título, pasta, monitor e quadra
 se vieram e o perfil usado. Se falhar por permissão de Automação (erro -1743), repassa a mensagem
 do script: o caminho pra liberar já vem nela.
 
+## Dentro do Cory
+
+Desde 24/10/2026, numa sessão que roda dentro do Cory (o app que junta as conversas do Claude Code),
+as trilhas abrem como terminais do Cory, embaixo da conversa que as abriu, e não como janelas do
+Terminal. O resto deste arquivo vale igual.
+
+- **Quando:** com `CORY_TERMINAIS` e `CORY_TERMINAIS_TOKEN` no ambiente, que o Cory põe nas sessões
+  dele. Sem eles nada muda.
+- **O que roda:** o mesmo que a janela rodaria (o claude em bypass, os hooks, o perfil, o worktree, o
+  prompt), aberto por `POST /terminais` com o título da trilha e a `CORY_CONVERSA`. O id da trilha é
+  o pid do processo do terminal, e no registro a marca dela é `cory:<id do terminal>`.
+- **`status`, `esperar` e `ver`** iguais, pelos hooks. O `ver` só mostra a resposta gravada, porque o
+  Cory não deixa ler a tela.
+- **`fechar`:** `DELETE` no terminal, sem osascript e sem diálogo. A guarda de servidor vale igual,
+  pelo processo do terminal. O `fechar-terminal.sh` chamado pelo nome não fecha terminal do Cory.
+- **Grade e `--monitor`** não valem dentro do Cory, e o `abrir` diz isso.
+- **Cory fora do ar ou token recusado:** o `abrir` avisa e abre as trilhas em janelas, como fora do
+  Cory. Se o Cory cair com a trilha aberta, o registro a segue pelo processo e o `fechar` a encerra.
+- **Linhagem:** a linha de cada trilha leva também o id do terminal (`cory`). A trilha recebe
+  `CORY_CONVERSA` com a própria sessão, para as trilhas que ela abrir ficarem embaixo dela.
+- Provado com um Cory de mentira (`scripts/cory_falso.py`) nos dois testes simulados. Com o Cory de
+  verdade ainda não.
+
 ## Como funciona
 
 Nos dois sistemas:
@@ -321,6 +347,10 @@ Nos dois sistemas:
   calado a linha de janela que já fechou, e não fecha a janela cujo tty não é o do registro.
 - A conferência do fim do `fechar` conta a janela como aberta se ela tem aba. Não olha o
   `visible`: ele é falso também na janela minimizada ou escondida, que continua aberta.
+- **Janela aberta sempre entra no registro** (24/10/2026, depois de três janelas órfãs pelo -1719 de
+  uma janela que sumia enquanto o `abrir` as percorria): cada janela grava o tty dela ao nascer, e o
+  `abrir` a acha por ele quando o Terminal falha; sem o id, ela entra com `0` e ganha o dela na leitura
+  seguinte. Terminal aberto se confere pelo `ps`: o `pgrep -x Terminal` não o acha no macOS 26.
 - `scripts/teste_mac_simulado.py` exercita o registro, o `esperar` e o `fechar` com o Terminal
   simulado, sem abrir janela nem tocar no registro de verdade. Roda depois de mexer no
   `so_mac.py`, no `terminais.py` ou no `fechar-terminal.sh`.

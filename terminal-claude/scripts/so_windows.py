@@ -7,6 +7,7 @@ GitHub Actions roda a cada mudança. Mexeu aqui? Ele e o teste_windows_simulado.
 import json
 import msvcrt
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -37,6 +38,7 @@ def marcador(nome):
 def subcomandos(sub):
     rodar_ = sub.add_parser("rodar")
     rodar_.add_argument("base")
+    rodar_.add_argument("--session-id")  # o rodar não usa: é onde o Cory procura a sessão do terminal
     rodar_.set_defaults(func=rodar)
     marcar_ = sub.add_parser("marcar")
     marcar_.add_argument("estado")
@@ -141,6 +143,21 @@ def abrir(t, base, cfg, args, destino):
                   if Path(base + ".pid").exists() else None, "o processo da janela começar")
     win.mover(hwnd, *destino)
     return hwnd, pid
+
+
+def comando(t, base, _cfg, _args):
+    """O que o terminal do Cory roda: o mesmo `rodar` da janela do Windows Terminal."""
+    return [sys.executable, str(MOTOR), "rodar", base, "--session-id", t["sessao"]]
+
+
+def processo_da_trilha(pid, base):
+    """O processo ainda roda e é o `rodar` desta trilha: o número pode ter passado a outro programa. O
+    caminho vem seguido de espaço, aspas ou fim: o da trilha 1 não pode valer pelo da 12."""
+    return win.processo_vivo(pid) and bool(re.search(re.escape(base) + r'(?=["\s]|$)', linha_de_comando(pid).strip()))
+
+
+def matar(pid):
+    subprocess.run(["taskkill", "/PID", str(pid), "/T", "/F"], capture_output=True)
 
 
 def rodar(a):

@@ -22,6 +22,7 @@ REGISTRO=/private/tmp/claude-terminais-abertos.tsv
 sessao=${CLAUDE_CODE_SESSION_ID:-sem-sessao}
 forcar=0; listar=0; todas=0; ids=()
 typeset -A registrado   # id -> tty, das janelas que vieram do registro
+typeset -A do_cory      # id -> 1, das trilhas que rodam em terminal do Cory: quem fecha é o terminais.py
 for a in "$@"; do
   case "$a" in
     --forcar) forcar=1 ;;
@@ -32,10 +33,12 @@ for a in "$@"; do
   esac
 done
 
-if (( ${#ids} == 0 )) && [[ -f $REGISTRO ]]; then
+pelo_registro=$(( ${#ids} == 0 ))
+if [[ -f $REGISTRO ]]; then
   while IFS=$'\t' read -r id tty pasta ses resto; do
     [[ -z ${id:-} ]] && continue
-    if (( todas )) || [[ ${ses:-} == $sessao ]]; then ids+=("$id"); registrado[$id]=$tty; fi
+    if [[ ${tty:-} == cory:* ]]; then do_cory[$id]=1; continue; fi
+    if (( pelo_registro )) && { (( todas )) || [[ ${ses:-} == $sessao ]]; }; then ids+=("$id"); registrado[$id]=$tty; fi
   done < $REGISTRO
 fi
 if (( ${#ids} == 0 )); then echo "nenhuma janela registrada para fechar"; exit 0; fi
@@ -66,6 +69,9 @@ arvore=$(ps -axo pid=,ppid=)
 
 fechar=(); pulou=0
 for id in $ids; do
+  # O id dela é o pid do processo do terminal, não o de uma janela do Terminal: fechar pelo número
+  # fecharia a janela do Terminal que tivesse o mesmo id.
+  if [[ -n ${do_cory[$id]:-} ]]; then echo "janela $id: é um terminal do Cory — fecha com: terminais.py fechar $id"; continue; fi
   tty=$(tty_de $id)
   if [[ -z $tty ]]; then echo "janela $id: não existe mais (já fechada)"; continue; fi
   # O Terminal recomeça a contagem dos ids quando reabre: o id de uma linha velha pode ser hoje o
