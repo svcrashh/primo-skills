@@ -35,6 +35,7 @@ import so_mac as so, terminais
 raiz = Path(tempfile.mkdtemp(prefix="simmac-"))
 registro_de_verdade = str(so.REGISTRO)
 so.REGISTRO, so.CACHE = raiz / "registro.tsv", raiz / "cache"
+terminais.LINHAGEM = raiz / "linhagem.jsonl"
 so.CACHE.mkdir()
 
 # --- Terminal de mentira ------------------------------------------------------------------
@@ -287,4 +288,12 @@ confere("fechando pelo terminais.py, janela que outra sessão abre na mesma hora
         "5 janela(s) fechada(s)" in saida and alheias and linhas() == [990404, *alheias], f"{len(set(alheias) - set(linhas()))} de {len(alheias)} linhas sumiram; saída: {saida}")
 terminal.clear()
 confere("no fim não sobra nada no registro nem no cache", registro() == [] and list(so.CACHE.iterdir()) == [], str(list(so.CACHE.iterdir())))
+
+trilha = {"sessao": "filho-1", "titulo": "A · motor", "pasta": Path("/tmp/projeto"), "worktree": "a-motor"}
+terminais.anotar_linhagem(trilha, terminais.MEU_PERFIL)
+terminais.anotar_linhagem({**trilha, "sessao": "filho-2", "titulo": "B · tela", "worktree": None}, terminais.MEU_PERFIL)
+anotadas = [json.loads(l) for l in terminais.LINHAGEM.read_text(encoding="utf-8").splitlines()]
+confere("a linhagem guarda quem abriu cada janela, uma linha por janela",
+        [(x["filho"], x["pai"], x["titulo"], x["worktree"]) for x in anotadas]
+        == [("filho-1", "sessao-teste", "A · motor", "a-motor"), ("filho-2", "sessao-teste", "B · tela", None)], str(anotadas))
 fim()

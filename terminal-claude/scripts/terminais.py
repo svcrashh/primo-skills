@@ -48,6 +48,9 @@ CASA = Path.home()
 # que as trilhas deixam pelo projeto. Quem responde "agora não" volta a ser perguntado em LIMPEZA_ADIA dias.
 LIMPEZA_LOTES, LIMPEZA_DIAS, LIMPEZA_ADIA = 10, 14, 3
 MARCAS = {"abrindo": "🕓", "trabalhando": "⏳", "parada": "✅", "pergunta": "❓", "encerrada": "⏹"}
+# Quem abriu cada janela, uma linha por janela, para sempre: o registro esquece a janela que fecha, e o
+# Cory (e quem mais quiser) precisa saber de qual conversa saiu cada trilha.
+LINHAGEM = CASA / ".claude" / "terminal-claude" / "linhagem.jsonl"
 
 def hook(estado):
     return [so.hook(estado)]
@@ -243,6 +246,15 @@ def levar_conversa(cfg):
         shutil.copytree(origem.with_suffix(""), destino.with_suffix(""), dirs_exist_ok=True)
 
 
+def anotar_linhagem(t, cfg):
+    LINHAGEM.parent.mkdir(parents=True, exist_ok=True)
+    linha = {"quando": time.strftime("%Y-%m-%dT%H:%M:%S%z"), "filho": t["sessao"],
+             "pai": None if SESSAO == "sem-sessao" else SESSAO, "titulo": t["titulo"], "pasta": str(t["pasta"]),
+             "perfil": nome_do_perfil(cfg), "worktree": t["worktree"] or None}
+    with LINHAGEM.open("a", encoding="utf-8") as f:
+        f.write(json.dumps(linha, ensure_ascii=False) + "\n")
+
+
 def montar_trilhas(a):
     # A cópia só acha a conversa se abrir na pasta dela; de outra pasta o claude nasce sem o histórico.
     conversa = pasta_da_conversa() if a.continuar else None
@@ -358,6 +370,7 @@ def cmd_abrir(a):
             with so.REGISTRO.open("a", encoding="utf-8") as f:
                 f.write("\t".join([str(jid), marca, str(t["pasta"]), SESSAO, time.strftime("%Y-%m-%d %H:%M"), base]) + "\n")
             abertas.append(jid)
+            anotar_linhagem(t, cfg)
             print(f"Janela {jid} · {resumo}")
         if not a.dry_run:
             organizar.aplicar(outras)

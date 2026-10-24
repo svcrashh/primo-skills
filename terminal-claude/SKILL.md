@@ -264,6 +264,9 @@ Nos dois sistemas:
 - **Estado por hooks.** Cada claude recebe por `--settings` hooks que só gravam o arquivo de
   estado. Não escrevem no terminal: escrever o título dali caía no meio do desenho da tela do
   claude e sujava a janela.
+- **Linhagem:** cada janela aberta ganha uma linha em `~/.claude/terminal-claude/linhagem.jsonl`
+  (`filho` = sessão da janela, `pai` = sessão que chamou, título, pasta, perfil, worktree), e ela não
+  é apagada quando a janela fecha. É por ela que o Cory põe cada trilha embaixo da conversa que a abriu.
 - **Registro** das janelas abertas (id, marca da janela, pasta, sessão, data, arquivos). É por ele
   que o `fechar` sabe o que é desta sessão. Janela fechada à mão sai dele sozinha, e os arquivos
   dela são apagados. Só sai com a morte confirmada: a leitura não enxergar a janela não basta (em
