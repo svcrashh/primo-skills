@@ -110,14 +110,15 @@ def roda(*argv):
     return buf.buffer.getvalue().decode()
 
 def fecha(*ids):
-    """O `terminais.py fechar`. O script escreve direto na saída do processo: é lá que se pega."""
+    """O `terminais.py fechar`. O script escreve direto na saída do processo: é lá que se pega; o que é do
+    Cory sai pelo print do Python."""
     with tempfile.TemporaryFile() as f:
         sys.stdout.flush()
         guardada = os.dup(1); os.dup2(f.fileno(), 1)
-        try: roda("fechar", *map(str, ids))
+        try: do_python = roda("fechar", *map(str, ids))
         finally: os.dup2(guardada, 1); os.close(guardada)
         f.seek(0)
-        return f.read().decode()
+        return f.read().decode() + do_python
 
 def direto(*ids):
     """O fechar-terminal.sh chamado pelo nome, como fazem prompts e scripts de outros projetos."""
@@ -296,4 +297,203 @@ anotadas = [json.loads(l) for l in terminais.LINHAGEM.read_text(encoding="utf-8"
 confere("a linhagem guarda quem abriu cada janela, uma linha por janela",
         [(x["filho"], x["pai"], x["titulo"], x["worktree"]) for x in anotadas]
         == [("filho-1", "sessao-teste", "A · motor", "a-motor"), ("filho-2", "sessao-teste", "B · tela", None)], str(anotadas))
+# --- dentro do Cory: cada trilha abre como terminal dele -------------------------------------------
+# O Cory é o de mentira (cory_falso.py), mas o terminal roda de verdade: o sh, o zsh de login, o caffeinate
+# e um claude de mentira que chama os hooks do --settings. O zsh lê uma pasta de inicialização vazia, não
+# o .zshrc do dono. Janela do Terminal aqui é a de mentira: o abrir dela só anota.
+import re, shlex, signal, socket, time
+from cory_falso import CoryFalso
+terminal.clear(); registro()
+projeto = raiz / "projeto do cory"; projeto.mkdir(); projeto = projeto.resolve()   # a skill resolve a pasta (/var é link)
+(raiz / "zdotdir").mkdir()
+claude_falso = raiz / "claude-falso"
+claude_falso.write_text(f"#!{sys.executable}\n" + """
+import json, os, socket, subprocess, sys, time
+a = sys.argv[1:]
+sid = a[a.index("--session-id") + 1]
+hooks = json.load(open(a[a.index("--settings") + 1], encoding="utf-8"))["hooks"]
+def hook(nome):
+    for h in hooks[nome][0]["hooks"]:
+        subprocess.run(h["command"], shell=True)
+saida = RAIZ + "/saida-" + sid + ".json"
+with open(saida + ".novo", "w", encoding="utf-8") as f:
+    json.dump({"argv": a, "cwd": os.getcwd(), "env": {k: v for k, v in os.environ.items()
+               if k.startswith(("CLAUDE", "TERMINAL_CLAUDE", "CORY", "AI_AGENT"))}}, f, ensure_ascii=False)
+os.replace(saida + ".novo", saida)
+hook("SessionStart")
+if "servidor" in a[-1]:
+    s = socket.socket(); s.bind(("127.0.0.1", 0)); s.listen()
+    open(RAIZ + "/porta-" + sid, "w").write(str(s.getsockname()[1]))
+if "termina" in a[-1]:
+    time.sleep(0.5); hook("Stop")
+time.sleep(120)
+""".replace("RAIZ", repr(str(raiz))), encoding="utf-8")
+claude_falso.chmod(0o755)
+
+no_terminal, planos = [], []
+def abrir_no_terminal(t, base, cfg, args, destino):
+    jid = 70001 + len(no_terminal); no_terminal.append(t["titulo"]); terminal[jid] = f"/dev/ttys{jid}"
+    return jid, f"/dev/ttys{jid}"
+so.abrir, so.ativar, so.achar_claude = abrir_no_terminal, (lambda ids: None), (lambda: str(claude_falso))
+terminais.organizar.plano_novas = lambda n, monitor=None: (planos.append(n), ([(0, 0, 9, 9)] * n, {}, ["Notebook"] * n, []))[1]
+terminais.organizar.aplicar = lambda plano, trazer=False: None
+terminais.extras_do_workspace = lambda pasta: []
+
+log = open(raiz / "cory.log", "w")
+def arvore(pid):
+    ps = subprocess.run(["ps", "-axo", "pid=,ppid="], capture_output=True, text=True).stdout
+    pai, nos = {int(c[0]): int(c[1]) for c in (l.split() for l in ps.splitlines())}, {pid}
+    while novos := {p for p, pp in pai.items() if pp in nos} - nos: nos |= novos
+    return nos
+def rodar_no_cory(tid, corpo):
+    # Como o Cory: o ambiente dele sem as CLAUDE*, o endereço da API com a conversa dona do terminal, e o env
+    # do pedido por cima.
+    env = {k: v for k, v in os.environ.items() if not k.startswith(("CLAUDE", "CORY"))}
+    env.update(CORY_TERMINAIS=cory.url, CORY_TERMINAIS_TOKEN=cory.token, **({"CORY_CONVERSA": corpo["conversa"]} if corpo.get("conversa") else {}))
+    env.update(corpo.get("env") or {}, ZDOTDIR=str(raiz / "zdotdir"))
+    return subprocess.Popen(corpo["comando"], cwd=corpo["pasta"], env=env, stdin=subprocess.DEVNULL, stdout=log, stderr=log)
+def matar_no_cory(p):
+    for pid in arvore(p.pid):
+        with contextlib.suppress(OSError): os.kill(pid, signal.SIGKILL)
+    p.wait()
+def novo_cory(**k):
+    return CoryFalso(rodar_no_cory, lambda p: p.poll() is None, matar_no_cory, **k)
+def esperar_que(cond, segundos=15):
+    fim_ = time.time() + segundos
+    while time.time() < fim_:
+        if cond(): return True
+        time.sleep(0.1)
+    return False
+def porta_aberta(porta):
+    with socket.socket() as s: return s.connect_ex(("127.0.0.1", porta)) == 0
+def trilhas(*pares):
+    arq = raiz / "lote.json"
+    arq.write_text(json.dumps([{"titulo": t, "prompt": p} for t, p in pares], ensure_ascii=False), encoding="utf-8")
+    return str(arq)
+def no_cory(cory, token=None, conversa="conversa-7"):
+    os.environ.update(CORY_TERMINAIS=cory.url, CORY_TERMINAIS_TOKEN=token or cory.token, CORY_CONVERSA=conversa)
+def fora_do_cory():
+    for k in ("CORY_TERMINAIS", "CORY_TERMINAIS_TOKEN", "CORY_CONVERSA"): os.environ.pop(k, None)
+# A linha que o Cory procura na saída do abrir (src/main/motor/blocos.ts, JANELA).
+JANELA = re.compile(r"^Janela \d+ · (.+?) · ((?:~|/|[A-Za-z]:[\\/])[^\n]*?)(?= · |$)", re.M)
+
+cory = novo_cory()
+fora_do_cory()
+saida = roda("abrir", str(projeto), "--prompt", "fora do cory")
+confere("sem CORY_TERMINAIS nada muda: janela do Terminal, na grade, e nenhum pedido ao Cory",
+        no_terminal == ["projeto do cory"] and planos == [1] and not cory.pedidos and "terminal do Cory" not in saida, saida)
+terminal.clear(); registro(); no_terminal.clear(); planos.clear()
+
+no_cory(cory)
+saida = roda("abrir", str(projeto), "--lote", trilhas(("A · termina", "faz e termina"), ("B · servidor", "sobe um servidor")), "--monitor", "vertical")
+posts, tids = cory.de("POST"), list(cory.terminais)
+confere("com CORY_TERMINAIS cada trilha abre como terminal do Cory, sem janela do Terminal nem grade",
+        len(posts) == 2 and no_terminal == [] and planos == [], saida)
+confere("e a saída diz que grade e --monitor não valem dentro do Cory", "Grade e --monitor não valem aqui" in saida, saida)
+confere("o token vai no cabeçalho de todo pedido", cory.pedidos and all(p[2] == f"Bearer {cory.token}" for p in cory.pedidos), str(cory.pedidos))
+confere("o POST leva o título, a pasta e a conversa de cada trilha",
+        [(p[3]["titulo"], p[3]["pasta"], p[3].get("conversa")) for p in posts] == [("A · termina", str(projeto), "conversa-7"), ("B · servidor", str(projeto), "conversa-7")], str(posts))
+reg = [l.split("\t") for l in so.REGISTRO.read_text(encoding="utf-8").splitlines()]
+procs = [cory.terminais[t]["processo"] for t in tids]
+confere("o registro marca cada uma com cory:<id> e usa o pid do terminal como id",
+        [c[1] for c in reg] == [f"cory:{t}" for t in tids] and [int(c[0]) for c in reg] == [p.pid for p in procs], str(reg))
+cmd = posts[0][3]["comando"] if posts else ["", "", ""]
+sessoes = [x["filho"] for x in [json.loads(l) for l in terminais.LINHAGEM.read_text(encoding="utf-8").splitlines()][-2:]]
+confere("o comando leva à vista o --session-id da trilha, que é onde o Cory procura a sessão do terminal",
+        [p[3]["comando"][3:] for p in posts] == [["terminal-claude", "--session-id", s] for s in sessoes], str(posts))
+confere("o comando é o lancador da janela (o .sh), num zsh de login, com o pid gravado antes",
+        cmd[:2] == ["/bin/sh", "-c"] and cmd[2].startswith(f"echo $$ > {shlex.quote(reg[0][5] + '.pid')}; exec /bin/zsh -l -i -c ")
+        and reg[0][5] + ".sh" in cmd[2] and Path(reg[0][5] + ".sh").read_text() == so.lancador(
+            {"pasta": projeto, "prompt": "x", "titulo": "A · termina"}, reg[0][5], terminais.MEU_PERFIL, json.loads(Path(reg[0][5] + ".json").read_text())["args"]), str(cmd))
+confere("a linha de cada uma é a que o Cory reconhece (Janela <número> · título · pasta)",
+        JANELA.findall(saida) == [("A · termina", str(projeto)), ("B · servidor", str(projeto))], saida)
+anotadas = [json.loads(l) for l in terminais.LINHAGEM.read_text(encoding="utf-8").splitlines()][-2:]
+confere("a linhagem anota as duas com a conversa que abriu e o terminal do Cory",
+        [(x["titulo"], x["pai"], x.get("cory")) for x in anotadas] == [("A · termina", "sessao-teste", tids[0]), ("B · servidor", "sessao-teste", tids[1])], str(anotadas))
+esperar_que(lambda: len(list(raiz.glob("saida-*.json"))) == 2)
+rodou = {j["argv"][j["argv"].index("--name") + 1]: j for j in (json.loads(f.read_text(encoding="utf-8")) for f in raiz.glob("saida-*.json"))}
+a = rodou.get("A · termina", {"argv": ["--settings", ""], "env": {}, "cwd": ""})
+confere("o claude da trilha rodou no terminal, em bypass, com os hooks e o prompt",
+        "--dangerously-skip-permissions" in a["argv"] and a["argv"][a["argv"].index("--settings") + 1] == str(so.CACHE / "hooks.json") and a["argv"][-1] == "faz e termina", str(a))
+confere("na pasta da trilha e com o arquivo de estado dos hooks",
+        os.path.realpath(a["cwd"]) == os.path.realpath(projeto) and a["env"].get("TERMINAL_CLAUDE_ESTADO") == reg[0][5] + ".estado", str(a))
+confere("e leva o Cory adiante com a conversa da própria trilha (a que ela abrir fica embaixo dela, não da avó)",
+        a["env"].get("CORY_TERMINAIS") == cory.url and a["env"].get("CORY_TERMINAIS_TOKEN") == cory.token
+        and a["env"].get("CORY_CONVERSA") == a["argv"][a["argv"].index("--session-id") + 1] != "conversa-7", str(a["env"]))
+
+saida = roda("esperar", "--minutos", "1")
+confere("o esperar volta quando a trilha do Cory para, pelo hook Stop dela", f"A janela {reg[0][0]} (A · termina) parou" in saida and "Ainda há janela trabalhando (1)" in saida, saida)
+st = roda("status")
+confere("o status mostra as duas pelos hooks: uma parada e a outra trabalhando", f"{reg[0][0]}  ✅ parada" in st and f"{reg[1][0]}  ⏳ trabalhando" in st, st)
+saida = roda("ver", reg[0][0])
+confere("o ver de trilha do Cory não pede a tela ao Terminal", saida.startswith("A · termina · parada") and "tela de mentira" not in saida and "ainda não gravou" in saida, saida)
+
+esperar_que(lambda: list(raiz.glob("porta-*")))
+porta = int(next(raiz.glob("porta-*")).read_text())
+saida = fecha()
+deletes = cory.de("DELETE")
+confere("o fechar tira a aba pelo DELETE, com o token, e a que segura servidor fica",
+        [(d[1], d[2]) for d in deletes] == [(f"/terminais/{tids[0]}", f"Bearer {cory.token}")] and f"janela {reg[1][0]} (terminal do Cory): segura servidor na porta {porta}" in saida, saida)
+confere("a que fechou acabou e saiu do registro; a do servidor continua", procs[0].poll() is not None and registro() == [procs[1].pid], f"{registro()} {saida}")
+saida = fecha(procs[1].pid, "--forcar")
+confere("com --forcar fecha derrubando o servidor junto", procs[1].poll() is not None and not porta_aberta(porta) and registro() == [] and f"janela {reg[1][0]} fechada" in saida, saida)
+
+roda("abrir", str(projeto), "--prompt", "fica")
+tid = next(iter(cory.terminais)); p = cory.terminais[tid]["processo"]
+confere("aberta no Cory, a trilha está no registro", registro() == [p.pid], str(registro()))
+cory.fechar_aba(tid)
+confere("aba fechada à mão no Cory sai do registro, mesmo com o Cory ainda listando o terminal (vivo falso)",
+        registro() == [] and tid in cory.terminais, str(registro()))
+del cory.terminais[tid]
+
+roda("abrir", str(projeto), "--prompt", "fica")
+tid, p = next((i, t["processo"]) for i, t in cory.terminais.items())
+terminal[p.pid] = "/dev/ttys990"   # uma janela do Terminal que, por acaso, tem o mesmo número
+saida = direto(p.pid)
+confere("o fechar-terminal.sh pelo nome não fecha nada com o id de um terminal do Cory",
+        "é um terminal do Cory" in saida and p.pid in abertas() and p.poll() is None, saida)
+terminal.pop(p.pid)
+# Os arquivos de cada janela levam o segundo e o pid de quem abriu: duas chamadas do mesmo processo no mesmo
+# segundo dariam o mesmo nome (fora do teste cada abrir é um processo).
+time.sleep(1)
+fora_do_cory(); roda("abrir", str(projeto), "--prompt", "no terminal"); no_cory(cory)
+saida = fecha()
+confere("o fechar sem ids fecha as duas desta sessão: a do Cory pelo DELETE e a do Terminal pelo script",
+        f"janela {p.pid} fechada" in saida and "janela 70001 fechada" in saida and cory.de("DELETE")[-1][1] == f"/terminais/{tid}"
+        and p.poll() is not None and abertas() == [] and registro() == [], saida)
+
+roda("abrir", str(projeto), "--prompt", "fica")
+p = next(iter(cory.terminais.values()))["processo"]
+cory.desligar()
+st = roda("status")
+confere("com o Cory fora do ar o registro segura a trilha pelo processo dela", registro() == [p.pid] and st.startswith(f"{p.pid}  "), f"{registro()} {st}")
+saida = fecha()
+confere("e o fechar, sem o Cory, encerra o processo dela", "o Cory não respondeu" in saida and "encerrei o processo dela" in saida
+        and esperar_que(lambda: p.poll() is not None) and registro() == [], saida)
+
+livre = socket.socket(); livre.bind(("127.0.0.1", 0)); porta_livre = livre.getsockname()[1]; livre.close()
+no_terminal.clear(); planos.clear()
+os.environ["CORY_TERMINAIS"] = f"http://127.0.0.1:{porta_livre}"
+saida = roda("abrir", str(projeto), "--prompt", "x")
+confere("Cory fora do ar na hora de abrir: avisa e abre no Terminal de sempre",
+        "Aviso: esta sessão roda dentro do Cory, mas o Cory não respondeu" in saida and no_terminal == ["projeto do cory"] and planos == [1], saida)
+terminal.clear(); registro(); no_terminal.clear(); planos.clear()
+
+cory = novo_cory(token="token-novo")
+no_cory(cory, token="token-velho")
+saida = roda("abrir", str(projeto), "--prompt", "x")
+confere("token recusado: avisa e abre no Terminal de sempre", "o Cory recusou o token" in saida and no_terminal == ["projeto do cory"]
+        and cory.pedidos and cory.pedidos[0][2] == "Bearer token-velho" and not cory.de("POST"), saida)
+terminal.clear(); registro(); no_terminal.clear(); planos.clear()
+
+no_cory(cory); cory.recusar_post = True
+saida = roda("abrir", str(projeto), "--lote", trilhas(("A · um", "x"), ("B · dois", "y")))
+confere("Cory que recusa o POST: avisa, e a trilha e as que faltam abrem no Terminal, na grade",
+        "o Cory respondeu 400 a POST /terminais" in saida and no_terminal == ["A · um", "B · dois"] and planos == [2] and len(cory.de("POST")) == 1, saida)
+terminal.clear(); registro(); cory.recusar_post = False; cory.pedidos.clear()
+
+saida = roda("abrir", str(projeto), "--prompt", "x", "--dry-run")
+confere("o --dry-run diz que a trilha iria para o Cory e não abre nada", "[simulação] projeto do cory · " in saida and " · terminal do Cory" in saida and not cory.de("POST"), saida)
+cory.desligar(); fora_do_cory()
+confere("no fim do Cory não sobra nada no registro", registro() == [], str(registro()))
 fim()

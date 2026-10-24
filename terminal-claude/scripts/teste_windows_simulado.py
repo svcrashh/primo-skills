@@ -28,7 +28,7 @@ claude_falso = executavel(raiz / "bin", f"""
 import json, os, sys
 a = sys.argv[1:]; sid = a[a.index("--session-id") + 1]
 json.dump({{"argv": a, "cwd": os.getcwd(), "config": os.environ.get("CLAUDE_CONFIG_DIR"),
-           "env": sorted(k for k in os.environ if k.upper().startswith(("CLAUDE", "TERMINAL_CLAUDE", "AI_AGENT")))}},
+           "env": sorted(k for k in os.environ if k.upper().startswith(("CLAUDE", "TERMINAL_CLAUDE", "AI_AGENT", "CORY")))}},
           open({str(raiz)!r} + "/saida-" + sid + ".json", "w", encoding="utf-8"), ensure_ascii=False)
 """)
 os.environ["CLAUDE_CODE_SESSION_ID"] = "sessao-teste"
@@ -384,6 +384,98 @@ api["respostas"] = {}
 saida = roda("abrir", pasta, "-n", "3", "--prompt", "x", "--perfil", "auto", "--dry-run")
 nomes = re.findall(r"· (padrão \(~/\.claude\)|~/\.claude-\w+)\n", saida)
 confere("API falhou e sem uso.json: cai no rodízio do outras e avisa", "caiu no rodízio do --perfil outras" in saida and nomes == ["padrão (~/.claude)", "~/.claude-devin", "padrão (~/.claude)"], f"{nomes}\n{saida}")
+
+# --- dentro do Cory: as trilhas abrem como terminais dele --------------------------------------------
+# O Cory é o de mentira (cory_falso.py). O terminal dele roda o mesmo `rodar` da janela do Windows
+# Terminal, aqui dentro do teste, como faz o wt de mentira.
+from cory_falso import CoryFalso
+roda("fechar"); mortos.clear(); chamadas.clear()
+so.processos = lambda: ({}, [])
+pids_cory = iter(range(7001, 7100))
+def rodar_no_cory(tid, corpo):
+    """Como o Cory: o ambiente dele sem as CLAUDE*, o endereço da API com a conversa dona do terminal, e o
+    env do pedido por cima."""
+    env = {k: v for k, v in os.environ.items() if not k.upper().startswith(("CLAUDE", "CORY"))}
+    env.update(CORY_TERMINAIS=cory.url, CORY_TERMINAIS_TOKEN=cory.token, **({"CORY_CONVERSA": corpo["conversa"]} if corpo.get("conversa") else {}))
+    env.update(corpo.get("env") or {})
+    ambiente = dict(os.environ); os.environ.clear(); os.environ.update(env)
+    base = corpo["comando"][3]
+    try:
+        sys.argv = corpo["comando"][1:]; terminais.main()   # o `rodar` como a linha de comando o chama
+    finally: os.environ.clear(); os.environ.update(ambiente)
+    # Aqui todo terminal roda no processo do teste: cada um ganha um número próprio, como teria.
+    pid = next(pids_cory)
+    Path(base + ".pid").write_text(str(pid))
+    fake.vivos.add(pid); fake.comandos[pid] = f'"C:/python.exe" C:/skills/terminais.py rodar {base} --session-id {corpo["comando"][-1]}'
+    return pid
+cory = CoryFalso(rodar_no_cory, lambda pid: pid in fake.vivos, fake.vivos.discard)
+
+os.environ.update(CORY_TERMINAIS=cory.url, CORY_TERMINAIS_TOKEN=cory.token, CORY_CONVERSA="conversa-9")
+lote.write_text(json.dumps([{"titulo": "W · um", "prompt": "faz a parte 1"}, {"titulo": "X · dois", "prompt": prompt_dificil}], ensure_ascii=False), encoding="utf-8")
+antes = set(glob.glob(str(raiz / "saida-*.json")))
+saida = roda("abrir", pasta, "--lote", str(lote))
+posts, tids = cory.de("POST"), list(cory.terminais)
+confere("Cory: com CORY_TERMINAIS as trilhas abrem como terminais do Cory, sem o wt", len(posts) == 2 and not chamadas and "Grade e --monitor não valem aqui" in saida, saida)
+sessoes = [l["filho"] for l in [json.loads(l) for l in terminais.LINHAGEM.read_text(encoding="utf-8").splitlines()][-2:]]
+confere("Cory: o comando é o `rodar` da janela com o --session-id à vista, e o POST leva token, título, pasta e conversa",
+        all(p[3]["comando"] == [sys.executable, str(so.MOTOR), "rodar", p[3]["comando"][3], "--session-id", s] and p[2] == f"Bearer {cory.token}"
+            and p[3]["pasta"] == pasta and p[3]["conversa"] == "conversa-9" for p, s in zip(posts, sessoes)) and [p[3]["titulo"] for p in posts] == ["W · um", "X · dois"], str(posts))
+confere("Cory: o env diz a conta (CLAUDE_CONFIG_DIR) e dá à trilha a conversa dela, a sessão",
+        [(p[3]["env"].get("CLAUDE_CONFIG_DIR"), p[3]["env"].get("CORY_CONVERSA")) for p in posts] == [(insiders, s) for s in sessoes], str(posts))
+novas = {le(f)["argv"][le(f)["argv"].index("--name") + 1]: le(f) for f in set(glob.glob(str(raiz / "saida-*.json"))) - antes}
+x = novas.get("X · dois", {"argv": [], "env": [], "config": None})
+confere("Cory: o claude de cada trilha rodou, com o prompt difícil inteiro, no perfil e com o arquivo de estado",
+        sorted(novas) == ["W · um", "X · dois"] and prompt_dificil in x["argv"] and x["config"] == insiders and "TERMINAL_CLAUDE_ESTADO" in x["env"], str(x))
+confere("Cory: e leva o Cory adiante", {"CORY_TERMINAIS", "CORY_TERMINAIS_TOKEN", "CORY_CONVERSA"} <= set(x["env"]), str(x["env"]))
+reg = [l.split("\t") for l in so.REGISTRO.read_text(encoding="utf-8").splitlines()]
+confere("Cory: o registro marca cada uma com cory:<id> e o pid do terminal", [c[1] for c in reg] == [f"cory:{t}" for t in tids] and [c[0] for c in reg] == ["7001", "7002"], str(reg))
+fake.vivos.add(7999); fake.comandos[7999] = f'"C:/python.exe" C:/skills/terminais.py rodar {reg[0][5]}2 --session-id x'
+confere("Cory: o processo de outra trilha (…-12) não passa pelo desta (…-1)", not so.processo_da_trilha(7999, reg[0][5]) and so.processo_da_trilha(7001, reg[0][5]))
+fake.vivos.discard(7999)
+linhagem = [json.loads(l) for l in terminais.LINHAGEM.read_text(encoding="utf-8").splitlines()][-2:]
+confere("Cory: a linhagem anota as duas, com quem abriu e o terminal", [(l["titulo"], l["pai"], l.get("cory")) for l in linhagem] == [("W · um", "sessao-teste", tids[0]), ("X · dois", "sessao-teste", tids[1])], str(linhagem))
+for c, estado in zip(reg, ("trabalhando", "parada")):
+    Path(c[5] + ".estado").write_text(estado, encoding="utf-8")
+st = roda("status")
+confere("Cory: o status das trilhas vem dos hooks", "7001  ⏳ trabalhando" in st and "7002  ✅ parada" in st, st)
+espera = roda("esperar")
+confere("Cory: o esperar volta com a trilha que parou", "A janela 7002 (X · dois) parou" in espera and "Ainda há janela trabalhando (1)" in espera, espera)
+
+so.processos = lambda: ({7501: 7001}, [(7501, 3000)])
+saida = roda("fechar", "7001")
+confere("Cory: terminal que segura servidor não fecha", "janela 7001 (terminal do Cory): segura servidor na porta 3000" in saida and not cory.de("DELETE"), saida)
+saida = roda("fechar", "7001", "--forcar")
+confere("Cory: com --forcar mata a árvore do processo e tira a aba pelo DELETE",
+        ["taskkill", "/PID", "7001", "/T", "/F"] in mortos and [(d[1], d[2]) for d in cory.de("DELETE")] == [(f"/terminais/{tids[0]}", f"Bearer {cory.token}")]
+        and no_registro() == ["7002"], saida + str(mortos))
+so.processos = lambda: ({}, [])
+mortos.clear()
+saida = roda("fechar")
+confere("Cory: o fechar tira a aba pelo DELETE, sem taskkill, e a linha sai do registro", len(cory.de("DELETE")) == 2 and not mortos and no_registro() == [], saida + str(mortos))
+
+roda("abrir", pasta, "--prompt", "fica")
+pid_cory = no_registro()[0]
+cory.desligar()
+confere("Cory: fora do ar, o registro segura a trilha pelo processo dela", no_registro() == [pid_cory], str(no_registro()))
+saida = roda("fechar")
+confere("Cory: e o fechar, sem o Cory, mata o processo dela", ["taskkill", "/PID", pid_cory, "/T", "/F"] in mortos and "o Cory não respondeu" in saida, saida + str(mortos))
+fake.vivos.discard(int(pid_cory))   # o taskkill daqui é de mentira
+confere("Cory: com o processo morto a linha sai do registro", no_registro() == [], str(no_registro()))
+
+chamadas.clear()
+saida = roda("abrir", pasta, "--prompt", "x")
+confere("Cory: fora do ar na hora de abrir, avisa e abre no Windows Terminal", "o Cory não respondeu" in saida and len(chamadas) == 1, saida)
+cory = CoryFalso(rodar_no_cory, lambda pid: pid in fake.vivos, fake.vivos.discard, token="token-novo")
+os.environ["CORY_TERMINAIS"] = cory.url
+saida = roda("abrir", pasta, "--prompt", "x")
+confere("Cory: token recusado, avisa e abre no Windows Terminal", "o Cory recusou o token" in saida and len(chamadas) == 2 and not cory.de("POST"), saida)
+for k in ("CORY_TERMINAIS", "CORY_TERMINAIS_TOKEN", "CORY_CONVERSA"):
+    os.environ.pop(k)
+cory.pedidos.clear()
+saida = roda("abrir", pasta, "--prompt", "x")
+confere("Cory: sem CORY_TERMINAIS nada muda: abre no Windows Terminal e não fala com o Cory", len(chamadas) == 3 and not cory.pedidos and "Cory" not in saida, saida)
+cory.desligar()
+roda("fechar")
 
 shutil.rmtree(raiz, ignore_errors=True)
 sys.exit(f"\n{len(falhas)} FALHA(S): {'; '.join(falhas)}" if falhas else print("\nTUDO OK"))
