@@ -51,12 +51,13 @@ class Janelas:
     def clear(self): [j.unlink() for j in self.pasta.iterdir()]
 terminal = Janelas(raiz / "janelas")
 omitidas = set()   # ids que a próxima leitura do AppleScript deixa de ver, uma vez só
+escondidas = set()  # ids que a leitura não vê enquanto estiverem aqui
 outras_abas = set()  # ttys de abas que não são a selecionada da janela: o AppleScript não mostra
 def vivas():
-    vistas = {jid: tty for jid, tty in terminal.items() if jid not in omitidas}
+    vistas = {jid: tty for jid, tty in terminal.items() if jid not in omitidas and jid not in escondidas}
     omitidas.clear()
     return vistas
-so.vivas = vivas
+vivas_de_verdade, so.vivas = so.vivas, vivas
 so.ttys_do_terminal = lambda: set(terminal.values()) | outras_abas
 so.tela = lambda jid: "tela de mentira"
 
@@ -334,6 +335,7 @@ no_terminal, planos = [], []
 def abrir_no_terminal(t, base, cfg, args, destino):
     jid = 70001 + len(no_terminal); no_terminal.append(t["titulo"]); terminal[jid] = f"/dev/ttys{jid}"
     return jid, f"/dev/ttys{jid}"
+abrir_de_verdade = so.abrir
 so.abrir, so.ativar, so.achar_claude = abrir_no_terminal, (lambda ids: None), (lambda: str(claude_falso))
 terminais.organizar.plano_novas = lambda n, monitor=None: (planos.append(n), ([(0, 0, 9, 9)] * n, {}, ["Notebook"] * n, []))[1]
 terminais.organizar.aplicar = lambda plano, trazer=False: None
@@ -453,9 +455,6 @@ saida = direto(p.pid)
 confere("o fechar-terminal.sh pelo nome não fecha nada com o id de um terminal do Cory",
         "é um terminal do Cory" in saida and p.pid in abertas() and p.poll() is None, saida)
 terminal.pop(p.pid)
-# Os arquivos de cada janela levam o segundo e o pid de quem abriu: duas chamadas do mesmo processo no mesmo
-# segundo dariam o mesmo nome (fora do teste cada abrir é um processo).
-time.sleep(1)
 fora_do_cory(); roda("abrir", str(projeto), "--prompt", "no terminal"); no_cory(cory)
 saida = fecha()
 confere("o fechar sem ids fecha as duas desta sessão: a do Cory pelo DELETE e a do Terminal pelo script",
@@ -496,4 +495,88 @@ saida = roda("abrir", str(projeto), "--prompt", "x", "--dry-run")
 confere("o --dry-run diz que a trilha iria para o Cory e não abre nada", "[simulação] projeto do cory · " in saida and " · terminal do Cory" in saida and not cory.de("POST"), saida)
 cory.desligar(); fora_do_cory()
 confere("no fim do Cory não sobra nada no registro", registro() == [], str(registro()))
+# --- vivas: o Terminal aberto é achado pelo ps -------------------------------------------------------
+# Neste macOS (26.6.2, medido em 24/10/2026) o pgrep -x Terminal não acha o Terminal aberto: o de mentira
+# daqui responde igual, e o vivas tem de ler as janelas mesmo assim.
+ps_comm = {"saida": ""}
+run_de_verdade = subprocess.run
+def run_falso(argv, *a, **k):
+    if list(argv) == ["ps", "-axo", "comm="]:
+        return subprocess.CompletedProcess(argv, 0, ps_comm["saida"], "")
+    if argv[0] == "pgrep":
+        return subprocess.CompletedProcess(argv, 1, "", "")
+    return run_de_verdade(argv, *a, **k)
+lido, resposta = [], {"rc": 0}
+so.chamar_osa = lambda *args: (lido.append(args), subprocess.CompletedProcess(args, resposta["rc"], "7 /dev/ttys007\n8 /dev/ttys008\n", ""))[1]
+subprocess.run = run_falso   # é o mesmo módulo que o so_mac usa
+try:
+    ps_comm["saida"] = "/sbin/launchd\n/System/Applications/Utilities/Terminal.app/Contents/MacOS/Terminal\n/usr/bin/login\n"
+    com_terminal = vivas_de_verdade()
+    resposta["rc"] = 1
+    sem_resposta = vivas_de_verdade()
+    ps_comm["saida"] = "/sbin/launchd\n/usr/bin/login\n/Applications/iTerm.app/Contents/MacOS/iTerm2\n"
+    antes = len(lido)
+    sem_terminal = vivas_de_verdade()
+finally:
+    subprocess.run = run_de_verdade
+confere("vivas: o Terminal aberto é achado pelo ps (o pgrep não o acha) e as janelas são lidas",
+        com_terminal == {7: "/dev/ttys007", 8: "/dev/ttys008"}, str(com_terminal))
+confere("vivas: Terminal que não responde não derruba quem lê (a prova pelo tty segura o registro)", sem_resposta == {}, str(sem_resposta))
+confere("vivas: sem o Terminal no ps não pergunta nada a ele (um tell abriria o app)", sem_terminal == {} and len(lido) == antes, str(lido))
+
+# --- abrir no Mac: janela aberta sempre entra no registro -------------------------------------------
+# O Terminal é de mentira (chamar_osa): o AppleScript do abrir responde como o de verdade respondeu nos
+# casos que deram errado, e a janela que nasce grava o tty dela, como a primeira linha do lancador.
+so.abrir = abrir_de_verdade
+so.ESPERA_TTY, so.ESPERA_JANELA = 0.5, 0.5
+terminal.clear(); registro()
+pedidos, modo = [], {"abrir": "normal"}
+ERRO_1719 = "execution error: Não é possível obter item 3 of every window. (-1719)"
+def terminal_que_falha(*args):
+    script = args[1]
+    pedidos.append(script)
+    if "do script" not in script:   # o set frame de depois
+        return subprocess.CompletedProcess(args, 0, "", "")
+    m, base = modo["abrir"], shlex.split(args[2])[1][:-len(".sh")]
+    if m == "-1743":
+        return subprocess.CompletedProcess(args, 1, "", "execution error: Not authorized to send Apple events to Terminal. (-1743)")
+    if m == "nao_abriu":
+        return subprocess.CompletedProcess(args, 1, "", ERRO_1719)
+    jid = 80001 + sum(j > 80000 for j, _ in terminal.items())
+    terminal[jid] = f"/dev/ttys{jid}"
+    Path(base + ".tty").write_text(f"/dev/ttys{jid}\n")
+    if m == "escondida":
+        escondidas.add(jid)
+    saida = {"normal": f"{jid} /dev/ttys{jid}\n", "sem_id": f"0 /dev/ttys{jid}\n"}.get(m)
+    return subprocess.CompletedProcess(args, 0, saida, "") if saida else subprocess.CompletedProcess(args, 1, "", ERRO_1719)
+so.chamar_osa = terminal_que_falha
+def abre_no_mac(m):
+    modo["abrir"] = m; pedidos.clear()
+    return roda("abrir", str(projeto), "--prompt", "x")
+
+saida = abre_no_mac("normal")
+base = so.REGISTRO.read_text(encoding="utf-8").split("\t")[5].strip()
+confere("abrir no Mac: o caso de sempre registra a janela que o Terminal disse", "Janela 80001 · " in saida and registro() == [80001], saida)
+confere("a primeira linha da janela grava o tty dela", Path(base + ".sh").read_text().startswith(f"tty > {shlex.quote(base + '.tty')} "), Path(base + ".sh").read_text()[:200])
+saida = abre_no_mac("falha_no_meio")
+confere("-1719 com a janela já aberta: ela entra no registro pelo tty que gravou e vai para o quadrado dela",
+        "Janela 80002 · " in saida and "[saiu" not in saida and registro() == [80001, 80002]
+        and any("set frame of window id 80002 to {0, 0, 9, 9}" in p for p in pedidos), saida)
+saida = abre_no_mac("sem_id")
+confere("Terminal que não achou a janela (id 0): ela é achada pelo tty", "Janela 80003 · " in saida and registro() == [80001, 80002, 80003], saida)
+saida = abre_no_mac("escondida")
+confere("janela que a leitura ainda não enxerga entra no registro com id 0, pelo tty, e avisa",
+        "Janela 0 · " in saida and "entrou no registro pelo tty" in saida and registro() == [0, 80001, 80002, 80003], saida)
+escondidas.clear()
+confere("e ganha o id dela na primeira leitura que a enxerga", registro() == [80001, 80002, 80003, 80004]
+        and "80004\t/dev/ttys80004\t" in so.REGISTRO.read_text(encoding="utf-8"), so.REGISTRO.read_text(encoding="utf-8"))
+saida = abre_no_mac("nao_abriu")
+confere("-1719 sem janela nenhuma aberta: sai com o erro e não registra nada",
+        "[saiu: Falhou ao falar com o Terminal:" in saida and "-1719" in saida and registro() == [80001, 80002, 80003, 80004], saida)
+antes = time.time()
+saida = abre_no_mac("-1743")
+confere("sem permissão (-1743) sai na hora, com o caminho para liberar", "Automação" in saida and time.time() - antes < 0.4
+        and registro() == [80001, 80002, 80003, 80004], saida)
+saida = fecha()
+confere("e o fechar fecha todas, inclusive a que entrou com id 0", "4 janela(s) fechada(s)" in saida and abertas() == [] and registro() == [], saida)
 fim()

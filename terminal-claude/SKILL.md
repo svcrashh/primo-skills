@@ -347,6 +347,10 @@ Nos dois sistemas:
   calado a linha de janela que já fechou, e não fecha a janela cujo tty não é o do registro.
 - A conferência do fim do `fechar` conta a janela como aberta se ela tem aba. Não olha o
   `visible`: ele é falso também na janela minimizada ou escondida, que continua aberta.
+- **Janela aberta sempre entra no registro** (24/10/2026, depois de três janelas órfãs pelo -1719 de
+  uma janela que sumia enquanto o `abrir` as percorria): cada janela grava o tty dela ao nascer, e o
+  `abrir` a acha por ele quando o Terminal falha; sem o id, ela entra com `0` e ganha o dela na leitura
+  seguinte. Terminal aberto se confere pelo `ps`: o `pgrep -x Terminal` não o acha no macOS 26.
 - `scripts/teste_mac_simulado.py` exercita o registro, o `esperar` e o `fechar` com o Terminal
   simulado, sem abrir janela nem tocar no registro de verdade. Roda depois de mexer no
   `so_mac.py`, no `terminais.py` ou no `fechar-terminal.sh`.

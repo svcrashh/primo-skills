@@ -866,7 +866,9 @@ def cmd_abrir(a):
                 for cfg in usados:
                     if not mesmo_perfil(cfg, MEU_PERFIL):
                         levar_conversa(cfg)
-        carimbo, abertas, no_cory = f"{time.strftime('%Y%m%d-%H%M%S')}-{os.getpid()}", [], 0
+        # O sufixo separa dois abrir do mesmo processo no mesmo segundo: com o mesmo nome, a janela nova
+        # regravava os arquivos da anterior.
+        carimbo, abertas, no_cory = f"{time.strftime('%Y%m%d-%H%M%S')}-{os.getpid()}-{uuid.uuid4().hex[:4]}", [], 0
         for k, t in enumerate(trilhas, 1):
             args = args_claude(t, claude, a.modo, SESSAO if a.continuar else None)
             cfg = t["config"]
