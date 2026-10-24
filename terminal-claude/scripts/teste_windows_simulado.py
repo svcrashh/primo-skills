@@ -359,10 +359,21 @@ def ja_aberta(cfg, estado="trabalhando", sessao="outra-sessao"):
     with so.REGISTRO.open("a", encoding="utf-8") as f:
         f.write("\t".join([str(hwnd), str(os.getpid()), pasta, sessao, "2026-10-24 10:00", base]) + "\n")
     fake.jan[hwnd] = (0, 0, 10, 10)
+from cory_falso import CoryFalso
+cory_de_la = CoryFalso(None, lambda pid: True, lambda pid: None)
+def no_cory_aberta(cfg, sessao="outra-sessao"):
+    """Uma trilha que roda num terminal do Cory (cory:<id>), que o Cory diz estar vivo."""
+    base = str(so.CACHE / "ja-aberta-cory")
+    Path(base + ".estado").write_text("trabalhando", encoding="utf-8")
+    Path(base + ".json").write_text(json.dumps({"titulo": "no Cory", "sessao": "s-cory", "config": cfg,
+                                                "cory": {"url": cory_de_la.url, "token": cory_de_la.token, "id": "t-1"}}), encoding="utf-8")
+    with so.REGISTRO.open("a", encoding="utf-8") as f:
+        f.write("\t".join(["7801", "cory:t-1", pasta, sessao, "2026-10-24 10:00", base]) + "\n")
+    cory_de_la.terminais["t-1"] = {"titulo": "no Cory", "processo": 7801}
 cory(("padrao", 10, 65, 1.5), ("devin", 10, 20, 5), ("insiders", 10, 10, 6.5))
-ja_aberta(None); ja_aberta(None, sessao="sessao-teste"); ja_aberta(None, estado="encerrada")
+ja_aberta(None, sessao="sessao-teste"); no_cory_aberta(None); ja_aberta(None, estado="encerrada")
 escolha, saida = auto("-n", "2", "--prompt", "x")
-confere("o auto soma as janelas que já rodam, de qualquer sessão: a 65% com 2 abertas (75%) recebe só mais uma",
+confere("o auto soma as janelas que já rodam, de qualquer sessão e também as do Cory: a 65% com 2 abertas (75%) recebe só mais uma",
         escolha == ["padrao", "devin"], saida)
 confere("e diz quantas já rodam na conta escolhida", "Prime (padrao) · 65% da semana" in saida and "2 janela(s) já aberta(s) nela" in saida, saida)
 contas = roda("contas")
@@ -370,6 +381,7 @@ confere("o contas mostra as abertas de cada conta e conta com elas na ordem", re
         and "1º Prime (1)" in contas, contas)
 for h in [h for h in fake.jan if h > 9000]:
     fake.jan.pop(h)
+cory_de_la.terminais.clear(); cory_de_la.desligar()
 escolha, saida = auto("-n", "2", "--prompt", "x")
 confere("fechadas as janelas, a conta volta a receber as duas", escolha == ["padrao", "padrao"], saida)
 
