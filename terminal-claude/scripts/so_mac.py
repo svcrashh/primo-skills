@@ -3,8 +3,11 @@ import fcntl
 import os
 import shlex
 import shutil
+import signal
 import subprocess
 import sys
+import time
+from contextlib import suppress
 from pathlib import Path
 
 STORAGES = [
@@ -161,6 +164,60 @@ def abrir(t, base, cfg, args, destino):
     Path(base + ".sh").write_text(lancador(t, base, cfg, args))
     jid, tty = osa("-e", ABRIR_AS, f" . {shlex.quote(base + '.sh')}", *map(str, destino)).split()
     return int(jid), tty
+
+
+def comando(t, base, cfg, args):
+    """O que o terminal do Cory roda: o mesmo lancador da janela, num zsh de login e interativo como o
+    do Terminal, e um shell na pasta quando o claude sai. O sh da frente grava o pid antes de o zsh ler os
+    arquivos de inicialização, e o exec mantém o número. O --session-id do fim o sh não usa: é onde o Cory
+    procura a sessão que roda no terminal."""
+    Path(base + ".sh").write_text(lancador(t, base, cfg, args))
+    q = shlex.quote
+    zsh = f". {q(base + '.sh')}; /bin/zsh -l -i"
+    return ["/bin/sh", "-c", f"echo $$ > {q(base + '.pid')}; exec /bin/zsh -l -i -c {q(zsh)}",
+            "terminal-claude", "--session-id", t["sessao"]]
+
+
+def processo_da_trilha(pid, base):
+    """O processo ainda roda e é o do terminal desta trilha: o número pode ter passado a outro programa."""
+    ps = subprocess.run(["ps", "-o", "stat=,command=", "-p", str(pid)], capture_output=True, text=True).stdout.strip()
+    return bool(ps) and not ps.startswith("Z") and base + ".sh" in ps
+
+
+def pais():
+    ps = subprocess.run(["ps", "-axo", "pid=,ppid="], capture_output=True, text=True).stdout
+    return {int(c[0]): int(c[1]) for c in (linha.split() for linha in ps.splitlines()) if len(c) == 2}
+
+
+def processos():
+    """(pai de cada processo, [(processo, porta em escuta)]), como no Windows."""
+    lsof = subprocess.run(["lsof", "-nP", "-iTCP", "-sTCP:LISTEN", "-Fpn"], capture_output=True, text=True).stdout
+    escuta, dono = [], None
+    for linha in lsof.splitlines():
+        if linha.startswith("p"):
+            dono = int(linha[1:])
+        elif linha.startswith("n") and dono and (porta := linha.rsplit(":", 1)[-1]).isdigit():
+            escuta.append((dono, int(porta)))
+    return pais(), escuta
+
+
+def matar(pid):
+    """Encerra o processo e tudo que nasceu dele: primeiro pedindo, depois à força. O pedido vai como o
+    do terminal que fecha (HUP, que o zsh interativo atende; TERM ele ignora) e como o do kill (TERM)."""
+    pai, arvore = pais(), {pid}
+    while novos := {p for p, pp in pai.items() if pp in arvore} - arvore:
+        arvore |= novos
+    for sinais in ((signal.SIGHUP, signal.SIGTERM), (signal.SIGKILL,)):
+        for p in arvore:
+            for sinal in sinais:
+                with suppress(OSError):
+                    os.kill(p, sinal)
+        fim = time.time() + 2
+        while time.time() < fim:
+            ps = subprocess.run(["ps", "-o", "stat=", "-p", ",".join(map(str, arvore))], capture_output=True, text=True).stdout
+            if not any(st.strip() and not st.strip().startswith("Z") for st in ps.splitlines()):
+                return
+            time.sleep(0.1)
 
 
 def ativar(_ids):
