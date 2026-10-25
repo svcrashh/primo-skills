@@ -115,8 +115,8 @@ Só a do que você for usar; uma não depende da outra.
 4. Confira: `node ~/.claude/skills/primo-videos/scripts/requisitos.mjs`. A linha da chave passa a ✔, sem mostrar o
    valor.
 
-A chave nunca é colada na conversa com o Claude, nunca vai para o git e nunca é impressa: quem a põe no arquivo é você,
-com o seu editor. Em vez do arquivo, também vale a variável de ambiente de mesmo nome.
+A chave nunca vai para o git. Quem a põe no arquivo é você, com o seu editor, ou o Claude, se você colar a chave na
+conversa. Em vez do arquivo, também vale a variável de ambiente de mesmo nome.
 
 ## O que precisa ter na máquina
 
