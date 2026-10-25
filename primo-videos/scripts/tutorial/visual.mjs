@@ -97,6 +97,8 @@ const ESQ = {
   // o painel 3D do computador nos passos (opcional). movimento: respira (inclinado para o texto, respirando em senos
   // lentos: o de sempre) · plano (de frente, parado: só a câmera anda dentro dele) · travelling (anda de lado devagar, um
   // sentido por seção, e gira de leve no sentido do movimento) · orbita (gira devagar em volta do próprio centro, em Y e X)
+  // letra (opcional, px, padrão 16): a letra pequena de leitura do app; a câmera aproxima até ela ficar com ~34 px
+  // zoom (opcional): leitura (padrão: a câmera entra no campo de cada passo) · nenhum (a tela inteira o vídeo todo)
   painel: {
     chave: 'movimento',
     tipos: { respira: [], plano: [], travelling: [], orbita: [] },
@@ -166,6 +168,9 @@ export function resolverVisual(serie, marca) {
       r[k] = cor(r[k], `${onde}.${k}`)
     }
     for (const k of ['raio', 'espessura', 'peso', 'espaco', 'escala', 'forca', 'largura', 'recuo']) if (r[k] !== undefined && typeof r[k] !== 'number') throw new Error(`${onde}.${k} must be a number, got ${JSON.stringify(r[k])}.`)
+    if (r.letra !== undefined && (typeof r.letra !== 'number' || r.letra < 10 || r.letra > 24)) throw new Error(`${onde}.letra is the app's small reading text in px (10 to 24; default 16), got ${JSON.stringify(r.letra)}.`)
+    if (el === 'painel' && r.zoom !== undefined && !['leitura', 'nenhum'].includes(r.zoom)) throw new Error(`${onde}.zoom = ${JSON.stringify(r.zoom)} does not exist. Options: leitura (the default: the camera moves in on each field) | nenhum (the whole screen the whole video).`)
+    if (el === 'legenda' && r.sobre !== undefined && typeof r.sobre !== 'boolean') throw new Error(`${onde}.sobre must be true or false (the strip over the edge of the screen, which takes the whole safe area), got ${JSON.stringify(r.sobre)}.`)
     out[el] = r
   }
   // o rótulo do passo usa a tinta da legenda se a série não disser outra cor; o realce proprio não tem cor exigida

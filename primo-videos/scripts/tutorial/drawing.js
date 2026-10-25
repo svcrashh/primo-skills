@@ -26,7 +26,8 @@ function cenasNovas({ conteudoTela, gancho, marcarSe, V, TOQUE, A, D, FIM, FT, F
   const legivel = (h) => (lum(h) > 0.4 ? '#111111' : '#FFFFFF')   // tinta que se lê sobre h
   const sombraDe = (s) => ({ nenhuma: 'none', curta: '0 6px 18px rgba(0,0,0,.18)', longa: '0 40px 90px rgba(0,0,0,.26), 0 8px 22px rgba(0,0,0,.14)' })[s] || 'none'
   const ret = (r) => ({ position: 'absolute', left: px(r.x), top: px(r.y), width: px(r.w), height: px(r.h) })
-  const passoTxt = (n, pad) => (TU.textos.passo || 'Step {n} of {N}').replace('{n}', pad ? String(n).padStart(2, '0') : n).replace('{N}', pad ? String(NP).padStart(2, '0') : NP)
+  // o rótulo do passo: o do próprio passo (g.passo(…, { rotulo })), ou o modelo da série com {n} e {N}
+  const passoTxt = (n, pad) => { const pr = passos.find((x) => x.n === n); if (pr && pr.rotulo) return pr.rotulo; return (TU.textos.passo || 'Step {n} of {N}').replace('{n}', pad ? String(n).padStart(2, '0') : n).replace('{N}', pad ? String(NP).padStart(2, '0') : NP) }
   // a imagem que texto nenhum cruza (VIDEO.texto "fora-da-imagem"): a tela, o painel, a prévia
   const imagemDe = (e, nome) => { if (typeof marcarImagem === 'function') marcarImagem(e, nome); return e }
   // a pílula da série (o rótulo do passo e o índice das seções): as cores do selo quando ele é uma pílula chapada; senão, o
@@ -552,6 +553,7 @@ function cenasNovas({ conteudoTela, gancho, marcarSe, V, TOQUE, A, D, FIM, FT, F
     const giraSecoes = secoes.filter((x) => x.t > SECAO_SEM_GIRO)
     // o movimento do painel nos passos (visual.painel) e a entrada do cartão de capítulo (visual.secao)
     const MOV = (V.painel || {}).movimento || 'respira', SEC = V.secao || {}, ENT = SEC.entrada || 'diagonal'
+    const SEM_ZOOM_P = (V.painel || {}).zoom === 'nenhum'
     const TS = SEC.tempos || { de0: -0.5, de1: -0.12, ate0: 0.45, ate1: 0.9, volta: 1.0 }
     // travelling: um sentido por trecho entre seções (a seção nova inverte), de lado a lado da folga que o texto deixa
     const marcos = [0, ...giraSecoes.map((x) => x.t), D]
@@ -565,7 +567,12 @@ function cenasNovas({ conteudoTela, gancho, marcarSe, V, TOQUE, A, D, FIM, FT, F
       // (no zoom de leitura a respiração cai pela metade: o texto do app fica de frente para ler)
       const vv = lerp(1, 0.5, zf)
       let ry, rx, tz, tx = 0, ty = 0
-      if (MOV === 'plano') { ry = ly * 1.2; rx = 0; tz = 0 }
+      if (MOV === 'plano' && SEM_ZOOM_P) {
+        // tela inteira: o painel recua e volta de leve (só para trás, nunca cresce: a página fica inteira no quadro) e gira
+        // meio grau, para o quadro nunca parar enquanto a voz fala e a mão espera
+        ry = ly * 1.2 + 1.5 * Math.sin(t * 0.53); rx = 0.8 * Math.sin(t * 0.41 + 1)
+        tz = -12 * (1 + Math.sin(t * 0.8)) - 6 * (1 + Math.sin(t * 1.6 + 1))
+      } else if (MOV === 'plano') { ry = ly * 1.2; rx = 0; tz = 0 }
       else if (MOV === 'orbita') {
         // gira em volta do próprio centro: Y e X em quadratura, uma volta a cada 9 s; menor no zoom de leitura
         const w = (2 * Math.PI) / 9
@@ -802,7 +809,7 @@ function cenasNovas({ conteudoTela, gancho, marcarSe, V, TOQUE, A, D, FIM, FT, F
       // a escala da câmera com a lupa aberta: a lente amplia o alvo `lupa` vezes sobre o que já está no quadro
       const s0 = noQuadro(0, 0, A + e.t + 0.4)[2]
       let es = k * s0 * e.lupa
-      es *= Math.min(1, (S.x1 - S.x0 - 60) / (rg.w * es))
+      es *= Math.min(1, (S.x1 - S.x0 - 60) / 1.02 / (rg.w * es)) // 1,02 (e 0,51 no centro): a lente aberta flutua
       const lw = rg.w * es, lh = rg.h * es, borda = 7
       const anel = el('div', { style: { position: 'absolute', left: '0', top: '0', borderRadius: '999px', border: `5px solid ${PT}`, boxSizing: 'border-box' } }, root)
       const box = el('div', { style: { position: 'absolute', left: '0', top: '0', width: px(lw), height: px(lh), borderRadius: px(Math.min(lh / 2, 60)), overflow: 'hidden', background: '#FFFFFF', boxShadow: `0 0 0 ${borda}px ${PT}, 0 34px 80px rgba(0,0,0,.42)`, transformOrigin: '50% 50%' } }, root)
@@ -819,10 +826,12 @@ function cenasNovas({ conteudoTela, gancho, marcarSe, V, TOQUE, A, D, FIM, FT, F
         // a lente mora acima do alvo (cobre o que já foi lido); se não couber, abaixo
         let cy = ay - ah / 2 - 44 - lh / 2
         if (cy - lh / 2 - borda < topo + 8) cy = ay + ah / 2 + 44 + lh / 2
-        const cx = clamp(ax + lw * 0.16, S.x0 + lw / 2 + borda + 6, S.x1 - lw / 2 - borda - 6)
+        const cx = clamp(ax + lw * 0.16, S.x0 + lw * 0.51 + borda + 6, S.x1 - lw * 0.51 - borda - 6)
         const g = E.outBack(P(tc, e.t, e.t + 0.4)), fim = E.inCubic(P(tc, e.t + e.dur - 0.08, e.t + e.dur + 0.16))
-        const esc = lerp(1 / e.lupa, 1, g) * (1 - 0.12 * fim)
-        place(box, lerp(ax, cx, g) - lw / 2, lerp(ay, cy, g) - lh / 2)
+        // aberta, a lente flutua de leve (escala e altura): parada, ela vira um quadro parado sobre a tela inteira
+        const fl = tc - e.t
+        const esc = lerp(1 / e.lupa, 1, g) * (1 - 0.12 * fim) * (1 + 0.018 * Math.sin(fl * 2.6))
+        place(box, lerp(ax, cx, g) - lw / 2, lerp(ay, cy, g) - lh / 2 + 7 * Math.sin(fl * 1.9))
         T(box, `scale(${esc.toFixed(4)})`); O(box, a)
         // um anel sai do alvo, no acento
         const pa = P(tc, e.t + 0.05, e.t + 0.7), ar = Math.max(aw, ah) * (0.7 + 1.5 * E.outCubic(pa))

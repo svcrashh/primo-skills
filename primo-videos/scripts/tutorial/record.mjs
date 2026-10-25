@@ -96,6 +96,16 @@ export function aparelhosDoVideo(video) {
   return out
 }
 
+/** legenda.sobre (references/tutorial.md): a faixa de baixo cobre o pé da tela. A página ganha essa folga embaixo, para a
+ *  rolagem trazer até o último botão da página acima da faixa. */
+function folgaDaLegenda(video) {
+  try {
+    const lg = (JSON.parse(fs.readFileSync(path.join(path.resolve(video.pasta, video.serie || '../serie'), 'series.json'), 'utf8')).visual || {}).legenda || {}
+    const lado = lg.lado && typeof lg.lado === 'object' ? lg.lado.padrao : lg.lado
+    return lg.sobre && (lado || 'baixo') === 'baixo' ? 200 : 0
+  } catch { return 0 }
+}
+
 /** Título e texto final como a tela vai mostrar (a voz da abertura e do fechamento diz o mesmo). */
 function textosDaTela(video) {
   const arq = path.join(path.resolve(video.pasta, video.serie || '../serie'), 'series.json')
@@ -147,7 +157,7 @@ async function rodarVersao(video, v, { check, captura: capturaPedida }) {
     locale: idioma, timezoneId: video.fuso || 'America/Sao_Paulo', colorScheme: video.tema || 'light', reducedMotion: 'no-preference',
   })
   const cfgPagina = { privacidade: { ...(video.privacidade || {}), seletores: [...((video.privacidade && video.privacidade.seletores) || []), ...(video.borrar || [])] },
-    esconder: Array.isArray(video.esconder) ? { seletores: video.esconder } : video.esconder || {}, avisos: video.avisos || [] }
+    esconder: Array.isArray(video.esconder) ? { seletores: video.esconder } : video.esconder || {}, avisos: video.avisos || [], folgaBaixo: folgaDaLegenda(video) }
   await ctx.addInitScript({ content: `${PAGINA}\n;fvPagina(${JSON.stringify(cfgPagina)});` })
   const p = await ctx.newPage()
   const errosPagina = []
@@ -347,15 +357,18 @@ async function rodarVersao(video, v, { check, captura: capturaPedida }) {
     p, v, ap, dados, check, phone: !!ap.toque, toque: !!ap.toque,
     /** Nova legenda. A anterior fica parada pelo menos `leituraMin` (3 s). Com voz, a legenda é a fala do passo,
      *  o passo fica na tela pela fala inteira e o controle volta 0,3 s antes do fim da frase: primeiro diz, depois faz.
-     *  junto: o controle volta no primeiro som, e os toques correm com a fala (cada um no seu g.na). */
-    async passo(legenda, { junto = false } = {}) {
+     *  junto: o controle volta no primeiro som, e os toques correm com a fala (cada um no seu g.na).
+     *  rotulo: o texto do rótulo deste passo no lugar do "Passo {n} de {N}" da série (ex.: '05 · 06 / 15', quando o
+     *  vídeo conta mudanças e um passo cobre duas). */
+    async passo(legenda, { junto = false, rotulo } = {}) {
+      if (rotulo !== undefined && (typeof rotulo !== 'string' || !rotulo.trim() || rotulo.length > 24)) regra(`g.passo: rotulo has 1 to 24 characters (got ${JSON.stringify(rotulo)})`)
       const ult = ultimoPasso()
       if (ult) { const falta = ult.t + (voz && !check ? LV.esperaDoPasso(voz.passos.get(ult.n), leituraMin) : leituraMin) - agora(); if (falta > 0) await p.waitForTimeout(falta * 1000) }
       const n = eventos.filter((e) => e.tipo === 'passo').length + 1
       const fala = voz && voz.passos.get(n)
       if (fala && n === 1 && !check) { const falta = LV.RESPIRO - agora(); if (falta > 0) await p.waitForTimeout(falta * 1000) }
       if (fala && fala.texto !== legenda) console.log(`  warning: step ${n}: the script says "${legenda}" and the voice says "${fala.texto}". The caption is the voice.`)
-      ev({ tipo: 'passo', n, legenda: fala ? fala.texto : legenda, ...(fala ? { fala: fala.id } : {}), ...(fala && fala.texto !== legenda ? { roteiro: legenda } : {}) })
+      ev({ tipo: 'passo', n, legenda: fala ? fala.texto : legenda, ...(fala ? { fala: fala.id } : {}), ...(fala && fala.texto !== legenda ? { roteiro: legenda } : {}), ...(rotulo ? { rotulo: rotulo.trim() } : {}) })
       if (check) console.log(`  · ${fala ? fala.texto : legenda}`)
       else if (fala) { const falta = eventos[eventos.length - 1].t + (junto ? LV.ENTRA : LV.devolveEm(fala)) - agora(); if (falta > 0) await p.waitForTimeout(falta * 1000) }
     },

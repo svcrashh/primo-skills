@@ -189,7 +189,9 @@ export async function refinar(alvo, o = {}) {
   else if (!player.largura) marca(['player'], `${player.origem}: the video plays at full size, no reduction`)
   const videos = []
   for (const f of formatos) {
-    const mp4 = ehMp4 ? path.resolve(alvo) : o.video ? path.resolve(projeto, o.video) : obra ? videoDaObra(projeto, obra.nome, f) : acharVideo(projeto, f, formatos.length === 1)
+    // --video vale da pasta do vídeo ou da pasta de onde se roda (references/tutorial.md §19 passa "01-<tarefa>/<id>…mp4")
+    const doVideo = o.video && (fs.existsSync(path.resolve(projeto, o.video)) || !fs.existsSync(path.resolve(o.video)) ? path.resolve(projeto, o.video) : path.resolve(o.video))
+    const mp4 = ehMp4 ? path.resolve(alvo) : doVideo ? doVideo : obra ? videoDaObra(projeto, obra.nome, f) : acharVideo(projeto, f, formatos.length === 1)
     if (!mp4) { achados.push({ checagem: 'vazio', nivel: 'aviso', msg: `could not find the MP4${f ? ` for ${f}` : ''} in out/`, oque_fazer: 'render it (a draft is fine) or pass --video' }); continue }
     videos.push(mp4)
     const plat = plataformaDe(o.plataforma || vj.plataforma || gab?.plataforma, f || '9x16')

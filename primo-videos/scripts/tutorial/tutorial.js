@@ -70,8 +70,14 @@ function montarTutorial(TU) {
   const CEL9 = FMT === '9x16' && TOQUE
   // Painel: o zoom de leitura é a letra de 16 px do app com ~34 px no quadro (o OCR do refino mede ~29); o plano geral, a
   // tela inteira, é curto. Chegar lá pede captura nítida: a série grava o computador com DSF 3 (serie.aparelhos).
-  const ZMIN = HORIZONTAL && TOQUE ? Math.min(ZMAX, 30 / (12 * k)) : CEL9 ? Math.min(ZMAX, 28.6 / (12 * k)) : PAINEL ? Math.min(ZMAX / 1.06, 34 / (16 * k)) : 1
-  const ZTETO = CEL9 ? ZMIN : ZMAX
+  // visual.painel.letra: a letra pequena de leitura do app (padrão 16 px); um app denso, com tabela em 12 px, pede 12 e a
+  // câmera aproxima até ela ficar com ~34 px (sempre abaixo do teto de nitidez da captura).
+  const LETRA = (V && V.painel && V.painel.letra) || 16
+  // visual.painel.zoom "nenhum": a tela inteira o vídeo todo (a câmera não entra no campo; o detalhe vai no realce e no
+  // cursor). Para quem precisa ver em que tela está, e não só o campo.
+  const SEM_ZOOM = !!(PAINEL && V && V.painel && V.painel.zoom === 'nenhum')
+  const ZMIN = HORIZONTAL && TOQUE ? Math.min(ZMAX, 30 / (12 * k)) : CEL9 ? Math.min(ZMAX, 28.6 / (12 * k)) : PAINEL && !SEM_ZOOM ? Math.min(ZMAX / 1.06, 34 / (LETRA * k)) : 1
+  const ZTETO = CEL9 ? ZMIN : SEM_ZOOM ? 1 : ZMAX
 
   // Layout da versão 2: a legenda ocupa um lado (visual.legenda.lado), a tela ocupa o maior retângulo que sobra
   // (descontada a moldura) e a parte livre é o quadro menos o lado da legenda. O texto da legenda fica sempre
@@ -113,6 +119,9 @@ function montarTutorial(TU) {
       const bx0 = LG.tipo === 'faixa' ? banda.x : x, bx1 = LG.tipo === 'faixa' ? banda.x + banda.w : x + lw
       R = lado === 'direita' ? { x0: mt, x1: bx0 - g, y0: mt, y1: H - mt } : { x0: bx1 + g, x1: W - mt, y0: mt, y1: H - mt }
     } else {
+      // visual.legenda.sobre: a faixa passa por cima da borda de baixo (ou de cima) da tela, e a tela fica com a área segura
+      // inteira (no 16:9 com a janela 16:9, 90% da largura): para mostrar a página toda, grande, sem perder a frase
+      const sobre = !!LG.sobre && HORIZONTAL
       const lh = linha ? 96 : L({ '16x9': 200, '9x16': 250, '4x5': 220, '1x1': 200 }) + (secoes.length ? 56 : 0)
       const lw = linha ? S.x1 - S.x0 : Math.min(S.x1 - S.x0, L({ '16x9': 1180, padrao: 9999 }))
       const y = lado === 'cima' ? S.y0 : S.y1 - lh
@@ -125,8 +134,9 @@ function montarTutorial(TU) {
       const by0 = LG.tipo === 'faixa' ? banda.y : y, by1 = LG.tipo === 'faixa' ? banda.y + banda.h : y + lh
       // (na linha, o painel sobe até a borda da área segura: a faixa já tirou a altura que podia)
       const mv = linha && PAINEL ? S.y0 + 16 : mt
-      R = lado === 'cima' ? { x0: mt, x1: W - mt, y0: by1 + g, y1: H - mv } : { x0: mt, x1: W - mt, y0: mv, y1: by0 - g }
+      R = sobre ? { x0: S.x0, x1: S.x1, y0: S.y0, y1: S.y1 } : lado === 'cima' ? { x0: mt, x1: W - mt, y0: by1 + g, y1: H - mv } : { x0: mt, x1: W - mt, y0: mv, y1: by0 - g }
     }
+    const SOBRE = !!LG.sobre && HORIZONTAL && !lateral
     const a = vp.width / vp.height
     let raio = V.moldura.raio
     if (V.moldura.tipo === 'aparelho') {
@@ -135,7 +145,7 @@ function montarTutorial(TU) {
       cr = { t: 28 * u, r: 20 * u, b: 28 * u, l: 20 * u }; raio = 44 * u
     }
     // painel: a tela inteira fica dentro da área segura (o texto do app também é texto no quadro)
-    if (PAINEL) R = { x0: Math.max(R.x0, S.x0), x1: Math.min(R.x1, S.x1), y0: Math.max(R.y0, S.y0 + 16), y1: Math.min(R.y1, S.y1 - 16) }
+    if (PAINEL) R = { x0: Math.max(R.x0, S.x0), x1: Math.min(R.x1, S.x1), y0: Math.max(R.y0, S.y0 + (SOBRE ? 0 : 16)), y1: Math.min(R.y1, S.y1 - (SOBRE ? 0 : 16)) }
     // Com o texto à direita, a borda de fora do painel é a da esquerda: inclinado para o texto, ela vem para a frente e cresce
     // na perspectiva, e é ali que o app costuma ter o nome e o menu. Ela fica 36 px dentro da área segura.
     if (PAINEL && lado === 'direita') R.x0 = Math.max(R.x0, S.x0 + 36)
@@ -195,6 +205,7 @@ function montarTutorial(TU) {
   }
   // justo: a caixa é o próprio retângulo (a regiao do g.antes), sem o contexto mínimo de meia tela
   const foco = (ret, t, dur = 0.75, justo = false) => {
+    if (SEM_ZOOM) { const c = { t: A + t, x: CX, y: CY, z: 1, dur }; chaves.push(c); return c }
     // caixa de interesse: o alvo com contexto (no mínimo meia tela de largura), no máximo o que cabe na parte livre
     const bw = justo ? ret.w * 1.04 : Math.max(ret.w + 40, vp.width * 0.5), bh = justo ? ret.h * 1.04 : Math.max(ret.h + 40, vp.height * 0.28)
     let z = clamp(Math.min(livre.w / (bw * k * 1.15), livre.h / (bh * k * 1.15)), ZMIN, ZTETO)
@@ -303,7 +314,8 @@ function montarTutorial(TU) {
   }
   // Painel: a câmera nunca fica parada. Entre duas chaves que se afastam mais de 2,6 s, ela aproxima e recua devagar no
   // mesmo ponto (7%), a cada 2,2 s: algo muda no quadro a cada 2–3 s, sem tirar o alvo do lugar.
-  if (PAINEL) {
+  // (com a tela inteira, painel.zoom "nenhum", não: o pulso de 7% cortaria a borda da página; quem respira é o painel)
+  if (PAINEL && !SEM_ZOOM) {
     const ks = chaves.filter((c) => c.t >= A).sort((a, b) => a.t - b.t), novos = []
     ks.forEach((c, i) => {
       const prox = ks[i + 1] ? ks[i + 1].t - (ks[i + 1].dur != null ? ks[i + 1].dur : 0.7) : A + D
@@ -337,6 +349,9 @@ function montarTutorial(TU) {
     // aproximar mais empurrava a borda do texto do app para fora dela (x < 70).
     // painel: no detalhe a respiração só afasta (até 3%) e anda de lado, para nunca bater no teto do zoom e parar; na tela
     // inteira ela só aproxima (afastar mostraria a janela vazia em volta) e não anda de lado
+    // tela inteira (painel.zoom "nenhum"): a câmera não aproxima nem por respiração (cortaria a borda da página); quem
+    // respira é o próprio painel, que recua de leve (drawing.js, painelEm)
+    if (PAINEL && SEM_ZOOM) return c
     if (PAINEL) {
       const b = (0.018 * (1 + Math.sin(u * 1.1))) / 2 + (0.012 * (1 + Math.sin(u * 2.3 + 1))) / 2, lado = clamp((c.z - 1.02) / 0.3)
       return { ...c, x: c.x + 7 * lado * Math.sin(u * 0.7), y: c.y + 4 * lado * Math.sin(u * 0.53 + 1), z: c.z > 1.05 ? c.z * (1 - b) : c.z * (1 + b) }

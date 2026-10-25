@@ -5,7 +5,7 @@
 //   · esconder — some com o que nunca aparece em vídeo (seletores e textos do projeto);
 //   · checagem — "tem algo na frente?": quem está de fato no ponto do toque e de que tipo;
 //   · trocas de tela — avisa o gravador quando a URL muda (history e hash).
-// cfg = { privacidade: { seletores, emails, emailsPermitidos, links, linksPermitidos }, esconder: { seletores, textos }, avisos }
+// cfg = { privacidade: { seletores, emails, emailsPermitidos, links, linksPermitidos }, esconder: { seletores, textos }, avisos, folgaBaixo }
 
 // O que num texto não pode ficar legível: e-mail (menos os de emailsPermitidos) e link com segredo (parâmetro com nome de
 // segredo, ou um trecho aleatório longo), menos os de linksPermitidos (ex.: um perfil público cujo id tem 22
@@ -36,7 +36,8 @@ function fvPagina(cfg) {
     st.id = '__fv-estilo'
     st.textContent = `${SEL_PRIV}, [data-fv-borrar] { filter: blur(${priv.raio || 7}px) !important; }
       ${SEL_ESC ? SEL_ESC + ',' : ''} [data-fv-esconder] { display: none !important; }
-      ::-webkit-scrollbar { display: none; } * { scrollbar-width: none; }`
+      ::-webkit-scrollbar { display: none; } * { scrollbar-width: none; }
+      ${cfg.folgaBaixo ? `body { padding-bottom: ${cfg.folgaBaixo}px !important; }` : ''}`
     document.head.appendChild(st)
   }
   const marcaTexto = (no) => {

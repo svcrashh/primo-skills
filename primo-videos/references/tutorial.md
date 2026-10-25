@@ -773,6 +773,22 @@ Only in the computer panel in cinema mode. Field: `movimento` (default `respira`
 With the text on the right, the panel's outer edge (the left one, where the app usually has its name and menu) stays 36 px inside the safe
 area: tilted toward the text, it comes forward and grows in perspective.
 
+Optional `letra` (px, 10 to 24, default 16): the app's small reading text. The reading zoom brings it to ~34 px in the
+frame, under the capture's sharpness ceiling. A dense app (tables and chips at 12 px) asks for `"painel": { "movimento":
+"…", "letra": 12 }`: with the default, its 12 px text stays at ~25 px and the refinement flags the table as a shrunken
+screen whenever it holds for more than 2.6 s.
+
+Optional `zoom` (`leitura`, the default, or `nenhum`): with `"nenhum"` the camera never comes close: the whole page stays
+in the frame at zoom 1 from start to end, for whoever asks to see "the whole screen, always". The detail is pointed by
+the cursor, the ring and `lupa` (the magnifier keeps the page whole around it), never by a crop. The camera's breathing
+and the 7% pulse between keys are off (both would cut the page's edge); only the panel moves, with `plano`: it breathes
+backward (never past the frame) and turns a little, enough for the still-frame check. The refinement's legibility check
+flags the app's small text in this mode: it is the cost of the whole screen, and the person who asked for it accepts it.
+
+`legenda.sobre: true` (with `lado: baixo` or `cima`, in a horizontal format): the screen keeps the whole safe area and
+the caption strip goes over its edge, instead of taking its height. With `zoom: "nenhum"`, it keeps the window at ~90%
+of the frame's width in 16:9.
+
 ### The `proprio` hook (visual.js)
 
 When no type says what the product is, the series brings a `visual.js` in its folder. These accept `proprio`:
