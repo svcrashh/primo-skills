@@ -291,8 +291,10 @@ Terminal. O resto deste arquivo vale igual.
   Cory. Se o Cory cair com a trilha aberta, o registro a segue pelo processo e o `fechar` a encerra.
 - **Linhagem:** a linha de cada trilha leva também o id do terminal (`cory`). A trilha recebe
   `CORY_CONVERSA` com a própria sessão, para as trilhas que ela abrir ficarem embaixo dela.
-- Provado com um Cory de mentira (`scripts/cory_falso.py`) nos dois testes simulados. Com o Cory de
-  verdade ainda não.
+- Provado com um Cory de mentira (`scripts/cory_falso.py`) nos dois testes simulados e, em 27/10/2026,
+  no Cory de verdade (o fork do VS Code, 0.3.6): a trilha abre como terminal no painel de baixo, com o
+  título dela, e o `status`, a lista do Cory e o `fechar` funcionam como aqui. Conversa aberta antes de o
+  Cory ter isso não recebe as variáveis: as trilhas dela abrem em janelas até ela ser aberta de novo.
 
 ## Como funciona
 
